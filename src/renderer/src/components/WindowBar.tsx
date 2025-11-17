@@ -27,10 +27,25 @@ function ModalShit(): React.ReactElement {
       <p>State: {a}</p>
       <button
         onClick={() => {
-          sa(a + 1)
+          if (a + 1 > 0) {
+            sa(a + 1)
+          } else {
+            console.log('count up clamped')
+          }
         }}
       >
         count up
+      </button>
+      <button
+        onClick={() => {
+          if (a - 1 >= 0) {
+            sa(a - 1)
+          } else {
+            console.log('count down clamped')
+          }
+        }}
+      >
+        count down
       </button>
     </>
   )
