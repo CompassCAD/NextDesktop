@@ -1,7 +1,7 @@
 import React, { ReactNode, useCallback, useEffect, useState } from 'react'
 import style from '../style/index.module.css'
 
-type ModalTitle = ReactNode
+type ModalTitle = string | null
 type ModalContent = ReactNode
 
 interface ModalPayload {

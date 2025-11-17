@@ -17,6 +17,24 @@ import React, { useEffect, useRef, useState } from 'react'
 import { GraphicsRenderer } from '@renderer/engine/Engine'
 import { getRendererIfAvailable } from '@renderer/exports'
 import { MenuProvider, MenuContext } from './MenuProvider'
+import { openModal } from './ModalProvider'
+
+function ModalShit(): React.ReactElement {
+  const [a, sa] = useState<number>(0)
+  return (
+    <>
+      <h1>Count together!</h1>
+      <p>State: {a}</p>
+      <button
+        onClick={() => {
+          sa(a + 1)
+        }}
+      >
+        count up
+      </button>
+    </>
+  )
+}
 
 export default function WindowBar(): React.ReactElement {
   const [isMaximized, setMaximized] = useState<boolean>(false)
@@ -90,6 +108,9 @@ export default function WindowBar(): React.ReactElement {
   }
   const toggleMenuState = (): void => {
     setMenuOpened(!menuOpened)
+  }
+  const spawnModal = (): void => {
+    openModal('Counting', <ModalShit />)
   }
   return (
     <>
@@ -170,6 +191,7 @@ export default function WindowBar(): React.ReactElement {
           <MenuContext icon={SaveDesignIcon} title="Save Design (ctrl+s)" />
           <MenuContext icon={SaveDesignAsIcon} title="Save as (ctrl+alt+s)" />
           <MenuContext icon={ExportIcon} title="Export to SVG (ctrl+e)" />
+          <MenuContext onAction={spawnModal} title="TEST MODAL SHIT AHHAHAHAHA" />
         </MenuProvider>
       )}
     </>

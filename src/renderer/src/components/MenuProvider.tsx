@@ -1,4 +1,5 @@
 import React from 'react'
+import UnknownIcon from '../assets/icons/help.svg'
 import styles from '../style/index.module.css'
 import { VectorType } from '@renderer/engine/Engine'
 
@@ -15,8 +16,8 @@ interface MenuContextProps {
 
 export function MenuContext(props: MenuContextProps): React.ReactElement {
   return (
-    <div className={styles['menu-context']}>
-      <img src={props.icon}></img>
+    <div className={styles['menu-context']} onClick={props.onAction}>
+      <img src={props.icon ? props.icon : UnknownIcon}></img>
       <span>{props.title}</span>
     </div>
   )
