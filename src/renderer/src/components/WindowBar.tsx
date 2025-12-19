@@ -200,12 +200,12 @@ export default function WindowBar(): React.ReactElement {
       </div>
       {menuOpened && (
         <MenuProvider offset={{ x: 50, y: 50 }}>
-          <MenuContext icon={NewFileIcon} title="New File (ctrl+n)" />
-          <MenuContext icon={OpenFileIcon} title="Open File (ctrl+o)" />
+          <MenuContext icon={NewFileIcon} title="New File" keyCombinations={['Ctrl', 'N']} />
+          <MenuContext icon={OpenFileIcon} title="Open File" keyCombinations={['Ctrl', 'O']} />
           <MenuContext icon={BackupIcon} title="Open Backups" />
-          <MenuContext icon={SaveDesignIcon} title="Save Design (ctrl+s)" />
-          <MenuContext icon={SaveDesignAsIcon} title="Save as (ctrl+alt+s)" />
-          <MenuContext icon={ExportIcon} title="Export to SVG (ctrl+e)" />
+          <MenuContext icon={SaveDesignIcon} title="Save Design" keyCombinations={['Ctrl', 'S']} />
+          <MenuContext icon={SaveDesignAsIcon} title="Save as" keyCombinations={['Ctrl', 'Alt', 'S']} />
+          <MenuContext icon={ExportIcon} title="Export to SVG" keyCombinations={['Ctrl', 'E']} />
           <MenuContext onAction={spawnModal} title="TEST MODAL SHIT AHHAHAHAHA" />
         </MenuProvider>
       )}

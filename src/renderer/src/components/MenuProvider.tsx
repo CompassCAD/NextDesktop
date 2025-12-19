@@ -11,6 +11,7 @@ interface MenuProviderProps {
 interface MenuContextProps {
   icon?: string
   title: string
+  keyCombinations?: string[]
   onAction?: () => void
 }
 
@@ -18,7 +19,12 @@ export function MenuContext(props: MenuContextProps): React.ReactElement {
   return (
     <div className={styles['menu-context']} onClick={props.onAction}>
       <img src={props.icon ? props.icon : UnknownIcon}></img>
-      <span>{props.title}</span>
+      <span className={styles['menu-context-title']}>{props.title}</span>
+      <div className={styles['menu-context-key-combinations']}>
+        {props.keyCombinations?.map((key, index) => (
+          <span className={styles['menu-context-key-combination-key']} key={index}>{key}</span>
+        ))}
+      </div>
     </div>
   )
 }
