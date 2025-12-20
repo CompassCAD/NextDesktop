@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import styles from '../style/index.module.css'
 import * as Types from '../engine/Types'
-import { GraphicsRenderer } from '@renderer/engine/Engine'
+import { GraphicsRenderer, VectorType } from '@renderer/engine/Engine'
 import { getRendererIfAvailable } from '@renderer/exports'
 import SelectIcon from '../assets/icons/navigate.svg'
 import NavigateIcon from '../assets/icons/pan.svg'
@@ -20,6 +20,8 @@ interface ToolbarButtonProps {
 }
 
 function ToolbarButton(props: ToolbarButtonProps): React.ReactElement {
+  const [isTooltipVisible, setVisibility] = useState<boolean>(false);
+  const [tooltipPos, setPos] = useState<VectorType>({ x: 0, y: 0 });
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent): void => {
       if ((e.keyCode === props.keyCode || e.keyCode === props.alternateKeyCode) && props.onAction) {
@@ -41,14 +43,28 @@ function ToolbarButton(props: ToolbarButtonProps): React.ReactElement {
       window.removeEventListener('keydown', handleKeyDown)
     }
   })
+  const changePos = (e: React.MouseEvent<HTMLDivElement, MouseEvent>): void => {
+    const x = e.clientX;
+    const y = e.clientY - 40;
+    setPos({ x, y });
+  }
   return (
-    <div
-      className={`${styles['toolbar-button']}${props.isActive ? ` ${styles['button-active']}` : ''}`}
-      title={`${props.title} (${props.keyName})`}
-      onClick={props.onAction}
-    >
+    <>
+      <div
+        className={`${styles['toolbar-button']}${props.isActive ? ` ${styles['button-active']}` : ''}`}
+        onClick={props.onAction}
+        onMouseEnter={() => setVisibility(true)}
+        onMouseLeave={() => setVisibility(false)}
+        onMouseMove={changePos}
+      >
       <img width={18} src={props.icon} />
-    </div>
+      </div>
+      {isTooltipVisible && (
+      <div className={styles['toolbar-tooltip']} style={{ left: tooltipPos.x, top: tooltipPos.y }}>
+        {props.title} <span className={styles['menu-context-key-combination-key']}>{props.keyName}</span>
+      </div>
+      )}
+    </>
   )
 }
 
