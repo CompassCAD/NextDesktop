@@ -223,12 +223,27 @@ export class GraphicsRenderer {
   }
   refreshSelectionTools() {
     if (this.selectedComponent !== null && this.logicDisplay?.components[this.selectedComponent]) {
+      // we gonna draw a line bois
+      switch (this.logicDisplay?.components[this.selectedComponent].type) {
+        case componentTypes.line:
+          const lineThingy = this.logicDisplay?.components[this.selectedComponent] as Line;
+          this.context?.save();
+          this.context!.strokeStyle = this.selectedColor;
+          this.context!.lineWidth = 2;
+          this.context!.beginPath();
+          this.context!.moveTo(lineThingy.x1 * this.zoom + this.cOutX * this.zoom, lineThingy.y1 * this.zoom + this.cOutY * this.zoom);
+          this.context!.lineTo(lineThingy.x2 * this.zoom + this.cOutX * this.zoom, lineThingy.y2 * this.zoom + this.cOutY * this.zoom);
+          this.context?.stroke();
+          this.context?.restore();
+          break;
+      }
       this.drawComponentSize(this.logicDisplay?.components[this.selectedComponent])
       const selectedComponent: Component = this.logicDisplay?.components[this.selectedComponent]
       const handles = this.getComponentHandles(selectedComponent)
       for (const handle of handles) {
         this.drawPoint(handle.x, handle.y, '#fff', 2, 100)
       }
+      
     }
   }
   drawComponentSize(component: Component) {
