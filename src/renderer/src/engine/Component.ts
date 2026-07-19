@@ -144,7 +144,7 @@ export class Label extends Point {
         this.type = componentTypes.label;
         this.color = '#eeeeee';
         this.text = text != undefined ? text : 'Sample text';
-        this.fontSize = fontSize != undefined ? fontSize : 18;
+        this.fontSize = fontSize != undefined ? fontSize : 10;
         this.opacity = opacity != undefined ? opacity : 100;
         this.name = name != undefined ? name : 'Label';
     }

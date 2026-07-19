@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import styles from '../style/index.module.css'
 import * as Types from '../engine/Types'
-import { GraphicsRenderer, VectorType } from '@renderer/engine/Engine'
+import { GraphicsRenderer, Vector2 } from '@renderer/engine/Engine'
 import { getRendererIfAvailable } from '@renderer/exports'
 import SelectIcon from '../assets/icons/navigate.svg'
 import NavigateIcon from '../assets/icons/pan.svg'
@@ -21,7 +21,7 @@ interface ToolbarButtonProps {
 
 function ToolbarButton(props: ToolbarButtonProps): React.ReactElement {
   const [isTooltipVisible, setVisibility] = useState<boolean>(false);
-  const [tooltipPos, setPos] = useState<VectorType>({ x: 0, y: 0 });
+  const [tooltipPos, setPos] = useState<Vector2>({ x: 0, y: 0 });
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent): void => {
       if ((e.keyCode === props.keyCode || e.keyCode === props.alternateKeyCode) && props.onAction) {
@@ -125,6 +125,14 @@ export default function Toolbar(): React.ReactElement {
           keyCode={Types.default.KeyCodes.H}
           isActive={modeState == Types.default.NavigationTypes.AddLabel}
           onAction={() => renderer.current?.setMode(Types.default.NavigationTypes.AddLabel)}
+        />
+        <ToolbarButton
+          icon={AddTextIcon}
+          title="Add Measure"
+          keyName="m"
+          keyCode={Types.default.KeyCodes.M}
+          isActive={modeState == Types.default.NavigationTypes.AddMeasure}
+          onAction={() => renderer.current?.setMode(Types.default.NavigationTypes.AddMeasure)}
         />
       </div>
     </>

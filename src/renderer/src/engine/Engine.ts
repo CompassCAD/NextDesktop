@@ -194,7 +194,7 @@ export class GraphicsRenderer {
     this.snap = true
     this.recordingMode = false
     this.snapTolerance = 10
-    this.fontSize = 18
+    this.fontSize = 4
     this.maximumStack = 50
     this.displayRef = displayRef != null ? displayRef : null
     this.defaultTooltip = 'CompassCAD'
@@ -596,10 +596,6 @@ export class GraphicsRenderer {
         const m = component as Measure
         return {minX: Math.min(m.x1, m.x2), minY: Math.min(m.y1, m.y2), maxX: Math.max(m.x1, m.x2), maxY: Math.max(m.y1, m.y2)}
         break;
-      case componentTypes.label:
-        const label = component as Label
-        return {minX: label.x, minY: label.y, maxX: label.x, maxY: label.y}
-        break;
       case componentTypes.arc:
         const arc = component as Arc
         return {minX: Math.min(arc.x1, arc.x2, arc.x3), minY: Math.min(arc.y1, arc.y2, arc.y3), maxX: Math.max(arc.x1, arc.x2, arc.x3), maxY: Math.max(arc.y1, arc.y2, arc.y3)}
@@ -624,7 +620,7 @@ export class GraphicsRenderer {
   drawAllComponents(components: Component[], moveByX: number, moveByY: number) {
     for (let i = 0; i < components.length; i++) {
       if (components[i].active == false) continue;
-      if (!this.isComponentInCamera(this.getComponentBoundaryBox(components[i]))) continue;
+      if (!this.isComponentInCamera(this.getComponentBoundaryBox(components[i])) && components[i].type !== componentTypes.label) continue;
       this.drawComponent(components[i], moveByX, moveByY)
     }
   }
@@ -687,6 +683,7 @@ export class GraphicsRenderer {
         this.drawLabel(
           label.x + moveByX,
           label.y + moveByY,
+          label.radius,
           label.text,
           label.color,
           label.fontSize,
@@ -1016,7 +1013,98 @@ export class GraphicsRenderer {
       opacity
     )
   }
-  drawMeasure(
+  async drawRawFontobeneAtLocation(
+    x: number, 
+    y: number, 
+    text: string, 
+    color?: string, 
+    fontSize?: number, 
+    thickness?: number, 
+    opacity?: number, 
+    rotation?: number,
+    textAlign: 'left' | 'center' = 'left',
+    textBaseline: 'middle' | 'top' | 'bottom' = 'bottom'
+  ) {
+    if (!this.context) return;
+
+    const glyphs = await this.fb.layoutText(text);
+    if (!glyphs || glyphs.length === 0) return;
+    
+    const targetColor = color || '#E9E9E9';
+    const targetOpacity = opacity !== undefined ? opacity : 1.0;
+    const targetFontSize = fontSize || this.fontSize;
+    const targetThickness = thickness || 0.5;
+
+    // 1. Calculate precise width and height bounds directly from Fontobene glyphs
+    let minX = Infinity, maxX = -Infinity;
+    let minY = Infinity, maxY = -Infinity;
+
+    for (const glyph of glyphs) {
+      for (const cmd of glyph.commands) {
+        if (cmd.x < minX) minX = cmd.x;
+        if (cmd.x > maxX) maxX = cmd.x;
+        if (cmd.y < minY) minY = cmd.y;
+        if (cmd.y > maxY) maxY = cmd.y;
+      }
+    }
+
+    // If no commands were found, fallback to zero dimensions
+    const fbWidth = (maxX >= minX) ? (maxX - minX) * targetFontSize : 0;
+    const fbHeight = (maxY >= minY) ? (maxY - minY) * targetFontSize : targetFontSize;
+
+    // 2. Determine local alignment offsets
+    let localOffsetX = 0;
+    if (textAlign === 'center') {
+      localOffsetX = -fbWidth / 2;
+    }
+
+    let localOffsetY = 0;
+    if (textBaseline === 'middle') {
+      // Shifting down by half the bounding height to perfectly center vertically
+      localOffsetY = fbHeight / 2; 
+    } else if (textBaseline === 'top') {
+      localOffsetY = fbHeight;
+    }
+
+    this.context.save();
+    
+    // 3. Move origin to target point and rotate
+    this.context.translate(x, y);
+    if (rotation) {
+      this.context.rotate(rotation);
+    }
+
+    // 4. Configure stroke
+    this.context.strokeStyle = targetColor + _num2hex(targetOpacity);
+    this.context.lineWidth = targetThickness * this.zoom;
+    this.context.lineCap = 'round';
+    this.context.lineJoin = 'round';
+
+    this.context.beginPath();
+    
+    // 5. Draw lines, applying the computed layout alignment offsets
+    for (const glyph of glyphs) {
+      for (const cmd of glyph.commands) {
+        // Apply scale first, then shift according to layout rules
+        const px = (cmd.x * targetFontSize) + localOffsetX;
+        const py = (-cmd.y * targetFontSize) + localOffsetY; 
+        
+        if (cmd.command === 'pendown') {
+          this.context.moveTo(px, py);
+        } else if (cmd.command === 'movepen') {
+          this.context.lineTo(px, py);
+        }
+      }
+    }
+    
+    this.context.stroke();
+    this.context.restore();
+
+    // Return the calculated width so drawMeasure can use it for line gaps
+    return fbWidth;
+  }
+
+  async drawMeasure(
     x1: number,
     y1: number,
     x2: number,
@@ -1037,11 +1125,18 @@ export class GraphicsRenderer {
       localDiff = 20
     }
     const distanceText = distance.toFixed(2) + '' + this.unitMeasure
-    this.context?.save()
-    this.context!.font =
-      this.fontSize * localZoom + `px ${this.displayFont}, Consolas, DejaVu Sans Mono, monospace`
-    const textWidth: number = this.context?.measureText(distanceText).width ?? 0
-    this.context?.restore()
+    
+    // Fetch text layout metrics directly from Fontobene helper method execution
+    const targetFontSize = this.zoom;
+    const glyphs = await this.fb.layoutText(distanceText);
+    let maxX = 0;
+    if (glyphs && glyphs.length > 0) {
+      const lastGlyph = glyphs[glyphs.length - 1];
+      // Estimate total width based on layout positioning metrics
+      maxX = glyphs.reduce((max, g) => Math.max(max, g.commands.reduce((m, c) => Math.max(m, c.x), 0)), 0);
+    }
+    const calculatedTextWidth = maxX * targetFontSize;
+    
     const minDistanceForFullArrow = (defaultArrowLength * 2) / 100 // 0.5 meters
     if (distance < minDistanceForFullArrow) {
       arrowLength = (distance / minDistanceForFullArrow) * defaultArrowLength
@@ -1050,10 +1145,12 @@ export class GraphicsRenderer {
     const midX = (x1 + x2) / 2
     const midY = (y1 + y2) / 2
     const textOffsetY = isShortDistance ? (750 / 100) * this.zoom : 0
+    
     if (!isShortDistance) {
       const basePadding = 20
       const adaptivePadding = basePadding * this.zoom
-      const labelGap = (textWidth + adaptivePadding) / this.zoom
+      // Use the true Fontobene calculated layout width for the dimension line break gap
+      const labelGap = (calculatedTextWidth + adaptivePadding) / this.zoom
 
       const halfGapX = (labelGap / 2) * Math.cos(angle)
       const halfGapY = (labelGap / 2) * Math.sin(angle)
@@ -1061,90 +1158,108 @@ export class GraphicsRenderer {
       this.drawLine(x1, y1, midX - halfGapX, midY - halfGapY, color, radius, opacity)
       this.drawLine(midX + halfGapX, midY + halfGapY, x2, y2, color, radius, opacity)
     }
+    
     this.drawArrowhead(x1, y1, angle, arrowLength, arrowOffset, color, radius, opacity)
     this.drawArrowhead(x2, y2, angle, -arrowLength, arrowOffset, color, radius, opacity)
-    this.context?.save()
-    this.context?.translate(
-      midX * this.zoom + this.cOutX * this.zoom,
-      midY * this.zoom + textOffsetY * 2 + this.cOutY * this.zoom
-    )
-    this.context?.rotate(angle)
-    this.context!.textAlign = 'center'
-    this.context!.textBaseline = isShortDistance ? 'top' : 'middle'
-    this.context!.fillStyle = color + _num2hex(opacity!)
-    this.context!.font =
-      this.fontSize * localZoom + `px ${this.displayFont}, Consolas, DejaVu Sans Mono, monospace`
-    this.context?.fillText(distanceText, 0, localDiff)
-    this.context?.restore()
+    
+    // Base location calculated relative to map space transforms
+    let posX = midX * this.zoom + this.cOutX * this.zoom;
+    let posY = midY * this.zoom + textOffsetY * 2 + this.cOutY * this.zoom;
+
+    // Add the old native baseline offset modifier if present
+    if (localDiff !== 0) {
+      // Project localDiff along the perpendicular axis of rotation vector
+      posX += localDiff * Math.sin(angle);
+      posY -= localDiff * Math.cos(angle);
+    }
+
+    // Render vector text with explicit alignment instruction sets
+    await this.drawRawFontobeneAtLocation(
+      posX,
+      posY,
+      distanceText,
+      color,
+      targetFontSize, 
+      radius / 2,             // stroke thickness scale 
+      opacity,
+      angle,
+      'center',                       // Horizontal alignment style
+      isShortDistance ? 'top' : 'middle' // Vertical baseline style
+    );
   }
-  async drawLabel(x: number, y: number, text: string, color: string, fontSize: number, opacity: number) {
+  async drawLabel(x: number, y: number, radius: number, text: string, color: string, fontSize: number, opacity: number) {
     if (!this.context) return;
 
-    // 1. Draw the reference anchor point
-    // this.drawPoint(x, y, '#0ff', 2, opacity);
-
-    // 2. Handle zoom adjustments
+    // 1. Handle zoom adjustments
     let localZoom = this.zoom;
-    let localDiff = 0;
+    let localDiff = 30;
 
     if (this.zoom <= 0.25) {
       localZoom = 0.5;
-      localDiff = 20;
+      localDiff = 30;
       y += localDiff;
     }
 
-    // 4. Split text and handle the 24-character row limit wrapping
+    // Calculate the target font scale factor
+    const targetFontScale = fontSize * localZoom;
+
+    // 2. Split text and handle the 24-character row limit wrapping
     const maxLength = 24;
     let tmpLength = 0;
     let tmpText = '';
     const arrText = text.split(' ');
+    const lines: string[] = [];
 
-    // Helper function to render a single line using Fontobene
-    const renderLine = async (lineText: string, currentY: number) => {
-      // scale/options might depend on your Fontobene wrapper library's API 
-      // passed here to respect fontSize and localZoom
-      const glyphs = await this.fb.layoutText(lineText);
-
-      // 3. Setup Canvas Stroke styles for Fontobene vector rendering
-      this.context!.strokeStyle = this.getColorWithOpacityFromCache(color, opacity);
-      this.context!.lineWidth = 0.5 * this.zoom; // Adjust line weight relative to zoom if desired
-      this.context!.lineCap = 'round';
-      this.context!.lineJoin = 'round';
-      
-      this.context!.beginPath();
-      for (const glyph of glyphs) {
-        for (const cmd of glyph.commands) {
-          // Adjust Fontobene coordinates relative to anchor positions and zoom
-          // Note: cmd.x/cmd.y typically need scaling by fontSize/zoom depending on fb layout output
-          const px = (cmd.x + this.cOutX + x - 5) * this.zoom;
-          const py = (-cmd.y + this.cOutY + currentY) * this.zoom;
-
-          if (cmd.command === 'pendown') {
-            this.context!.moveTo(px, py);
-          } else if (cmd.command === 'movepen') {
-            this.context!.lineTo(px, py);
-          }
-        }
-      }
-      this.context!.stroke();
-    };
-
-    // Process words
+    // Break text into clean line arrays first to avoid mixed coordinate mutations
     for (let i = 0; i < arrText.length; i++) {
       tmpLength += arrText[i].length + 1;
-      tmpText += ' ' + arrText[i];
+      tmpText += (tmpText ? ' ' : '') + arrText[i];
 
       if (tmpLength > maxLength) {
-        await renderLine(tmpText, y);
-        y += 25 + localDiff;
+        lines.push(tmpText);
         tmpLength = 0;
         tmpText = '';
       }
     }
-
-    // 5. Print the remaining text line
     if (tmpText.trim().length > 0) {
-      await renderLine(tmpText, y);
+      lines.push(tmpText);
+    }
+
+    // 4. Render each line sequentially with absolute line offsets
+    for (let lineIndex = 0; lineIndex < lines.length; lineIndex++) {
+      const lineText = lines[lineIndex];
+      const glyphs = await this.fb.layoutText(lineText);
+
+      // Calculate the absolute baseline Y coordinate for this specific line
+      // Fontobene internal glyph lines move upwards/downwards based on targetFontScale
+      const currentLineY = y + (lineIndex * (30 + localDiff));
+
+      // 3. Setup Canvas Stroke styles for Fontobene vector rendering
+      this.context.strokeStyle = this.getColorWithOpacityFromCache(color, opacity);
+      this.context.lineWidth = radius * this.zoom; 
+      this.context.lineCap = 'round';
+      this.context.lineJoin = 'round';
+
+      this.context.beginPath();
+      for (const glyph of glyphs) {
+        for (const cmd of glyph.commands) {
+          /*
+            CORRECTED MATH:
+            - Scale raw font data (cmd.x, cmd.y) strictly by the target font scale factor.
+            - Scale the global world anchor points (x, currentLineY) by this.zoom.
+            - Apply camera/screen view offset (cOutX, cOutY) scaled by this.zoom.
+          */
+          const px = (cmd.x * targetFontScale) + (this.cOutX + x - 5) * this.zoom;
+          const py = (-cmd.y * targetFontScale) + (this.cOutY + currentLineY) * this.zoom;
+
+          if (cmd.command === 'pendown') {
+            this.context.moveTo(px, py);
+          } else if (cmd.command === 'movepen') {
+            this.context.lineTo(px, py);
+          }
+        }
+      }
+      this.context.stroke();
     }
   }
   drawArc(
