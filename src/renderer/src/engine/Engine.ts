@@ -208,8 +208,15 @@ export class GraphicsRenderer {
     this._WARNING_MAYLAGSHIT_debugMode = false;
   }
 
-  markDirty() {
+  private _lastCamX = NaN
+  private _lastCamY = NaN
+  private _lastZoom = NaN
+  private _lastOffsetX = NaN
+  private _lastOffsetY = NaN
+
+  markDirty(why: string = 'unknown') {
     this._dirty = true;
+    this.cleanLog(`Marked as dirty: ${why}`);
   }
 
   cleanLog(content: any) {
@@ -225,7 +232,22 @@ export class GraphicsRenderer {
     return v
   }
 
+  private lastCursorClientX = -Infinity
+  private lastCursorClientY = -Infinity
+
+  didCursorActuallyMove(e: MouseEvent | any): boolean {
+    const cx = e.clientX
+    const cy = e.clientY
+    if (cx === this.lastCursorClientX && cy === this.lastCursorClientY) {
+      return false
+    }
+    this.lastCursorClientX = cx
+    this.lastCursorClientY = cy
+    return true
+  }
+
   start() {
+    this.markDirty('Engine started');
     this.logicDisplay = new LogicDisplay()
     this.zoom = 1
     this.temporaryObjectArray = []
@@ -236,7 +258,7 @@ export class GraphicsRenderer {
     if (!context) {
       throw new Error('Failed to get 2D context')
     }
-    this.context = context
+    this.context = context;
   }
   scaleForHighDPI(dpi: number) {
     if (this.enableHighDPI) {
@@ -277,7 +299,7 @@ export class GraphicsRenderer {
       case componentTypes.boundBox:
       case componentTypes.line:
         const line = component as Line
-        displayText = `${Number(Math.abs(line.x2 - line.x1).toFixed(2))}×${Number(Math.abs(line.y2 - line.y1).toFixed(2))}`
+        displayText = `${Number(Math.abs(line.x2 - line.x1).toFixed(2))} × ${Number(Math.abs(line.y2 - line.y1).toFixed(2))}`
         break
       case componentTypes.measure:
         const measure = component as Measure
@@ -493,7 +515,21 @@ export class GraphicsRenderer {
       this.cOutX += this.getCursorXRaw() - this.xCNaught
       this.cOutY += this.getCursorYRaw() - this.yCNaught
     }
-    this.markDirty();
+    const changed =
+      this.camX !== this._lastCamX ||
+      this.camY !== this._lastCamY ||
+      this.zoom !== this._lastZoom ||
+      this.offsetX !== this._lastOffsetX ||
+      this.offsetY !== this._lastOffsetY
+
+    if (changed) {
+      this._lastCamX = this.camX
+      this._lastCamY = this.camY
+      this._lastZoom = this.zoom
+      this._lastOffsetX = this.offsetX
+      this._lastOffsetY = this.offsetY
+      this.markDirty('Camera updated')
+    }
   }
   saveState() {
     this.cleanLog('saving state')
@@ -1337,7 +1373,7 @@ export class GraphicsRenderer {
           arc.y3 += dy3
           break
       }
-      this.markDirty();
+      this.markDirty('Component moved');
     }
   }
   selectComponent(index: number) {
@@ -1614,7 +1650,7 @@ export class GraphicsRenderer {
       this.onComponentChangeCallback()
     }
     this.cleanLog('component changed')
-    this.markDirty(); 
+    this.markDirty('Component changed'); 
   }
   async performAction(e: MouseEvent, action: number) {
     switch (this.mode) {
@@ -2263,6 +2299,7 @@ export class GraphicsRenderer {
         this.tooltip = 'Select (click to select/deselect)'
         break
     }
+    this.markDirty('Action performed: ' + action + ' in mode: ' + this.mode)
   }
   setZoom(zoomFactor: number) {
     var newZoom = this.zoom * zoomFactor
@@ -2280,7 +2317,7 @@ export class GraphicsRenderer {
     this.camX -= cursorOffsetX * (zoomDiff / this.zoom)
     this.camY -= cursorOffsetY * (zoomDiff / this.zoom)
     this.cleanLog('onZoomUpdate callback?' + this.onZoomUpdate);
-    this.markDirty();
+    this.markDirty('Zoom updated');
   }
   clearGrid() {
     if (this.context) {
@@ -2301,7 +2338,10 @@ export class GraphicsRenderer {
     )
   }
   update() {
-    if (!this._dirty) return;
+    if (!this._dirty) {
+      this.cleanLog('update wants to be called but i am not dirty, skipping');
+      return;
+    } else this.cleanLog('update called, dirty flag is true, proceeding with update');
     this._dirty = false;
     this.offsetX = this.displayRef!.offsetLeft
     this.offsetY = this.displayRef!.offsetTop
@@ -2463,19 +2503,13 @@ export const InitializeInstance = (renderer: GraphicsRenderer) => {
     renderer.keyboard?.onKeyDown(e)
   }
   renderer.displayRef!.addEventListener('mousemove', (e: any) => {
-    // Ignore emulated mouse events from touch
-    if (e.sourceCapabilities && e.sourceCapabilities.firesTouchEvents) {
-      return
-    }
+    if (e.sourceCapabilities && e.sourceCapabilities.firesTouchEvents) return
+
+    if (!renderer.didCursorActuallyMove(e)) return // <-- swallow synthetic/no-op moves
 
     renderer.mouse?.onMouseMove(e)
-
-    if (!renderer.gridPointer) {
-      renderer.gridPointer = true
-    }
-
+    if (!renderer.gridPointer) renderer.gridPointer = true
     renderer.performAction(e, renderer.mouseAction.Move)
-    renderer.markDirty();
   })
 
   renderer.displayRef!.addEventListener('mouseout', () => {
@@ -2485,7 +2519,7 @@ export const InitializeInstance = (renderer: GraphicsRenderer) => {
   renderer.displayRef!.addEventListener('mousedown', (e: MouseEvent) => {
     if (e.which == 2) {
       renderer.camMoving = true;
-      renderer.markDirty();
+      renderer.markDirty('Mouse moved during drag');
       renderer.xCNaught = renderer.getCursorXRaw()
       renderer.yCNaught = renderer.getCursorYRaw()
     } else {
@@ -2497,7 +2531,7 @@ export const InitializeInstance = (renderer: GraphicsRenderer) => {
   renderer.displayRef!.addEventListener('mouseup', (e: MouseEvent) => {
     if (e.which == 2) {
       renderer.camMoving = false;
-      renderer.markDirty();
+      renderer.markDirty('Mouse released during drag');
       renderer.camX += renderer.getCursorXRaw() - renderer.xCNaught
       renderer.camY += renderer.getCursorYRaw() - renderer.yCNaught
       renderer.updateCamera()
