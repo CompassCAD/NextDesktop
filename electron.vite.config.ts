@@ -10,10 +10,11 @@ export default defineConfig({
     plugins: [externalizeDepsPlugin()]
   },
   renderer: {
+    assetsInclude: ['**/*.bene'],
     resolve: {
       alias: {
         '@renderer': resolve('src/renderer/src')
-      }
+      },
     },
     plugins: [react()]
   }

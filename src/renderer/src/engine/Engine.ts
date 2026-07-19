@@ -23,6 +23,8 @@ import NavigateIdleCursor from '../assets/cursors/navigate-idle.svg'
 import Nwse1 from '../assets/cursors/nwse-1.svg'
 import Nwse2 from '../assets/cursors/nwse-2.svg'
 import { callTextPrompt } from '@renderer/components/TextPrompt'
+import FontobeneParser from './fontobene/FontobeneParser'
+import Newstroke from './fontobene/newstroke.bene'
 
 let lastTime = performance.now()
 let frameCount = 0
@@ -113,6 +115,7 @@ export class GraphicsRenderer {
   keyboard: KeyboardHandler | null
   mouse: MouseHandler | null
   handles: HandleProperties[]
+  fb: FontobeneParser
   dragHandle: string | null
   lastSelectedComponent: number | null
   private _dirty: boolean;
@@ -205,7 +208,8 @@ export class GraphicsRenderer {
     this.lastSelectedComponent = null
     this._dirty = false;
     this._colorCache = new Map();
-    this._WARNING_MAYLAGSHIT_debugMode = false;
+    this.fb = new FontobeneParser(Newstroke)
+    this._WARNING_MAYLAGSHIT_debugMode = true;
   }
 
   private _lastCamX = NaN
@@ -1073,45 +1077,74 @@ export class GraphicsRenderer {
     this.context?.fillText(distanceText, 0, localDiff)
     this.context?.restore()
   }
-  drawLabel(x: number, y: number, text: string, color: string, fontSize: number, opacity: number) {
-    if (this.context) {
-      this.drawPoint(x, y, '#0ff', 2, opacity)
+  async drawLabel(x: number, y: number, text: string, color: string, fontSize: number, opacity: number) {
+    if (!this.context) return;
 
-      var localZoom = this.zoom
-      var localDiff = 0
+    // 1. Draw the reference anchor point
+    // this.drawPoint(x, y, '#0ff', 2, opacity);
 
-      if (this.zoom <= 0.25) {
-        localZoom = 0.5
-        localDiff = 20
-        y += localDiff
-      }
+    // 2. Handle zoom adjustments
+    let localZoom = this.zoom;
+    let localDiff = 0;
 
-      this.context.fillStyle = this.getColorWithOpacityFromCache(color, opacity);
-      this.context.font = fontSize * localZoom + `px ${this.displayFont}, monospace, 'SECEmojis'`
+    if (this.zoom <= 0.25) {
+      localZoom = 0.5;
+      localDiff = 20;
+      y += localDiff;
+    }
 
-      var maxLength = 24 // 24 Characters per row
-      var tmpLength = 0
-      var tmpText = ''
-      var arrText = text.split(' ')
+    // 4. Split text and handle the 24-character row limit wrapping
+    const maxLength = 24;
+    let tmpLength = 0;
+    let tmpText = '';
+    const arrText = text.split(' ');
 
-      for (var i = 0; i < arrText.length; i++) {
-        tmpLength += arrText[i].length + 1
-        tmpText += ' ' + arrText[i]
+    // Helper function to render a single line using Fontobene
+    const renderLine = async (lineText: string, currentY: number) => {
+      // scale/options might depend on your Fontobene wrapper library's API 
+      // passed here to respect fontSize and localZoom
+      const glyphs = await this.fb.layoutText(lineText);
 
-        if (tmpLength > maxLength) {
-          this.context.fillText(
-            tmpText,
-            (this.cOutX + x - 5) * this.zoom,
-            (this.cOutY + y) * this.zoom
-          )
-          y += 25 + localDiff
-          tmpLength = 0
-          tmpText = ''
+      // 3. Setup Canvas Stroke styles for Fontobene vector rendering
+      this.context!.strokeStyle = this.getColorWithOpacityFromCache(color, opacity);
+      this.context!.lineWidth = 0.5 * this.zoom; // Adjust line weight relative to zoom if desired
+      this.context!.lineCap = 'round';
+      this.context!.lineJoin = 'round';
+      
+      this.context!.beginPath();
+      for (const glyph of glyphs) {
+        for (const cmd of glyph.commands) {
+          // Adjust Fontobene coordinates relative to anchor positions and zoom
+          // Note: cmd.x/cmd.y typically need scaling by fontSize/zoom depending on fb layout output
+          const px = (cmd.x + this.cOutX + x - 5) * this.zoom;
+          const py = (-cmd.y + this.cOutY + currentY) * this.zoom;
+
+          if (cmd.command === 'pendown') {
+            this.context!.moveTo(px, py);
+          } else if (cmd.command === 'movepen') {
+            this.context!.lineTo(px, py);
+          }
         }
       }
+      this.context!.stroke();
+    };
 
-      // Print the remainig text
-      this.context.fillText(tmpText, (this.cOutX + x - 5) * this.zoom, (this.cOutY + y) * this.zoom)
+    // Process words
+    for (let i = 0; i < arrText.length; i++) {
+      tmpLength += arrText[i].length + 1;
+      tmpText += ' ' + arrText[i];
+
+      if (tmpLength > maxLength) {
+        await renderLine(tmpText, y);
+        y += 25 + localDiff;
+        tmpLength = 0;
+        tmpText = '';
+      }
+    }
+
+    // 5. Print the remaining text line
+    if (tmpText.trim().length > 0) {
+      await renderLine(tmpText, y);
     }
   }
   drawArc(
@@ -2366,6 +2399,25 @@ export class GraphicsRenderer {
       ` (${fps} FPS, dx=${Math.floor(this.getCursorXLocal())};dy=${Math.floor(this.getCursorYLocal())})`
     )
   }
+  /*private async fontobeneTest() {
+    const glyphs = await this.fb.layoutText('Hello!');
+
+    this.context!.strokeStyle = '#E9E9E9';
+    this.context!.lineWidth = 0.5 * this.zoom;
+    this.context!.lineCap = 'round';
+    this.context!.lineJoin = 'round';
+    this.context?.beginPath();
+    for (const glyph of glyphs) {
+      for (const cmd of glyph.commands) {
+        const px = (cmd.x + this.cOutX) * this.zoom;
+        const py = (-cmd.y + this.cOutY) * this.zoom;
+        if (cmd.command === 'pendown') this.context?.moveTo(px, py);
+        else if (cmd.command === 'movepen') this.context?.lineTo(px, py);
+        // 'penup' intentionally does nothing — it's just a marker
+      }
+    }
+    this.context?.stroke();
+  }*/
   update() {
     if (!this._dirty) {
       this.cleanLog('update wants to be called but i am not dirty, skipping');
@@ -2391,6 +2443,7 @@ export class GraphicsRenderer {
         (this.getCursorYRaw() + this.camY) * this.zoom
       )
     }
+    //this.fontobeneTest();
     // Useful event handlers for later on ;)
     if (this.onZoomUpdate) {
       this.onZoomUpdate()
