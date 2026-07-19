@@ -600,6 +600,19 @@ export class GraphicsRenderer {
         const arc = component as Arc
         return {minX: Math.min(arc.x1, arc.x2, arc.x3), minY: Math.min(arc.y1, arc.y2, arc.y3), maxX: Math.max(arc.x1, arc.x2, arc.x3), maxY: Math.max(arc.y1, arc.y2, arc.y3)}
         break;
+      case componentTypes.polygon: {
+        const poly = component as Polygon
+        const xs = poly.vectors.map(v => v.x), ys = poly.vectors.map(v => v.y)
+        return { minX: Math.min(...xs), minY: Math.min(...ys), maxX: Math.max(...xs), maxY: Math.max(...ys) }
+      }
+      case componentTypes.picture: {
+        const pic = component as Picture
+        return { minX: pic.x, minY: pic.y, maxX: pic.x, maxY: pic.y } // widen with image dims if known
+      }
+      case componentTypes.boundBox: {
+        const b = component as BoundBox
+        return { minX: Math.min(b.x1,b.x2), minY: Math.min(b.y1,b.y2), maxX: Math.max(b.x1,b.x2), maxY: Math.max(b.y1,b.y2) }
+      }
       default:
         return {minX: 0, minY: 0, maxX: 0, maxY: 0}
     }
@@ -1274,60 +1287,76 @@ export class GraphicsRenderer {
     }
   }
   drawGrid(camXoff: number, camYoff: number) {
-    const gridSpacingAdjusted = this.gridSpacing * this.zoom
-    let densityDivisor
-    if (this.gridSpacing < 5) {
-      if (this.zoom <= 1) {
-        densityDivisor = 50
-      } else if (this.zoom <= 2) {
-        densityDivisor = 25
-      } else {
-        densityDivisor = 20
-      }
-    } else if (this.gridSpacing < 10) {
-      if (this.zoom < 1) {
-        densityDivisor = 6
-      } else if (this.zoom <= 2) {
-        densityDivisor = 3
-      } else {
-        densityDivisor = 1
-      }
-    } else if (this.gridSpacing < 20) {
-      if (this.zoom < 1) {
-        densityDivisor = 3
-      } else {
-        densityDivisor = 1.5
-      }
-    } else if (this.gridSpacing < 50) {
-      if (this.zoom < 1) densityDivisor = 2
-      else densityDivisor = 1
-    } else {
-      if (this.zoom < 1) {
-        densityDivisor = 2
-      } else {
-        densityDivisor = 1
-      }
-    }
-    const effectiveSpacing = gridSpacingAdjusted * densityDivisor
+    const ctx = this.context
+    if (!ctx) return
+
+    // --- Tunables ---
+    const targetPixelSpacing = 40 // ideal on-screen distance between dots
+    const minPixelSpacing = 4     // never draw dots closer than this
+    const majorMultiplier = 10   // every Nth *base* grid line is "major"
+    const minorDotSize = 1
+    const majorDotSize = 2.5
+
+    // On-screen spacing if we drew every base grid line, at current zoom.
+    const baseScreenSpacing = this.gridSpacing * this.zoom
+
+    // Guard against degenerate input (zoom/gridSpacing == 0 => would loop forever).
+    if (!isFinite(baseScreenSpacing) || baseScreenSpacing <= 0) return
+
+    // How many base grid lines to skip so the visible spacing stays near
+    // targetPixelSpacing. Rounding log2 to an integer snaps to powers of two,
+    // so the skip factor changes in discrete, non-flickering steps as you zoom
+    // continuously in/out (same technique used by adaptive grids in design tools).
+    const rawSkip = targetPixelSpacing / baseScreenSpacing
+    const skipPower = Math.max(0, Math.round(Math.log2(Math.max(rawSkip, 1))))
+    const skipFactor = Math.pow(2, skipPower)
+
+    const effectiveSpacing = baseScreenSpacing * skipFactor
+
+    // If spacing is still tiny (extreme zoom-out), bail rather than drawing a
+    // dot-per-pixel mush.
+    if (effectiveSpacing < minPixelSpacing) return
+
     const leftBound = -this.displayWidth / 2
     const rightBound = this.displayWidth / 2
     const topBound = -this.displayHeight / 2
     const bottomBound = this.displayHeight / 2
-    const startX =
-      Math.floor((leftBound - camXoff * this.zoom) / effectiveSpacing) * effectiveSpacing
-    const startY =
-      Math.floor((topBound - camYoff * this.zoom) / effectiveSpacing) * effectiveSpacing
-    const endX = Math.ceil((rightBound - camXoff * this.zoom) / effectiveSpacing) * effectiveSpacing
-    const endY =
-      Math.ceil((bottomBound - camYoff * this.zoom) / effectiveSpacing) * effectiveSpacing
-    this.context!.fillStyle = '#cccccc75'
-    for (let x = startX; x <= endX; x += effectiveSpacing) {
-      for (let y = startY; y <= endY; y += effectiveSpacing) {
-        this.context?.beginPath()
-        const adjustedX = x + camXoff * this.zoom
-        const adjustedY = y + camYoff * this.zoom
-        this.context?.arc(adjustedX, adjustedY, 1, 0, Math.PI * 2)
-        this.context?.fill()
+
+    const camScreenX = camXoff * this.zoom
+    const camScreenY = camYoff * this.zoom
+
+    // Work in integer "grid steps" anchored at world-space origin (x=0 <=> ix=0),
+    // rather than accumulating floats. This avoids drift, and multiplying the
+    // step index by skipFactor gives the exact base-grid index used for
+    // major-line detection below.
+    const startIndexX = Math.floor((leftBound - camScreenX) / effectiveSpacing) - 1
+    const endIndexX = Math.ceil((rightBound - camScreenX) / effectiveSpacing) + 1
+    const startIndexY = Math.floor((topBound - camScreenY) / effectiveSpacing) - 1
+    const endIndexY = Math.ceil((bottomBound - camScreenY) / effectiveSpacing) + 1
+
+    ctx.fillStyle = '#cccccc75'
+
+    for (let ix = startIndexX; ix <= endIndexX; ix++) {
+      const x = ix * effectiveSpacing
+      const screenX = x + camScreenX
+      // Real culling: skip columns entirely outside the viewport.
+      if (screenX < leftBound || screenX > rightBound) continue
+
+      const baseIndexX = ix * skipFactor
+      const isMajorX = baseIndexX % majorMultiplier === 0
+
+      for (let iy = startIndexY; iy <= endIndexY; iy++) {
+        const y = iy * effectiveSpacing
+        const screenY = y + camScreenY
+        // Real culling: skip points entirely outside the viewport.
+        if (screenY < topBound || screenY > bottomBound) continue
+
+        const baseIndexY = iy * skipFactor
+        const isMajor = isMajorX && baseIndexY % majorMultiplier === 0
+
+        const size = isMajor ? majorDotSize : minorDotSize
+        // Center the dot on its grid point regardless of size.
+        ctx.fillRect(screenX - size / 2, screenY - size / 2, size, size)
       }
     }
   }
