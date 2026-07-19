@@ -38,7 +38,7 @@ export interface HandleProperties {
   id: string
   cursor: string
 }
-export interface VectorType {
+export interface Vector2 {
   x: number
   y: number
 }
@@ -71,7 +71,7 @@ export class GraphicsRenderer {
   undoStack: string[]
   redoStack: string[]
   temporaryObjectArray: any[]
-  temporaryVectors: VectorType[]
+  temporaryVectors: Vector2[]
   temporaryVectorIndex: number
   imageCache: { [key: string]: any }
   displayWidth: number
@@ -115,6 +115,9 @@ export class GraphicsRenderer {
   handles: HandleProperties[]
   dragHandle: string | null
   lastSelectedComponent: number | null
+  private _dirty: boolean;
+  private _colorCache: Map<string, string>;
+  private _WARNING_MAYLAGSHIT_debugMode: boolean;
 
   constructor(displayRef: HTMLCanvasElement | null, width: number, height: number) {
     this.modes = {
@@ -179,7 +182,7 @@ export class GraphicsRenderer {
     this.showOrigin = false
     this.showRules = true
     this.gridPointer = false
-    this.gridSpacing = 100
+    this.gridSpacing = 10
     this.conversionFactor = 1
     this.unitName = 'px'
     this.unitMeasure = 'm'
@@ -200,6 +203,26 @@ export class GraphicsRenderer {
     this.handles = []
     this.dragHandle = ''
     this.lastSelectedComponent = null
+    this._dirty = false;
+    this._colorCache = new Map();
+    this._WARNING_MAYLAGSHIT_debugMode = false;
+  }
+
+  markDirty() {
+    this._dirty = true;
+  }
+
+  cleanLog(content: any) {
+    if (this._WARNING_MAYLAGSHIT_debugMode) {
+      console.log(`[renderer] ${content}`);
+    }
+  }
+
+  private getColorWithOpacityFromCache (color: string, opacity: number): string {
+    const key = color + '|' + opacity
+    let v = this._colorCache.get(key)
+    if (!v) { v = color + _num2hex(opacity); this._colorCache.set(key, v) }
+    return v
   }
 
   start() {
@@ -217,7 +240,7 @@ export class GraphicsRenderer {
   }
   scaleForHighDPI(dpi: number) {
     if (this.enableHighDPI) {
-      console.log('[renderer] ok, scaling')
+      this.cleanLog('ok, scaling')
       this.context?.scale(dpi, dpi)
     }
   }
@@ -470,17 +493,18 @@ export class GraphicsRenderer {
       this.cOutX += this.getCursorXRaw() - this.xCNaught
       this.cOutY += this.getCursorYRaw() - this.yCNaught
     }
+    this.markDirty();
   }
   saveState() {
-    console.log('[renderer] saving state')
+    this.cleanLog('saving state')
     this.undoStack.push(JSON.stringify(this.logicDisplay?.components))
-    console.log(this.undoStack)
+    this.cleanLog(this.undoStack)
     if (this.undoStack.length > this.maximumStack) {
       this.undoStack.shift()
     }
     this.redoStack = []
     if (this.onComponentArrayChanged) {
-      console.log('[renderer] array changed defined, firing')
+      this.cleanLog('array changed defined, firing')
       this.onComponentArrayChanged()
     }
   }
@@ -495,10 +519,59 @@ export class GraphicsRenderer {
     var scaledAngle = theta * (3.15 / PI)
     return scaledAngle
   }
+  private isComponentInCamera(bbox: {minX: number, minY: number, maxX: number, maxY: number}): boolean {
+    const padding = 50
+    const halfW = this.displayWidth / 2
+    const halfH = this.displayHeight / 2
+    const screenMinX = (bbox.minX + this.cOutX) * this.zoom
+    const screenMaxX = (bbox.maxX + this.cOutX) * this.zoom
+    const screenMinY = (bbox.minY + this.cOutY) * this.zoom
+    const screenMaxY = (bbox.maxY + this.cOutY) * this.zoom
+    return (
+      screenMaxX >= -halfW - padding &&
+      screenMinX <= halfW + padding &&
+      screenMaxY >= -halfH - padding &&
+      screenMinY <= halfH + padding
+    )
+  }
+  private getComponentBoundaryBox(component: Component): {minX: number, minY: number, maxX: number, maxY: number} {
+    switch (component.type) {
+      case componentTypes.point:
+        const p = component as Point
+        return {minX: p.x, minY: p.y, maxX: p.x, maxY: p.y}
+        break;
+      case componentTypes.line:
+        const l = component as Line
+        return {minX: Math.min(l.x1, l.x2), minY: Math.min(l.y1, l.y2), maxX: Math.max(l.x1, l.x2), maxY: Math.max(l.y1, l.y2)}
+        break;
+      case componentTypes.circle:
+        const c = component as Circle
+        return {minX: Math.min(c.x1, c.x2), minY: Math.min(c.y1, c.y2), maxX: Math.max(c.x1, c.x2), maxY: Math.max(c.y1, c.y2)}
+        break;
+      case componentTypes.rectangle:
+        const r = component as Rectangle
+        return {minX: Math.min(r.x1, r.x2), minY: Math.min(r.y1, r.y2), maxX: Math.max(r.x1, r.x2), maxY: Math.max(r.y1, r.y2)}
+        break;
+      case componentTypes.measure:
+        const m = component as Measure
+        return {minX: Math.min(m.x1, m.x2), minY: Math.min(m.y1, m.y2), maxX: Math.max(m.x1, m.x2), maxY: Math.max(m.y1, m.y2)}
+        break;
+      case componentTypes.label:
+        const label = component as Label
+        return {minX: label.x, minY: label.y, maxX: label.x, maxY: label.y}
+        break;
+      case componentTypes.arc:
+        const arc = component as Arc
+        return {minX: Math.min(arc.x1, arc.x2, arc.x3), minY: Math.min(arc.y1, arc.y2, arc.y3), maxX: Math.max(arc.x1, arc.x2, arc.x3), maxY: Math.max(arc.y1, arc.y2, arc.y3)}
+        break;
+      default:
+        return {minX: 0, minY: 0, maxX: 0, maxY: 0}
+    }
+  }
   drawAllComponents(components: Component[], moveByX: number, moveByY: number) {
     for (let i = 0; i < components.length; i++) {
-      if (components[i].active == false) continue
-
+      if (components[i].active == false) continue;
+      if (!this.isComponentInCamera(this.getComponentBoundaryBox(components[i]))) continue;
       this.drawComponent(components[i], moveByX, moveByY)
     }
   }
@@ -697,7 +770,7 @@ export class GraphicsRenderer {
         )
         break
       case componentTypes.arc:
-        console.log(`temporary points: ${this.temporaryPoints[0]}`)
+        this.cleanLog(`temporary points: ${this.temporaryPoints[0]}`)
         this.drawArc(
           this.temporaryPoints[0]!,
           this.temporaryPoints[1]!,
@@ -737,7 +810,7 @@ export class GraphicsRenderer {
     }
   }
   drawUserCursor(x: number, y: number) {
-    const mouseShapeVectors: VectorType[] = [
+    const mouseShapeVectors: Vector2[] = [
       {
         x: 0,
         y: 0
@@ -787,8 +860,8 @@ export class GraphicsRenderer {
         this.context.stroke()
       } else {
         this.context.lineWidth = 3 * this.zoom
-        this.context.fillStyle = color + _num2hex(opacity)
-        this.context.strokeStyle = color + _num2hex(opacity)
+        this.context.fillStyle = this.getColorWithOpacityFromCache(color, opacity);
+        this.context.strokeStyle = this.getColorWithOpacityFromCache(color, opacity);
         this.context.beginPath()
         this.context.arc(
           (x + this.cOutX) * this.zoom,
@@ -814,8 +887,8 @@ export class GraphicsRenderer {
   ) {
     if (this.context) {
       this.context.lineWidth = radius * this.zoom
-      this.context.fillStyle = color + _num2hex(opacity)
-      this.context.strokeStyle = color + _num2hex(opacity)
+      this.context.fillStyle = this.getColorWithOpacityFromCache(color, opacity);
+      this.context.strokeStyle = this.getColorWithOpacityFromCache(color, opacity);
       this.context.lineCap = 'round'
       this.context.beginPath()
       this.context.moveTo((x1 + this.cOutX) * this.zoom, (y1 + this.cOutY) * this.zoom)
@@ -834,8 +907,8 @@ export class GraphicsRenderer {
   ) {
     if (this.context) {
       this.context.lineWidth = radius * this.zoom
-      this.context.fillStyle = color + _num2hex(opacity)
-      this.context.strokeStyle = color + _num2hex(opacity)
+      this.context.fillStyle = this.getColorWithOpacityFromCache(color, opacity);
+      this.context.strokeStyle = this.getColorWithOpacityFromCache(color, opacity);
       this.context.beginPath()
       this.context.arc(
         (x1 + this.cOutX) * this.zoom,
@@ -964,7 +1037,7 @@ export class GraphicsRenderer {
         y += localDiff
       }
 
-      this.context.fillStyle = color + _num2hex(opacity)
+      this.context.fillStyle = this.getColorWithOpacityFromCache(color, opacity);
       this.context.font = fontSize * localZoom + `px ${this.displayFont}, monospace, 'SECEmojis'`
 
       var maxLength = 24 // 24 Characters per row
@@ -1008,8 +1081,8 @@ export class GraphicsRenderer {
       var secondAngle = this.getAngle(x1, y1, x3, y3)
 
       this.context.lineWidth = radius * this.zoom
-      this.context.fillStyle = color + _num2hex(opacity)
-      this.context.strokeStyle = color + _num2hex(opacity)
+      this.context.fillStyle = this.getColorWithOpacityFromCache(color, opacity);
+      this.context.strokeStyle = this.getColorWithOpacityFromCache(color, opacity);
       this.context.beginPath()
       this.context.arc(
         (x1 + this.cOutX) * this.zoom,
@@ -1094,7 +1167,7 @@ export class GraphicsRenderer {
     }
   }
   drawPolygon(
-    vectors: VectorType[],
+    vectors: Vector2[],
     fillColor: string,
     strokeColor: string,
     radius: number,
@@ -1264,6 +1337,7 @@ export class GraphicsRenderer {
           arc.y3 += dy3
           break
       }
+      this.markDirty();
     }
   }
   selectComponent(index: number) {
@@ -1495,7 +1569,7 @@ export class GraphicsRenderer {
         this.logicDisplay!.components = []
         this.logicDisplay?.importJSON(JSON.parse(lastState), this.logicDisplay.components)
         if (this.onComponentArrayChanged) {
-          console.log('[renderer] array changed defined, firing')
+          this.cleanLog('[renderer] array changed defined, firing')
           this.onComponentArrayChanged()
         }
       } else return
@@ -1510,10 +1584,10 @@ export class GraphicsRenderer {
 
       // Get the last state from the redoStack
       const state = this.redoStack.pop()
-      console.log('upcoming state')
-      console.log(state) // Log the state (optional)
-      console.log('parsed state')
-      console.log(JSON.parse(state != null ? state : '[]')) // Log the parsed state (optional)
+      this.cleanLog('upcoming state')
+      this.cleanLog(state) // Log the state (optional)
+      this.cleanLog('parsed state')
+      this.cleanLog(JSON.parse(state != null ? state : '[]')) // Log the parsed state (optional)
 
       // Clear the current components
       this.logicDisplay!.components = []
@@ -1524,7 +1598,7 @@ export class GraphicsRenderer {
         this.logicDisplay.components
       )
       if (this.onComponentArrayChanged) {
-        console.log('[renderer] array changed defined, firing')
+        this.cleanLog('[renderer] array changed defined, firing')
         this.onComponentArrayChanged()
       }
       this.update() // Re-render the canvas
@@ -1539,6 +1613,8 @@ export class GraphicsRenderer {
     if (this.onComponentChangeCallback) {
       this.onComponentChangeCallback()
     }
+    this.cleanLog('component changed')
+    this.markDirty(); 
   }
   async performAction(e: MouseEvent, action: number) {
     switch (this.mode) {
@@ -1650,7 +1726,7 @@ export class GraphicsRenderer {
             this.temporaryPoints[4] = this.getCursorXLocal()
             this.temporaryPoints[5] = this.getCursorYLocal()
           } else if (this.temporaryComponentType === componentTypes.arc) {
-            console.log('[renderer] adding new arc')
+            this.cleanLog('adding new arc')
             this.logicDisplay?.addComponent(
               new Arc(
                 this.temporaryPoints[0]!,
@@ -1823,7 +1899,7 @@ export class GraphicsRenderer {
       case this.modes.AddPolygon:
         this.displayRef!.style.cursor = `url("${CrosshairCursor}") 16 16, crosshair`
         this.tooltip = 'Add Polygon'
-        let firstVec: VectorType = {
+        let firstVec: Vector2 = {
           x: 0,
           y: 0
         }
@@ -1845,7 +1921,7 @@ export class GraphicsRenderer {
             this.temporaryVectors.push(firstVec)
             this.temporaryVectorIndex++
           } else if (this.temporaryComponentType === componentTypes.polygon) {
-            let tempVector: VectorType = {
+            let tempVector: Vector2 = {
               x: this.getCursorXLocal(),
               y: this.getCursorYLocal()
             }
@@ -1952,7 +2028,7 @@ export class GraphicsRenderer {
       case this.modes.Select:
         this.displayRef!.style.cursor = `url("${DefaultCursor}") 6 6, default`
         if (action == this.mouseAction.Move) {
-          console.log('[renderer] moused moved during select')
+          this.cleanLog('mouse moved during select')
           if (this.selectedComponent == null) {
             this.temporarySelectedComponent = this.findIntersectionWith(
               this.getCursorXRaw(),
@@ -2116,9 +2192,9 @@ export class GraphicsRenderer {
             }
           }
         } else if (action == this.mouseAction.Down) {
-          console.log('[renderer] moused down during select')
+          this.cleanLog('mouse down during select')
           if (this.selectedComponent !== null) {
-            console.log('[renderer] selected component', this.selectedComponent)
+            this.cleanLog('selected component' + this.selectedComponent)
             const component = this.logicDisplay?.components[this.selectedComponent]
             if (
               component &&
@@ -2145,7 +2221,7 @@ export class GraphicsRenderer {
           }
 
           if (this.temporarySelectedComponent != null) {
-            console.log('[renderer] selected component', this.temporarySelectedComponent)
+            this.cleanLog('selected component' + this.temporarySelectedComponent)
             if (this.selectedComponent === this.temporarySelectedComponent) {
               this.unselectComponent()
               this.handles = []
@@ -2190,7 +2266,7 @@ export class GraphicsRenderer {
   }
   setZoom(zoomFactor: number) {
     var newZoom = this.zoom * zoomFactor
-    console.log(newZoom)
+    this.cleanLog(newZoom)
 
     // Zoom interval control
     if (newZoom <= 0.4 || newZoom >= 15) return
@@ -2203,7 +2279,8 @@ export class GraphicsRenderer {
     const zoomDiff = this.targetZoom - this.zoom
     this.camX -= cursorOffsetX * (zoomDiff / this.zoom)
     this.camY -= cursorOffsetY * (zoomDiff / this.zoom)
-    console.log('[renderer] onZoomUpdate callback?', this.onZoomUpdate)
+    this.cleanLog('onZoomUpdate callback?' + this.onZoomUpdate);
+    this.markDirty();
   }
   clearGrid() {
     if (this.context) {
@@ -2224,6 +2301,8 @@ export class GraphicsRenderer {
     )
   }
   update() {
+    if (!this._dirty) return;
+    this._dirty = false;
     this.offsetX = this.displayRef!.offsetLeft
     this.offsetY = this.displayRef!.offsetTop
     this.zoom = this.targetZoom
@@ -2396,6 +2475,7 @@ export const InitializeInstance = (renderer: GraphicsRenderer) => {
     }
 
     renderer.performAction(e, renderer.mouseAction.Move)
+    renderer.markDirty();
   })
 
   renderer.displayRef!.addEventListener('mouseout', () => {
@@ -2404,7 +2484,8 @@ export const InitializeInstance = (renderer: GraphicsRenderer) => {
 
   renderer.displayRef!.addEventListener('mousedown', (e: MouseEvent) => {
     if (e.which == 2) {
-      renderer.camMoving = true
+      renderer.camMoving = true;
+      renderer.markDirty();
       renderer.xCNaught = renderer.getCursorXRaw()
       renderer.yCNaught = renderer.getCursorYRaw()
     } else {
@@ -2415,7 +2496,8 @@ export const InitializeInstance = (renderer: GraphicsRenderer) => {
 
   renderer.displayRef!.addEventListener('mouseup', (e: MouseEvent) => {
     if (e.which == 2) {
-      renderer.camMoving = false
+      renderer.camMoving = false;
+      renderer.markDirty();
       renderer.camX += renderer.getCursorXRaw() - renderer.xCNaught
       renderer.camY += renderer.getCursorYRaw() - renderer.yCNaught
       renderer.updateCamera()
