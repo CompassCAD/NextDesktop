@@ -1,6 +1,7 @@
 import React from 'react'
 import UnknownIcon from '../assets/icons/help.svg'
 import styles from '../style/index.module.css'
+// @ts-ignore
 import { VectorType } from '@renderer/engine/Engine'
 
 interface MenuProviderProps {
