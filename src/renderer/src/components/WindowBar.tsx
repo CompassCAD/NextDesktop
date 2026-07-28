@@ -58,7 +58,8 @@ export default function WindowBar(): React.ReactElement {
   const renderer = useRef<GraphicsRenderer | null>(null)
   window.electron.ipcRenderer.on('isMaximized', (_event, isMaximized: boolean) => {
     console.log(`[windowbar] isMaximized: ${isMaximized}`)
-    setMaximized(isMaximized)
+    setMaximized(isMaximized);
+    renderer.current?.markDirty('maximize state refresh (requires canvas resize)');
   })
   useEffect(() => {
     const checkForRenderer = (): void => {
@@ -147,6 +148,12 @@ export default function WindowBar(): React.ReactElement {
   const toggleMenuState = (): void => {
     setMenuOpened(!menuOpened)
   }
+  const resetZoom = (): void => {
+    console.log('resetting zoom!');
+    const zoomFactor: number = 1 / renderer.current!.zoom;
+    renderer.current?.setZoom(zoomFactor);
+    renderer.current?.markDirty('zoom reset');
+  }
   const spawnModal = (): void => {
     openModal('Counting', <ModalShit />)
   }
@@ -186,7 +193,7 @@ export default function WindowBar(): React.ReactElement {
           >
             <img src={MenuIcon} />
           </button>
-          <span>{zoom.toFixed(2)}x</span>
+          <span onClick={resetZoom}>{zoom.toFixed(2)}x</span>
         </div>
         <div className={styles['window-bar-dragger']}></div>
         {window.process.platform != 'darwin' && (
