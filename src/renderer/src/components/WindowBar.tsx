@@ -121,6 +121,29 @@ export default function WindowBar(): React.ReactElement {
       }
     }
   }
+  const openFileAndParse = async (): Promise<void> => {
+    const file = await window.api.showOpenFileDialog({
+      title: 'Open a CompassCAD file',
+      filters: [
+        { name: 'CompassCAD NEXT Files', extensions: ['cnext'] },
+        { name: 'CompassCAD Files', extensions: ['ccad'] },
+        { name: 'QroCAD Files', extensions: [".qrocad", ".qrocad2"] }
+      ]
+    });
+    console.log(file);
+    if (file != undefined) {
+      console.log(file);
+      const filePath = file[0];
+      const fileContent = window.api.readFile(filePath);
+      try {
+        const parsedData = JSON.parse(fileContent);
+        renderer.current!.logicDisplay!.components = [];
+        renderer.current?.logicDisplay?.importJSON(parsedData, renderer.current.logicDisplay.components);
+      } catch (e) {
+        console.error('[windowbar] failed to open file: ', e);
+      }
+    }
+  }
   const toggleMenuState = (): void => {
     setMenuOpened(!menuOpened)
   }
@@ -201,7 +224,7 @@ export default function WindowBar(): React.ReactElement {
       {menuOpened && (
         <MenuProvider offset={{ x: 50, y: 50 }}>
           <MenuContext icon={NewFileIcon} title="New File" keyCombinations={['Ctrl', 'N']} />
-          <MenuContext icon={OpenFileIcon} title="Open File" keyCombinations={['Ctrl', 'O']} />
+          <MenuContext icon={ OpenFileIcon } onAction = {openFileAndParse} title="Open File" keyCombinations={['Ctrl', 'O']} />
           <MenuContext icon={BackupIcon} title="Open Backups" />
           <MenuContext icon={SaveDesignIcon} title="Save Design" keyCombinations={['Ctrl', 'S']} />
           <MenuContext icon={SaveDesignAsIcon} title="Save as" keyCombinations={['Ctrl', 'Alt', 'S']} />
