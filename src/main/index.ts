@@ -1,7 +1,8 @@
-import { app, shell, BrowserWindow, ipcMain } from 'electron'
+import { app, shell, BrowserWindow, ipcMain, dialog } from 'electron'
 import { join } from 'path'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
-import icon from '../../resources/icon.png?asset'
+import icon from '../../resources/icon.png?asset';
+import * as fs from 'fs';
 // Declare mainWindow as a global variable
 let mainWindow: BrowserWindow | null = null
 
@@ -88,6 +89,12 @@ ipcMain.on('fullscreen', () => {
   mainWindow?.setFullScreen(!mainWindow.isFullScreen());
 })
 ipcMain.on('close', () => mainWindow?.close())
+ipcMain.handle('dialog:showOpenFileDialog', (_event, options) => {
+  return dialog.showOpenDialogSync(options)
+})
+ipcMain.on('renderer-log', (_event, args) => {
+  console.log('[renderer]', ...args);
+});
 
 // In this file you can include the rest of your app's specific main process
 // code. You can also put them in separate files and require them here.
