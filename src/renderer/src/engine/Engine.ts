@@ -1127,7 +1127,7 @@ export class GraphicsRenderer {
     const distanceText = distance.toFixed(2) + '' + this.unitMeasure
     
     // Fetch text layout metrics directly from Fontobene helper method execution
-    const targetFontSize = this.zoom;
+    const targetFontSize = 2 * this.zoom;
     const glyphs = await this.fb.layoutText(distanceText);
     let maxX = 0;
     if (glyphs && glyphs.length > 0) {
@@ -1180,7 +1180,7 @@ export class GraphicsRenderer {
       distanceText,
       color,
       targetFontSize, 
-      radius / 2,             // stroke thickness scale 
+      radius,             // stroke thickness scale 
       opacity,
       angle,
       'center',                       // Horizontal alignment style
