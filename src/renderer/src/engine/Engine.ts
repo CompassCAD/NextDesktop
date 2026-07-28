@@ -229,7 +229,7 @@ export class GraphicsRenderer {
     }
   }
 
-  private getColorWithOpacityFromCache (color: string, opacity: number): string {
+  private getColorWithOpacityFromCache(color: string, opacity: number): string {
     const key = color + '|' + opacity
     let v = this._colorCache.get(key)
     if (!v) { v = color + _num2hex(opacity); this._colorCache.set(key, v) }
@@ -310,7 +310,7 @@ export class GraphicsRenderer {
       for (const handle of handles) {
         this.drawPoint(handle.x, handle.y, '#fff', 2, 100)
       }
-      
+
     }
   }
   drawComponentSize(component: Component) {
@@ -358,7 +358,7 @@ export class GraphicsRenderer {
       this.context.fillText(
         displayText,
         ((secondDummyLine.x2 - secondDummyLine.x1) / 2 + secondDummyLine.x1 + this.cOutX) *
-          this.zoom,
+        this.zoom,
         boxY + 15
       )
     }
@@ -577,7 +577,7 @@ export class GraphicsRenderer {
     var scaledAngle = theta * (3.15 / PI)
     return scaledAngle
   }
-  private isComponentInCamera(bbox: {minX: number, minY: number, maxX: number, maxY: number}): boolean {
+  private isComponentInCamera(bbox: { minX: number, minY: number, maxX: number, maxY: number }): boolean {
     const padding = 50
     const halfW = this.displayWidth / 2
     const halfH = this.displayHeight / 2
@@ -592,31 +592,31 @@ export class GraphicsRenderer {
       screenMinY <= halfH + padding
     )
   }
-  private getComponentBoundaryBox(component: Component): {minX: number, minY: number, maxX: number, maxY: number} {
+  private getComponentBoundaryBox(component: Component): { minX: number, minY: number, maxX: number, maxY: number } {
     switch (component.type) {
       case componentTypes.point:
         const p = component as Point
-        return {minX: p.x, minY: p.y, maxX: p.x, maxY: p.y}
+        return { minX: p.x, minY: p.y, maxX: p.x, maxY: p.y }
         break;
       case componentTypes.line:
         const l = component as Line
-        return {minX: Math.min(l.x1, l.x2), minY: Math.min(l.y1, l.y2), maxX: Math.max(l.x1, l.x2), maxY: Math.max(l.y1, l.y2)}
+        return { minX: Math.min(l.x1, l.x2), minY: Math.min(l.y1, l.y2), maxX: Math.max(l.x1, l.x2), maxY: Math.max(l.y1, l.y2) }
         break;
       case componentTypes.circle:
         const c = component as Circle
-        return {minX: Math.min(c.x1, c.x2), minY: Math.min(c.y1, c.y2), maxX: Math.max(c.x1, c.x2), maxY: Math.max(c.y1, c.y2)}
+        return { minX: Math.min(c.x1, c.x2), minY: Math.min(c.y1, c.y2), maxX: Math.max(c.x1, c.x2), maxY: Math.max(c.y1, c.y2) }
         break;
       case componentTypes.rectangle:
         const r = component as Rectangle
-        return {minX: Math.min(r.x1, r.x2), minY: Math.min(r.y1, r.y2), maxX: Math.max(r.x1, r.x2), maxY: Math.max(r.y1, r.y2)}
+        return { minX: Math.min(r.x1, r.x2), minY: Math.min(r.y1, r.y2), maxX: Math.max(r.x1, r.x2), maxY: Math.max(r.y1, r.y2) }
         break;
       case componentTypes.measure:
         const m = component as Measure
-        return {minX: Math.min(m.x1, m.x2), minY: Math.min(m.y1, m.y2), maxX: Math.max(m.x1, m.x2), maxY: Math.max(m.y1, m.y2)}
+        return { minX: Math.min(m.x1, m.x2), minY: Math.min(m.y1, m.y2), maxX: Math.max(m.x1, m.x2), maxY: Math.max(m.y1, m.y2) }
         break;
       case componentTypes.arc:
         const arc = component as Arc
-        return {minX: Math.min(arc.x1, arc.x2, arc.x3), minY: Math.min(arc.y1, arc.y2, arc.y3), maxX: Math.max(arc.x1, arc.x2, arc.x3), maxY: Math.max(arc.y1, arc.y2, arc.y3)}
+        return { minX: Math.min(arc.x1, arc.x2, arc.x3), minY: Math.min(arc.y1, arc.y2, arc.y3), maxX: Math.max(arc.x1, arc.x2, arc.x3), maxY: Math.max(arc.y1, arc.y2, arc.y3) }
         break;
       case componentTypes.polygon: {
         const poly = component as Polygon
@@ -629,10 +629,10 @@ export class GraphicsRenderer {
       }
       case componentTypes.boundBox: {
         const b = component as BoundBox
-        return { minX: Math.min(b.x1,b.x2), minY: Math.min(b.y1,b.y2), maxX: Math.max(b.x1,b.x2), maxY: Math.max(b.y1,b.y2) }
+        return { minX: Math.min(b.x1, b.x2), minY: Math.min(b.y1, b.y2), maxX: Math.max(b.x1, b.x2), maxY: Math.max(b.y1, b.y2) }
       }
       default:
-        return {minX: 0, minY: 0, maxX: 0, maxY: 0}
+        return { minX: 0, minY: 0, maxX: 0, maxY: 0 }
     }
   }
   drawAllComponents(components: Component[], moveByX: number, moveByY: number) {
@@ -1032,13 +1032,13 @@ export class GraphicsRenderer {
     )
   }
   async drawRawFontobeneAtLocation(
-    x: number, 
-    y: number, 
-    text: string, 
-    color?: string, 
-    fontSize?: number, 
-    thickness?: number, 
-    opacity?: number, 
+    x: number,
+    y: number,
+    text: string,
+    color?: string,
+    fontSize?: number,
+    thickness?: number,
+    opacity?: number,
     rotation?: number,
     textAlign: 'left' | 'center' = 'left',
     textBaseline: 'middle' | 'top' | 'bottom' = 'bottom'
@@ -1047,7 +1047,7 @@ export class GraphicsRenderer {
 
     const glyphs = await this.fb.layoutText(text);
     if (!glyphs || glyphs.length === 0) return;
-    
+
     const targetColor = color || '#E9E9E9';
     const targetOpacity = opacity !== undefined ? opacity : 1.0;
     const targetFontSize = fontSize || this.fontSize;
@@ -1079,13 +1079,13 @@ export class GraphicsRenderer {
     let localOffsetY = 0;
     if (textBaseline === 'middle') {
       // Shifting down by half the bounding height to perfectly center vertically
-      localOffsetY = fbHeight / 2; 
+      localOffsetY = fbHeight / 2;
     } else if (textBaseline === 'top') {
       localOffsetY = fbHeight;
     }
 
     this.context.save();
-    
+
     // 3. Move origin to target point and rotate
     this.context.translate(x, y);
     if (rotation) {
@@ -1099,14 +1099,14 @@ export class GraphicsRenderer {
     this.context.lineJoin = 'round';
 
     this.context.beginPath();
-    
+
     // 5. Draw lines, applying the computed layout alignment offsets
     for (const glyph of glyphs) {
       for (const cmd of glyph.commands) {
         // Apply scale first, then shift according to layout rules
         const px = (cmd.x * targetFontSize) + localOffsetX;
-        const py = (-cmd.y * targetFontSize) + localOffsetY; 
-        
+        const py = (-cmd.y * targetFontSize) + localOffsetY;
+
         if (cmd.command === 'pendown') {
           this.context.moveTo(px, py);
         } else if (cmd.command === 'movepen') {
@@ -1114,7 +1114,7 @@ export class GraphicsRenderer {
         }
       }
     }
-    
+
     this.context.stroke();
     this.context.restore();
 
@@ -1143,7 +1143,7 @@ export class GraphicsRenderer {
       localDiff = 20
     }
     const distanceText = distance.toFixed(2) + '' + this.unitMeasure
-    
+
     // Fetch text layout metrics directly from Fontobene helper method execution
     const targetFontSize = 2 * this.zoom;
     const glyphs = await this.fb.layoutText(distanceText);
@@ -1154,7 +1154,7 @@ export class GraphicsRenderer {
       maxX = glyphs.reduce((max, g) => Math.max(max, g.commands.reduce((m, c) => Math.max(m, c.x), 0)), 0);
     }
     const calculatedTextWidth = maxX * targetFontSize;
-    
+
     const minDistanceForFullArrow = (defaultArrowLength * 2) / 100 // 0.5 meters
     if (distance < minDistanceForFullArrow) {
       arrowLength = (distance / minDistanceForFullArrow) * defaultArrowLength
@@ -1163,7 +1163,7 @@ export class GraphicsRenderer {
     const midX = (x1 + x2) / 2
     const midY = (y1 + y2) / 2
     const textOffsetY = isShortDistance ? (750 / 100) * this.zoom : 0
-    
+
     if (!isShortDistance) {
       const basePadding = 20
       const adaptivePadding = basePadding * this.zoom
@@ -1176,10 +1176,10 @@ export class GraphicsRenderer {
       this.drawLine(x1, y1, midX - halfGapX, midY - halfGapY, color, radius, opacity)
       this.drawLine(midX + halfGapX, midY + halfGapY, x2, y2, color, radius, opacity)
     }
-    
+
     this.drawArrowhead(x1, y1, angle, arrowLength, arrowOffset, color, radius, opacity)
     this.drawArrowhead(x2, y2, angle, -arrowLength, arrowOffset, color, radius, opacity)
-    
+
     // Base location calculated relative to map space transforms
     let posX = midX * this.zoom + this.cOutX * this.zoom;
     let posY = midY * this.zoom + textOffsetY * 2 + this.cOutY * this.zoom;
@@ -1197,7 +1197,7 @@ export class GraphicsRenderer {
       posY,
       distanceText,
       color,
-      targetFontSize, 
+      targetFontSize,
       radius,             // stroke thickness scale 
       opacity,
       angle,
@@ -1267,7 +1267,7 @@ export class GraphicsRenderer {
 
       // 3. Setup Canvas Stroke styles for Fontobene vector rendering
       this.context.strokeStyle = this.getColorWithOpacityFromCache(color, opacity);
-      this.context.lineWidth = (radius / 2) * this.zoom; 
+      this.context.lineWidth = (radius / 2) * this.zoom;
       this.context.lineCap = 'round';
       this.context.lineJoin = 'round';
 
@@ -1858,7 +1858,7 @@ export class GraphicsRenderer {
       this.onComponentChangeCallback()
     }
     this.cleanLog('component changed')
-    this.markDirty('Component changed'); 
+    this.markDirty('Component changed');
   }
   async performAction(e: MouseEvent, action: number) {
     switch (this.mode) {
@@ -2602,6 +2602,35 @@ export const InitializeInstance = (renderer: GraphicsRenderer) => {
   let touchStartY = 0
   let initialPinchDistance = 0
   let isPinching = false
+
+  // --- Smooth, intensity-based zoom ---------------------------------------
+  // Regular mouse wheels report deltaY in coarse "line" units (often ±100 per
+  // notch), while trackpads report much finer pixel-based deltas and, on
+  // pinch gestures, browsers synthesize wheel events with ctrlKey = true.
+  // We use an exponential response (rather than a fixed step) so zoom speed
+  // scales naturally with how hard/fast the person scrolls or pinches.
+  const WHEEL_ZOOM_SENSITIVITY = 0.0015 // regular wheel / two-finger scroll-to-zoom
+  const TRACKPAD_PINCH_SENSITIVITY = 0.01 // real pinch gesture (ctrlKey wheel or touch pinch)
+  const MAX_WHEEL_DELTA = 100 // clamp so momentum-scroll spikes can't cause huge jumps
+
+  // Coalesce rapid wheel events into a single zoom update per animation
+  // frame. This keeps pinch/scroll zoom buttery smooth instead of thrashing
+  // the renderer with dozens of updates per second.
+  let pendingZoomFactor: number | null = null
+  let zoomRAF: number | null = null
+
+  const queueZoom = (factor: number) => {
+    pendingZoomFactor = pendingZoomFactor === null ? factor : pendingZoomFactor * factor
+    if (zoomRAF === null) {
+      zoomRAF = requestAnimationFrame(() => {
+        if (pendingZoomFactor !== null) {
+          renderer.setZoom(pendingZoomFactor)
+          pendingZoomFactor = null
+        }
+        zoomRAF = null
+      })
+    }
+  }
   const getTouchPos = (e: TouchEvent) => {
     const touch = e.touches[0]
     return {
@@ -2650,17 +2679,17 @@ export const InitializeInstance = (renderer: GraphicsRenderer) => {
       // Handle pinch zoom
       if (e.touches.length === 2 && isPinching) {
         const currentDistance = getPinchDistance(e)
-        const pinchDelta = currentDistance - initialPinchDistance
 
-        if (Math.abs(pinchDelta) > 10) {
-          // Add threshold to prevent accidental zooms
-          if (pinchDelta > 0) {
-            renderer.setZoom(renderer.zoomIn)
-          } else {
-            renderer.setZoom(renderer.zoomOut)
-          }
-          initialPinchDistance = currentDistance
+        // Ignore degenerate distances (fingers momentarily overlapping/jittering)
+        if (initialPinchDistance > 0 && currentDistance > 0) {
+          // Continuous scale ratio between this move and the last one, so
+          // zoom tracks finger movement 1:1 instead of jumping in fixed
+          // steps once an arbitrary threshold is crossed.
+          const scaleRatio = currentDistance / initialPinchDistance
+          queueZoom(scaleRatio)
         }
+
+        initialPinchDistance = currentDistance
         return
       }
 
@@ -2769,14 +2798,29 @@ export const InitializeInstance = (renderer: GraphicsRenderer) => {
     }
   })
 
-  renderer.displayRef!.addEventListener('wheel', (e: WheelEvent) => {
-    e.preventDefault()
-    if (e.deltaY < 0) {
-      renderer.setZoom(renderer.zoomIn)
-    } else {
-      renderer.setZoom(renderer.zoomOut)
-    }
-  })
+  renderer.displayRef!.addEventListener(
+    'wheel',
+    (e: WheelEvent) => {
+      e.preventDefault()
+
+      // Trackpads pinch-to-zoom are synthesized by the browser as wheel
+      // events with ctrlKey = true (this is a de facto standard across
+      // Chrome, Firefox, Safari and Edge) — treat those with their own,
+      // more sensitive curve since the physical gesture is much smaller.
+      const isTrackpadPinch = e.ctrlKey
+      const sensitivity = isTrackpadPinch ? TRACKPAD_PINCH_SENSITIVITY : WHEEL_ZOOM_SENSITIVITY
+
+      const clampedDelta = Math.max(-MAX_WHEEL_DELTA, Math.min(MAX_WHEEL_DELTA, e.deltaY))
+
+      // Exponential response: each unit of delta multiplies the zoom by a
+      // constant ratio, so a light flick zooms a little and a hard, fast
+      // gesture zooms a lot — instead of the old fixed in/out step.
+      const zoomFactor = Math.exp(-clampedDelta * sensitivity)
+
+      queueZoom(zoomFactor)
+    },
+    { passive: false }
+  )
 
   let animationFrameId: number | null
   let isWindowFocused = true
