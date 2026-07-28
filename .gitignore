@@ -5,3 +5,5 @@ out
 .eslintcache
 *.log*
 .vs
+/.vs/slnx.sqlite
+/.vs/NextDesktop.slnx/v18/.wsuo

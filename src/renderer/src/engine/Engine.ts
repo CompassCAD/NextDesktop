@@ -24,7 +24,7 @@ import Nwse1 from '../assets/cursors/nwse-1.svg'
 import Nwse2 from '../assets/cursors/nwse-2.svg'
 import { callTextPrompt } from '@renderer/components/TextPrompt'
 import FontobeneParser from './fontobene/FontobeneParser'
-import Newstroke from './fontobene/newstroke.bene'
+import AnsiFont from './fontobene/ansifont.bene'
 
 let lastTime = performance.now()
 let frameCount = 0
@@ -208,7 +208,7 @@ export class GraphicsRenderer {
     this.lastSelectedComponent = null
     this._dirty = false;
     this._colorCache = new Map();
-    this.fb = new FontobeneParser(Newstroke)
+    this.fb = new FontobeneParser(AnsiFont)
     this._WARNING_MAYLAGSHIT_debugMode = true;
   }
 
