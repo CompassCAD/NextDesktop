@@ -1,8 +1,16 @@
-import { contextBridge } from 'electron'
+import { contextBridge, ipcRenderer, OpenDialogSyncOptions } from 'electron'
 import { electronAPI } from '@electron-toolkit/preload'
+import fs from 'node:original-fs';
+import { writeFile } from 'fs';
 
 // Custom APIs for renderer
-const api = {}
+const api = {
+  readFile: (filePath: string) => fs.readFileSync(filePath, 'utf-8'),
+  writeFile: (filePath: string, data: string) => fs.writeFileSync(filePath, data, 'utf-8'),
+  showOpenFileDialog: (options: OpenDialogSyncOptions) =>
+    ipcRenderer.invoke('dialog:showOpenFileDialog', options),
+  forwardLog: (args: any) => ipcRenderer.send('renderer-log', args)
+}
 
 // Use `contextBridge` APIs to expose Electron APIs to
 // renderer only if context isolation is enabled, otherwise
@@ -20,6 +28,6 @@ if (process.contextIsolated) {
   window.electron = electronAPI
   // @ts-ignore (define in dts)
   window.api = api
-  // @ts-ignore (define in dts)
+  // @ts-ignore
   window.process = process
 }
