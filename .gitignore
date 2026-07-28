@@ -4,4 +4,4 @@ out
 .DS_Store
 .eslintcache
 *.log*
-.vs/NextDesktop*
+.vs
