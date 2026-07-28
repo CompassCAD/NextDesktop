@@ -7,12 +7,22 @@
       "name": "Debug Main Process",
       "cwd": "${workspaceFolder}",
       "program": "${workspaceFolder}/node_modules/electron-vite/bin/electron-vite.js",
-      "args": [
-        "dev",
-        "--inspect=9229"
-      ],
-      "port": 9229,
-      "stopOnEntry": false
+      "args": [ "dev", "--", "--inspect=9229", "--remote-debugging-port=9222" ],
+      "console": "internalConsole",
+      "outputCapture": "std"
+    },
+    {
+      "type": "pwa-chrome",
+      "request": "attach",
+      "name": "Attach to Renderer",
+      "port": 9222,
+      "webRoot": "${workspaceFolder}/src/renderer"
+    }
+  ],
+  "compounds": [
+    {
+      "name": "Debug Application",
+      "configurations": [ "Debug Main Process", "Attach to Renderer" ]
     }
   ]
 }
