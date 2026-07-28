@@ -194,7 +194,7 @@ export class GraphicsRenderer {
     this.snap = true
     this.recordingMode = false
     this.snapTolerance = 10
-    this.fontSize = 4
+    this.fontSize = 18
     this.maximumStack = 50
     this.displayRef = displayRef != null ? displayRef : null
     this.defaultTooltip = 'CompassCAD'
@@ -209,7 +209,7 @@ export class GraphicsRenderer {
     this._dirty = false;
     this._colorCache = new Map();
     this.fb = new FontobeneParser(AnsiFont)
-    this._WARNING_MAYLAGSHIT_debugMode = true;
+    this._WARNING_MAYLAGSHIT_debugMode = false;
   }
 
   private _lastCamX = NaN
@@ -269,6 +269,24 @@ export class GraphicsRenderer {
       this.cleanLog('ok, scaling')
       this.context?.scale(dpi, dpi)
     }
+  }
+  drawUnscalableStrokeVector(vectors: Vector2[], x: number, y: number) {
+    this.context!.strokeStyle = "#fff";
+    this.context!.lineWidth = 1;
+    this.context?.beginPath();
+    const minScale = 1.1; // never shrink the vector below this world-scale factor
+    const invZoom = Math.max(1 / this.zoom, minScale);
+    for (let i = 0; i < vectors.length; i++) {
+      const px = (x + this.cOutX) * this.zoom + vectors[i].x * invZoom;
+      const py = (y + this.cOutY) * this.zoom + vectors[i].y * invZoom;
+      if (i == 0) {
+        this.context?.moveTo(px, py);
+      } else {
+        this.context?.lineTo(px, py);
+      }
+    }
+    this.context?.closePath();
+    this.context?.stroke();
   }
   refreshSelectionTools() {
     if (this.selectedComponent !== null && this.logicDisplay?.components[this.selectedComponent]) {
@@ -1190,6 +1208,19 @@ export class GraphicsRenderer {
   async drawLabel(x: number, y: number, radius: number, text: string, color: string, fontSize: number, opacity: number) {
     if (!this.context) return;
 
+    const markerVectors: Vector2[] = [
+      { x: 0, y: 0 },
+      { x: -5, y: -5 },
+      { x: 0, y: 0 },
+      { x: 5, y: -5 },
+      { x: 0, y: 0 },
+      { x: -5, y: 5 },
+      { x: 0, y: 0 },
+      { x: 5, y: 5 }
+    ];
+
+    this.drawUnscalableStrokeVector(markerVectors, x, y);
+
     // 1. Handle zoom adjustments
     let localZoom = this.zoom;
     let localDiff = 30;
@@ -1201,7 +1232,7 @@ export class GraphicsRenderer {
     }
 
     // Calculate the target font scale factor
-    const targetFontScale = fontSize * localZoom;
+    const targetFontScale = (fontSize / 12) * localZoom;
 
     // 2. Split text and handle the 24-character row limit wrapping
     const maxLength = 24;
@@ -1236,7 +1267,7 @@ export class GraphicsRenderer {
 
       // 3. Setup Canvas Stroke styles for Fontobene vector rendering
       this.context.strokeStyle = this.getColorWithOpacityFromCache(color, opacity);
-      this.context.lineWidth = radius * this.zoom; 
+      this.context.lineWidth = (radius / 2) * this.zoom; 
       this.context.lineCap = 'round';
       this.context.lineJoin = 'round';
 

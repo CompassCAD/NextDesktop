@@ -8,7 +8,7 @@ name = Allegro ANSI Font
 description = Allegro's default font, converted into Fontobene
 version = 1.0.0
 license = nil
-letter_spacing = 1.8
+letter_spacing = 1.4
 line_spacing = 16
 
 ---
