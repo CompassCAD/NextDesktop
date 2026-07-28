@@ -5,7 +5,8 @@
     "\\src\\renderer",
     "\\src\\renderer\\src",
     "\\src\\renderer\\src\\components",
-    "\\src\\renderer\\src\\engine"
+    "\\src\\renderer\\src\\engine",
+    "\\src\\renderer\\src\\engine\\fontobene"
   ],
   "PreviewInSolutionExplorer": false
 }
