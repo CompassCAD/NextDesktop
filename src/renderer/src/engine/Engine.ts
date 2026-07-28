@@ -212,11 +212,33 @@ export class GraphicsRenderer {
     this._WARNING_MAYLAGSHIT_debugMode = false;
   }
 
-  private _lastCamX = NaN
-  private _lastCamY = NaN
-  private _lastZoom = NaN
-  private _lastOffsetX = NaN
-  private _lastOffsetY = NaN
+  private _lastCamX = NaN;
+  private _lastCamY = NaN;
+  private _lastZoom = NaN;
+  private _lastOffsetX = NaN;
+  private _lastOffsetY = NaN;
+  private _glyphLayoutCache: Map<string, any> = new Map();
+  private _textWidthCache: Map<string, number> = new Map();
+
+  private _measureTextCached(text: string): number {
+    let w = this._textWidthCache.get(text)
+    if (w === undefined) {
+      w = this.context!.measureText(text).width
+      this._textWidthCache.set(text, w)
+    }
+    return w
+  }
+
+  private _internal_getGlyphsInASynchronousManner(text: string): any[] | null {
+    const cached = this._glyphLayoutCache.get(text);
+    if (cached) return cached;
+
+    this.fb.layoutText(text).then(glyphs => {
+      this._glyphLayoutCache.set(text, glyphs);
+      this.markDirty('resolving glyph layout: ' + text);
+    })
+    return null;
+  }
 
   markDirty(why: string = 'unknown') {
     this._dirty = true;
@@ -340,7 +362,7 @@ export class GraphicsRenderer {
     }
     if (this.context) {
       this.context.font = `18px 'Radio Canada Big', sans-serif`
-      const textWidth = this.context.measureText(displayText).width
+      const textWidth = this._measureTextCached(displayText);
       const boxWidth = textWidth + 20
       const dummyLine = component as Line
       const boxX =
@@ -631,6 +653,11 @@ export class GraphicsRenderer {
         const b = component as BoundBox
         return { minX: Math.min(b.x1, b.x2), minY: Math.min(b.y1, b.y2), maxX: Math.max(b.x1, b.x2), maxY: Math.max(b.y1, b.y2) }
       }
+      case componentTypes.label: {
+        const lbl = component as Label;
+        const approxWidth = 150, approxHeight = 20 * (lbl.text?.split(' ').length ?? 1)
+        return { minX: lbl.x, minY: lbl.y, maxX: lbl.x + approxWidth, maxY: lbl.y + approxHeight }
+      }
       default:
         return { minX: 0, minY: 0, maxX: 0, maxY: 0 }
     }
@@ -638,7 +665,7 @@ export class GraphicsRenderer {
   drawAllComponents(components: Component[], moveByX: number, moveByY: number) {
     for (let i = 0; i < components.length; i++) {
       if (components[i].active == false) continue;
-      if (!this.isComponentInCamera(this.getComponentBoundaryBox(components[i])) && components[i].type !== componentTypes.label) continue;
+      if (!this.isComponentInCamera(this.getComponentBoundaryBox(components[i]))) continue;
       this.drawComponent(components[i], moveByX, moveByY)
     }
   }
@@ -990,19 +1017,19 @@ export class GraphicsRenderer {
       this.context.stroke()
     }
   }
-  drawRectangle(
-    x1: number,
-    y1: number,
-    x2: number,
-    y2: number,
-    color: string,
-    radius: number,
-    opacity: number
-  ) {
-    this.drawLine(x1, y1, x2, y1, color, radius, opacity)
-    this.drawLine(x2, y1, x2, y2, color, radius, opacity)
-    this.drawLine(x2, y2, x1, y2, color, radius, opacity)
-    this.drawLine(x1, y2, x1, y1, color, radius, opacity)
+  drawRectangle(x1: number, y1: number, x2: number, y2: number, color: string, radius: number, opacity: number) {
+    const stroke = this.getColorWithOpacityFromCache(color, opacity)
+    const ctx = this.context!
+    ctx.lineWidth = radius * this.zoom
+    ctx.strokeStyle = stroke
+    ctx.lineCap = 'round'
+    ctx.beginPath()
+    ctx.moveTo((x1 + this.cOutX) * this.zoom, (y1 + this.cOutY) * this.zoom)
+    ctx.lineTo((x2 + this.cOutX) * this.zoom, (y1 + this.cOutY) * this.zoom)
+    ctx.lineTo((x2 + this.cOutX) * this.zoom, (y2 + this.cOutY) * this.zoom)
+    ctx.lineTo((x1 + this.cOutX) * this.zoom, (y2 + this.cOutY) * this.zoom)
+    ctx.lineTo((x1 + this.cOutX) * this.zoom, (y1 + this.cOutY) * this.zoom)
+    ctx.stroke() // one path, one state set, one stroke instead of 4 drawLine calls
   }
   drawArrowhead(
     x: number,
@@ -1031,7 +1058,7 @@ export class GraphicsRenderer {
       opacity
     )
   }
-  async drawRawFontobeneAtLocation(
+  drawRawFontobeneAtLocation(
     x: number,
     y: number,
     text: string,
@@ -1045,8 +1072,8 @@ export class GraphicsRenderer {
   ) {
     if (!this.context) return;
 
-    const glyphs = await this.fb.layoutText(text);
-    if (!glyphs || glyphs.length === 0) return;
+    const glyphs = this._internal_getGlyphsInASynchronousManner(text);
+    if (!glyphs) return;
 
     const targetColor = color || '#E9E9E9';
     const targetOpacity = opacity !== undefined ? opacity : 1.0;
@@ -1122,7 +1149,7 @@ export class GraphicsRenderer {
     return fbWidth;
   }
 
-  async drawMeasure(
+  drawMeasure(
     x1: number,
     y1: number,
     x2: number,
@@ -1146,7 +1173,8 @@ export class GraphicsRenderer {
 
     // Fetch text layout metrics directly from Fontobene helper method execution
     const targetFontSize = 2 * this.zoom;
-    const glyphs = await this.fb.layoutText(distanceText);
+    const glyphs = this._internal_getGlyphsInASynchronousManner(distanceText);
+    if (!glyphs) return;
     let maxX = 0;
     if (glyphs && glyphs.length > 0) {
       const lastGlyph = glyphs[glyphs.length - 1];
@@ -1192,7 +1220,7 @@ export class GraphicsRenderer {
     }
 
     // Render vector text with explicit alignment instruction sets
-    await this.drawRawFontobeneAtLocation(
+    this.drawRawFontobeneAtLocation(
       posX,
       posY,
       distanceText,
@@ -1205,7 +1233,7 @@ export class GraphicsRenderer {
       isShortDistance ? 'top' : 'middle' // Vertical baseline style
     );
   }
-  async drawLabel(x: number, y: number, radius: number, text: string, color: string, fontSize: number, opacity: number) {
+  drawLabel(x: number, y: number, radius: number, text: string, color: string, fontSize: number, opacity: number) {
     if (!this.context) return;
 
     const markerVectors: Vector2[] = [
@@ -1259,7 +1287,9 @@ export class GraphicsRenderer {
     // 4. Render each line sequentially with absolute line offsets
     for (let lineIndex = 0; lineIndex < lines.length; lineIndex++) {
       const lineText = lines[lineIndex];
-      const glyphs = await this.fb.layoutText(lineText);
+      // drawLabel — was: const glyphs = await this.fb.layoutText(lineText);
+      const glyphs = this._internal_getGlyphsInASynchronousManner(lineText);
+      if (!glyphs) continue;
 
       // Calculate the absolute baseline Y coordinate for this specific line
       // Fontobene internal glyph lines move upwards/downwards based on targetFontScale
@@ -1626,6 +1656,7 @@ export class GraphicsRenderer {
 
     if (this.readonly) this.mode = this.modes.Navigate
     else this.mode = mode
+    this.markDirty('changing modes');
 
     if (this.onModeChange) {
       this.onModeChange()
