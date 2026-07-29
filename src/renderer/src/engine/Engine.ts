@@ -25,6 +25,7 @@ import Nwse2 from '../assets/cursors/nwse-2.svg'
 import { callTextPrompt } from '@renderer/components/TextPrompt'
 import FontobeneParser from './fontobene/FontobeneParser'
 import AnsiFont from './fontobene/ansifont.bene'
+import * as Types from '../engine/Types'
 
 let lastTime = performance.now()
 let frameCount = 0
@@ -209,7 +210,7 @@ export class GraphicsRenderer {
     this._dirty = false;
     this._colorCache = new Map();
     this.fb = new FontobeneParser(AnsiFont)
-    this._WARNING_MAYLAGSHIT_debugMode = false;
+    this._WARNING_MAYLAGSHIT_debugMode = true;
   }
 
   private _lastCamX = NaN;
@@ -1260,7 +1261,7 @@ export class GraphicsRenderer {
     }
 
     // Calculate the target font scale factor
-    const targetFontScale = (fontSize / 12) * localZoom;
+    const targetFontScale = (fontSize / 10) * localZoom;
 
     // 2. Split text and handle the 24-character row limit wrapping
     const maxLength = 24;
@@ -1891,6 +1892,19 @@ export class GraphicsRenderer {
     this.cleanLog('component changed')
     this.markDirty('Component changed');
   }
+
+  forcefullyRemoveSelectedComponentOnActiveIndex() {
+    this.cleanLog('attempting to delete component');
+    this.cleanLog('selected component: ' + this.temporarySelectedComponent);
+    if (this.temporarySelectedComponent != null) {
+      this.logicDisplay!.components.splice(this.temporarySelectedComponent, 1);
+      this.markDirty('component deleted');
+      this.temporarySelectedComponent = null;
+      this.displayRef?.focus();
+    } else {
+      this.cleanLog('not deleting, nothing was selected');
+    }
+  }
   async performAction(e: MouseEvent, action: number) {
     switch (this.mode) {
       case this.modes.AddPoint:
@@ -2294,7 +2308,7 @@ export class GraphicsRenderer {
             this.temporarySelectedComponent !== null &&
             this.logicDisplay?.components[this.temporarySelectedComponent]
           ) {
-            this.logicDisplay.components[this.temporarySelectedComponent].active = false
+            this.forcefullyRemoveSelectedComponentOnActiveIndex();
             this.saveState()
           }
         }
@@ -2597,7 +2611,7 @@ export class GraphicsRenderer {
   }*/
   update() {
     if (!this._dirty) {
-      this.cleanLog('update wants to be called but i am not dirty, skipping');
+      // this.cleanLog('update wants to be called but i am not dirty, skipping');
       return;
     } else this.cleanLog('update called, dirty flag is true, proceeding with update');
     this._dirty = false;
@@ -2785,9 +2799,11 @@ export const InitializeInstance = (renderer: GraphicsRenderer) => {
     { passive: false }
   )
   renderer.displayRef!.onkeyup = (e: KeyboardEvent) => {
+    renderer.cleanLog('hook: onkeyup');
     renderer.keyboard?.onKeyUp(e)
   }
   renderer.displayRef!.onkeydown = (e: KeyboardEvent) => {
+    renderer.cleanLog('hook: onkeydown');
     renderer.keyboard?.onKeyDown(e)
   }
   renderer.displayRef!.addEventListener('mousemove', (e: any) => {
@@ -2852,6 +2868,11 @@ export const InitializeInstance = (renderer: GraphicsRenderer) => {
     },
     { passive: false }
   )
+
+  renderer.keyboard?.addKeyEvent(true, Types.default.KeyCodes.DEL, () => {
+    renderer.cleanLog('del pressed, deleting');
+    renderer.forcefullyRemoveSelectedComponentOnActiveIndex();
+  }, { ctrl: false })
 
   let animationFrameId: number | null
   let isWindowFocused = true

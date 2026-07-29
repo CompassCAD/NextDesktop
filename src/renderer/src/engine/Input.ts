@@ -124,7 +124,7 @@ export class KeyboardHandler {
         keyDown: boolean, 
         key: number,
         fx: () => void,
-        modifiers: KeyboardEventModifiers
+        modifiers?: KeyboardEventModifiers
     ) {
         let keyEvent = new KeyboardEventCore(keyDown, key, fx, modifiers);
         this.keyEvents.push(keyEvent);
