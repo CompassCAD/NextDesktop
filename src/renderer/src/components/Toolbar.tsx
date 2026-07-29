@@ -5,8 +5,10 @@ import { GraphicsRenderer, Vector2 } from '@renderer/engine/Engine'
 import { getRendererIfAvailable } from '@renderer/exports'
 import SelectIcon from '../assets/icons/navigate.svg'
 import NavigateIcon from '../assets/icons/pan.svg'
+import MoveIcon from '../assets/icons/move.svg'
 import AddLineIcon from '../assets/icons/line.svg'
 import AddTextIcon from '../assets/icons/text.svg'
+import MeasureIcon from '../assets/icons/measure.svg'
 
 interface ToolbarButtonProps {
   icon: string
@@ -111,6 +113,14 @@ export default function Toolbar(): React.ReactElement {
           onAction={() => renderer.current?.setMode(Types.default.NavigationTypes.Navigate)}
         />
         <ToolbarButton
+          icon={MoveIcon}
+          title="Move"
+          keyName="e"
+          keyCode={Types.default.KeyCodes.E}
+          isActive={modeState == Types.default.NavigationTypes.Move}
+          onAction={() => renderer.current?.setMode(Types.default.NavigationTypes.Move)}
+        />
+        <ToolbarButton
           icon={AddLineIcon}
           title="Add Line"
           keyName="s"
@@ -127,7 +137,7 @@ export default function Toolbar(): React.ReactElement {
           onAction={() => renderer.current?.setMode(Types.default.NavigationTypes.AddLabel)}
         />
         <ToolbarButton
-          icon={AddTextIcon}
+          icon={MeasureIcon}
           title="Add Measure"
           keyName="m"
           keyCode={Types.default.KeyCodes.M}
