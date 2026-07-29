@@ -9,6 +9,7 @@ import MoveIcon from '../assets/icons/move.svg'
 import AddLineIcon from '../assets/icons/line.svg'
 import AddTextIcon from '../assets/icons/text.svg'
 import MeasureIcon from '../assets/icons/measure.svg'
+import { useRenderer } from './RendererContextProvider'
 
 interface ToolbarButtonProps {
   icon: string
@@ -72,24 +73,24 @@ function ToolbarButton(props: ToolbarButtonProps): React.ReactElement {
 
 export default function Toolbar(): React.ReactElement {
   const [modeState, setModeState] = useState<number>(Types.default.NavigationTypes.Navigate)
-  const renderer = useRef<GraphicsRenderer>(null)
+  const { renderer } = useRenderer();
   useEffect(() => {
-    renderer.current = getRendererIfAvailable()
-    if (renderer.current) {
+    if (!renderer) return;
+    if (renderer) {
       // Set initial mode state from renderer
-      setModeState(renderer.current.mode || Types.default.NavigationTypes.Navigate)
+      setModeState(renderer.mode || Types.default.NavigationTypes.Navigate)
       // Listen for mode changes
-      renderer.current.onModeChange = () => {
-        if (renderer.current) {
-          setModeState(renderer.current.mode || Types.default.NavigationTypes.Navigate)
+      renderer.onModeChange = () => {
+        if (renderer) {
+          setModeState(renderer.mode || Types.default.NavigationTypes.Navigate)
         }
       }
     }
 
     return () => {
       // Cleanup listener on unmount
-      if (renderer.current) {
-        renderer.current.onModeChange = null
+      if (renderer) {
+        renderer.onModeChange = null
       }
     }
   }, [])
@@ -102,7 +103,7 @@ export default function Toolbar(): React.ReactElement {
           keyName="q"
           keyCode={Types.default.KeyCodes.Q}
           isActive={modeState == Types.default.NavigationTypes.Select}
-          onAction={() => renderer.current?.setMode(Types.default.NavigationTypes.Select)}
+          onAction={() => renderer?.setMode(Types.default.NavigationTypes.Select)}
         />
         <ToolbarButton
           icon={NavigateIcon}
@@ -110,7 +111,7 @@ export default function Toolbar(): React.ReactElement {
           keyName="w"
           keyCode={Types.default.KeyCodes.W}
           isActive={modeState == Types.default.NavigationTypes.Navigate}
-          onAction={() => renderer.current?.setMode(Types.default.NavigationTypes.Navigate)}
+          onAction={() => renderer?.setMode(Types.default.NavigationTypes.Navigate)}
         />
         <ToolbarButton
           icon={MoveIcon}
@@ -118,7 +119,7 @@ export default function Toolbar(): React.ReactElement {
           keyName="e"
           keyCode={Types.default.KeyCodes.E}
           isActive={modeState == Types.default.NavigationTypes.Move}
-          onAction={() => renderer.current?.setMode(Types.default.NavigationTypes.Move)}
+          onAction={() => renderer?.setMode(Types.default.NavigationTypes.Move)}
         />
         <ToolbarButton
           icon={AddLineIcon}
@@ -126,7 +127,7 @@ export default function Toolbar(): React.ReactElement {
           keyName="s"
           keyCode={Types.default.KeyCodes.S}
           isActive={modeState == Types.default.NavigationTypes.AddLine}
-          onAction={() => renderer.current?.setMode(Types.default.NavigationTypes.AddLine)}
+          onAction={() => renderer?.setMode(Types.default.NavigationTypes.AddLine)}
         />
         <ToolbarButton
           icon={AddTextIcon}
@@ -134,7 +135,7 @@ export default function Toolbar(): React.ReactElement {
           keyName="h"
           keyCode={Types.default.KeyCodes.H}
           isActive={modeState == Types.default.NavigationTypes.AddLabel}
-          onAction={() => renderer.current?.setMode(Types.default.NavigationTypes.AddLabel)}
+          onAction={() => renderer?.setMode(Types.default.NavigationTypes.AddLabel)}
         />
         <ToolbarButton
           icon={MeasureIcon}
@@ -142,7 +143,7 @@ export default function Toolbar(): React.ReactElement {
           keyName="m"
           keyCode={Types.default.KeyCodes.M}
           isActive={modeState == Types.default.NavigationTypes.AddMeasure}
-          onAction={() => renderer.current?.setMode(Types.default.NavigationTypes.AddMeasure)}
+          onAction={() => renderer?.setMode(Types.default.NavigationTypes.AddMeasure)}
         />
       </div>
     </>

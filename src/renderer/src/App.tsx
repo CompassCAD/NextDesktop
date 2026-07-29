@@ -1,39 +1,17 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef } from 'react'
 import WindowBar from './components/WindowBar'
-import { GraphicsRenderer, InitializeInstance } from './engine/Engine'
-import { setRendererInstance } from './exports'
 import style from './style/index.module.css'
 import { ModalProvider } from './components/ModalProvider'
 import Toolbar from './components/Toolbar'
 import TextPrompt from './components/TextPrompt'
+import { RendererProvider, useRenderer } from './components/RendererContextProvider'
 
-function App(): React.JSX.Element {
+function AppContent(): React.JSX.Element {
   const canvas = useRef<HTMLCanvasElement>(null)
-  const renderer = useRef<GraphicsRenderer | null>(null)
-  const [isRendererReady, setIsRendererReady] = useState(false)
-  const isInitialized = useRef(false) // Track initialization state
-
-  const startRendererInstance = (): void => {
-    // Only initialize once
-    if (canvas.current && !renderer.current && !isInitialized.current) {
-      console.log('[main] canvas is available and ready')
-      const newRenderer = new GraphicsRenderer(
-        canvas.current,
-        window.innerWidth,
-        window.innerHeight
-      )
-      setRendererInstance(newRenderer)
-      renderer.current = newRenderer
-      isInitialized.current = true // Mark as initialized
-      console.log('[main] renderer instance now:', renderer.current)
-      console.log('[main] starting instance now')
-      InitializeInstance(renderer.current)
-      setIsRendererReady(true)
-    }
-  }
+  const { renderer, isReady, createRenderer } = useRenderer()
 
   const resize = (): void => {
-    if (canvas.current && renderer.current) {
+    if (canvas.current && renderer) {
       const dpi = window.devicePixelRatio
       const physicalWidth = window.innerWidth * dpi
       const physicalHeight = (window.innerHeight - 40) * dpi
@@ -41,33 +19,37 @@ function App(): React.JSX.Element {
       canvas.current.height = physicalHeight
       canvas.current.style.width = window.innerWidth + 'px'
       canvas.current.style.height = window.innerHeight - 40 + 'px'
-      renderer.current.displayWidth = window.innerWidth
-      renderer.current.displayHeight = window.innerHeight
-      renderer.current.scaleForHighDPI(dpi)
+      renderer.displayWidth = window.innerWidth
+      renderer.displayHeight = window.innerHeight
+      renderer.scaleForHighDPI(dpi)
     }
   }
 
+  // Create the renderer once the canvas exists.
   useEffect(() => {
-    startRendererInstance()
-    resize()
-    return () => {
-      renderer.current = null
-      isInitialized.current = false
+    if (canvas.current) {
+      console.log('[main] canvas is available and ready')
+      createRenderer(canvas.current, window.innerWidth, window.innerHeight)
     }
-  }, []) // Empty dependency array ensures this runs only once
+    // createRenderer is stable (useCallback with no deps) and is itself
+    // idempotent, so this is still effectively "run once".
+  }, [createRenderer])
 
+  // Size the canvas as soon as the renderer becomes available, and again
+  // on every window resize.
   useEffect(() => {
+    resize()
     const handleResize = (): void => resize()
     window.addEventListener('resize', handleResize)
     return () => window.removeEventListener('resize', handleResize)
-  }, [])
+  }, [renderer])
 
   return (
     <>
       <TextPrompt />
       <ModalProvider />
       <WindowBar />
-      {isRendererReady && <Toolbar />}
+      {isReady && <Toolbar />}
       <div className={style['canvas-container']}>
         <canvas width={window.innerWidth} height={window.innerHeight} ref={canvas} tabIndex={-1} />
       </div>
@@ -75,4 +57,12 @@ function App(): React.JSX.Element {
   )
 }
 
-export default App
+function App(): React.JSX.Element {
+  return (
+    <RendererProvider>
+      <AppContent />
+    </RendererProvider>
+  )
+}
+
+export default App;
