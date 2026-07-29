@@ -1900,8 +1900,10 @@ export class GraphicsRenderer {
       this.logicDisplay!.components.splice(this.temporarySelectedComponent, 1);
       this.markDirty('component deleted');
       this.temporarySelectedComponent = null;
-      this.displayRef?.focus();
-    } else {
+      this.selectedComponent = null;      // <-- added: was left stale, pointing at a
+      this.lastSelectedComponent = null;  // <-- shifted/invalid index after splice,
+      this.displayRef?.focus();           //     which threw inside refreshSelectionTools()
+    } else {                              //     and got silently swallowed, freezing the canvas
       this.cleanLog('not deleting, nothing was selected');
     }
   }
