@@ -18,6 +18,7 @@ import { GraphicsRenderer } from '@renderer/engine/Engine'
 import { getRendererIfAvailable } from '@renderer/exports'
 import { MenuProvider, MenuContext } from './MenuProvider'
 import { openModal } from './ModalProvider'
+import AboutModal from './submodals/AboutModal'
 
 function ModalShit(): React.ReactElement {
   const [a, sa] = useState<number>(0)
@@ -157,6 +158,9 @@ export default function WindowBar(): React.ReactElement {
   const spawnModal = (): void => {
     openModal('Counting', <ModalShit />)
   }
+  const spawnAboutModal = (): void => {
+    openModal('About CompassCAD', <AboutModal />)
+  }
   return (
     <>
       <div className={styles['window-bar']}>
@@ -237,6 +241,7 @@ export default function WindowBar(): React.ReactElement {
           <MenuContext icon={SaveDesignAsIcon} title="Save as" keyCombinations={['Ctrl', 'Alt', 'S']} />
           <MenuContext icon={ExportIcon} title="Export to SVG" keyCombinations={['Ctrl', 'E']} />
           <MenuContext onAction={spawnModal} title="TEST MODAL SHIT AHHAHAHAHA" />
+          <MenuContext onAction={spawnAboutModal} title="About CompassCAD NEXT" />
         </MenuProvider>
       )}
     </>
