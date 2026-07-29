@@ -1,5 +1,6 @@
 import React, { ReactNode, useCallback, useEffect, useState } from 'react'
 import style from '../style/index.module.css'
+import CloseIcon from '../assets/icons/close.svg'
 
 type ModalTitle = string | null
 type ModalContent = ReactNode
@@ -65,7 +66,9 @@ const ModalComponent: React.FC<ModalProps> = ({ isOpen, onClose, title, content 
       <div className={style['modal-itself']} onClick={handleModalClick}>
         <div className={style['modal-header']}>
           <h2>{title}</h2>
-          <span onClick={onClose}>&times;</span>
+          <div onClick={onClose}>
+            <img src={CloseIcon} height={24 } />
+          </div>
         </div>
         <div className={style['modal-content']}>{content}</div>
       </div>
