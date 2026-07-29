@@ -149,6 +149,9 @@
     border-radius: 10px;
     border: 0.5px solid var(--outline);
     padding: 10px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
 }
 .modal-content button:hover {
     background-color: var(--secondary);
@@ -329,4 +332,16 @@
   z-index: 99999;
   font-size: 10pt;
   backdrop-filter: blur(5px);
+}
+.osl-modal-licenses {
+  background-color: var(--primary);
+  color: var(--text);
+  width: 100%;
+  height: 256pt;
+  max-height: 256pt;
+  overflow-y: scroll;
+  resize: none;
+  border: none;
+  outline: none;
+  white-space: pre-wrap;
 }
