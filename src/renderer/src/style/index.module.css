@@ -8,6 +8,7 @@
 .canvas-container canvas {
     position: absolute;
     bottom: 0;
+    outline: none;
 }
 .window-bar {
     display: flex;
@@ -100,14 +101,14 @@
     }
 }
 .modal-hitbox {
-    position: absolute;
-    top: 0;
-    left: 0;
-    height: 100dvh;
-    width: 100vw;
-    z-index: 99;
-    animation: modal-zoomin 0.5s ease;
-    background-color: rgba(0, 0, 0, 0.25);
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 100dvh;
+  width: 100vw;
+  z-index: 99;
+  animation: popup 0.25s cubic-bezier(0.31, 1.02, 0.51, 1.17);
+  background-color: rgba(0, 0, 0, 0.25);
 }
 .modal-itself {
     background-color: var(--primary);
@@ -251,17 +252,17 @@
     
 }
 .prompt-overlay {
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    z-index: 9;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    animation: popup 0.25s cubic-bezier(0.31, 1.02, 0.66, 1.74);
-    background-color: rgba(0, 0, 0, 0.25);
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 9;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  animation: popup 0.25s cubic-bezier(0.31, 1.02, 0.51, 1.17);
+  background-color: rgba(0, 0, 0, 0.25);
 }
 .prompt-container {
     background-color: var(--primary);
@@ -316,15 +317,16 @@
     background-color: var(--secondary);
 }
 .toolbar-tooltip {
-    position: absolute;
-    display: flex;
-    white-space: nowrap;
-    background-color: var(--primary);
-    border: 0.5px solid var(--outline);
-    padding: 5px 10px;
-    border-radius: 10px;
-    box-shadow: 0px 0px 13px 3px rgba(0, 0, 0, 0.5);
-    animation: popup 0.15s ease;
-    z-index: 99999;
-    font-size: 10pt;
+  position: absolute;
+  display: flex;
+  white-space: nowrap;
+  background-color: var(--primary);
+  border: 0.5px solid var(--outline);
+  padding: 5px 10px;
+  border-radius: 10px;
+  box-shadow: 0px 0px 13px 3px rgba(0, 0, 0, 0.5);
+  animation: popup 0.15s ease;
+  z-index: 99999;
+  font-size: 10pt;
+  backdrop-filter: blur(5px);
 }
