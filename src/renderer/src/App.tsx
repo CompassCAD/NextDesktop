@@ -69,7 +69,7 @@ function App(): React.JSX.Element {
       <WindowBar />
       {isRendererReady && <Toolbar />}
       <div className={style['canvas-container']}>
-        <canvas width={window.innerWidth} height={window.innerHeight} ref={canvas} />
+        <canvas width={window.innerWidth} height={window.innerHeight} ref={canvas} tabIndex={-1} />
       </div>
     </>
   )
