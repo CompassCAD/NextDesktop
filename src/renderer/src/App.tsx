@@ -5,6 +5,7 @@ import { ModalProvider } from './components/ModalProvider'
 import Toolbar from './components/Toolbar'
 import TextPrompt from './components/TextPrompt'
 import { RendererProvider, useRenderer } from './components/RendererContextProvider'
+import Inspector from './components/Inspector'
 
 function AppContent(): React.JSX.Element {
   const canvas = useRef<HTMLCanvasElement>(null)
@@ -49,6 +50,7 @@ function AppContent(): React.JSX.Element {
       <TextPrompt />
       <ModalProvider />
       <WindowBar />
+      <Inspector />
       {isReady && <Toolbar />}
       <div className={style['canvas-container']}>
         <canvas width={window.innerWidth} height={window.innerHeight} ref={canvas} tabIndex={-1} />
