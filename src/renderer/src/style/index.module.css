@@ -153,6 +153,25 @@
     align-items: center;
     gap: 10px;
 }
+.modal-content input {
+  -webkit-appearance: none;
+  margin: 5px;
+  padding: 10px;
+  border: none;
+  font-family: var(--font);
+  color: var(--text);
+  background-color: var(--secondary);
+  border-radius: 10px;
+}
+
+.modal-content input:focus {
+  outline: 1px solid var(--theme);
+}
+
+.modal-content input::placeholder {
+  color: var(--text);
+  opacity: 0.5;
+}
 .modal-content button:hover {
     background-color: var(--secondary);
 }
@@ -341,6 +360,9 @@
     color: var(--text);
     opacity: 0.5;
 }
+
+
+
 .prompt-container .prompt-actions {
     display: flex;
     justify-content: flex-end;

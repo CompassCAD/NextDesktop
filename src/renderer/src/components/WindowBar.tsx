@@ -19,6 +19,40 @@ import { getRendererIfAvailable } from '@renderer/exports'
 import { MenuProvider, MenuContext } from './MenuProvider'
 import { openModal } from './ModalProvider'
 import AboutModal from './submodals/AboutModal'
+import { useRenderer } from './RendererContextProvider'
+import { Component } from '../engine/Component'
+import { generateRandomDesign } from '../utils/RandomGenerator'
+
+function RNGSpamGen(): React.ReactElement {
+  interface RNGGen {
+    seed: number;
+    count: number;
+  }
+
+  const { renderer } = useRenderer();
+  const [rngGeneratorConfig, setRngGeneratorConfig] = useState<RNGGen>({ seed: 0, count: 1 });
+
+  const generateDesign = () => {
+    renderer!.logicDisplay!.components = [];
+    const design: Component[] = generateRandomDesign(Math.random(), rngGeneratorConfig.count, {
+      bounds: {
+        minX: -5000,
+        minY: -5000,
+        maxX: 5000,
+        maxY: 5000
+      }
+    });
+    renderer!.logicDisplay?.importJSON(design, renderer!.logicDisplay!.components);
+  }
+
+  return (
+    <>
+      <input type="number" min="0" max="2147483647" defaultValue="15" placeholder="Count" onChange={(e) => setRngGeneratorConfig({ ...rngGeneratorConfig, count: parseInt(e.target.value) })} />
+      <br />
+      <button onClick={generateDesign}>Generate</button>
+    </>
+  )
+}
 
 function ModalShit(): React.ReactElement {
   const [a, sa] = useState<number>(0)
@@ -158,6 +192,9 @@ export default function WindowBar(): React.ReactElement {
   const spawnModal = (): void => {
     openModal('Counting', <ModalShit />)
   }
+  const _internal_spawnRngModal = (): void => {
+    openModal('RNG Gen', <RNGSpamGen />)
+  }
   const spawnAboutModal = (): void => {
     openModal('About CompassCAD', <AboutModal />)
   }
@@ -241,6 +278,7 @@ export default function WindowBar(): React.ReactElement {
           <MenuContext icon={SaveDesignAsIcon} title="Save as" keyCombinations={['Ctrl', 'Alt', 'S']} />
           <MenuContext icon={ExportIcon} title="Export to SVG" keyCombinations={['Ctrl', 'E']} />
           <MenuContext onAction={spawnModal} title="TEST MODAL SHIT AHHAHAHAHA" />
+          <MenuContext onAction={_internal_spawnRngModal} title="RNG Design Generator" />
           <MenuContext onAction={spawnAboutModal} title="About CompassCAD NEXT" />
         </MenuProvider>
       )}

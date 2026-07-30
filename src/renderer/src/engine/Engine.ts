@@ -26,6 +26,7 @@ import { callTextPrompt } from '@renderer/components/TextPrompt'
 import FontobeneParser from './fontobene/FontobeneParser'
 import AnsiFont from './fontobene/ansifont.bene'
 import * as Types from '../engine/Types'
+import { LRUCache, QuadTree, QuadTreeBounds } from './CacheDatas'
 
 let lastTime = performance.now()
 let frameCount = 0
@@ -76,7 +77,7 @@ export class GraphicsRenderer {
   temporaryObjectArray: any[]
   temporaryVectors: Vector2[]
   temporaryVectorIndex: number
-  imageCache: { [key: string]: any }
+  imageCache: LRUCache<string, HTMLImageElement | 'ERROR'>
   displayWidth: number
   displayHeight: number
   offsetX: number
@@ -118,9 +119,13 @@ export class GraphicsRenderer {
   handles: HandleProperties[]
   fb: FontobeneParser
   dragHandle: string | null
-  lastSelectedComponent: number | null
+  lastSelectedComponent: number | null;
+  _debugMode: boolean;
   private _dirty: boolean;
   private _colorCache: Map<string, string>;
+  private _quadtree: QuadTree<Component> | null = null;
+  private _isQuadtreeDirty: boolean = true;
+  private _pathBatches: Map<string, { path: Path2D; strokeStyle: string; lineWidth: number }> = new Map();
   private _WARNING_MAYLAGSHIT_debugMode: boolean;
 
   constructor(displayRef: HTMLCanvasElement | null, width: number, height: number) {
@@ -164,7 +169,7 @@ export class GraphicsRenderer {
     this.temporaryObjectArray = []
     this.temporaryVectorIndex = 0
     this.temporaryVectors = []
-    this.imageCache = {}
+    this.imageCache = new LRUCache(256);
     this.displayWidth = width
     this.displayHeight = height
     this.offsetX = 0
@@ -210,7 +215,8 @@ export class GraphicsRenderer {
     this._dirty = false;
     this._colorCache = new Map();
     this.fb = new FontobeneParser(AnsiFont)
-    this._WARNING_MAYLAGSHIT_debugMode = true;
+    this._WARNING_MAYLAGSHIT_debugMode = false;
+    this._debugMode = true;
   }
 
   private _lastCamX = NaN;
@@ -584,6 +590,7 @@ export class GraphicsRenderer {
       this.undoStack.shift()
     }
     this.redoStack = []
+    this._isQuadtreeDirty = true;
     if (this.onComponentArrayChanged) {
       this.cleanLog('array changed defined, firing')
       this.onComponentArrayChanged()
@@ -599,6 +606,36 @@ export class GraphicsRenderer {
     var theta = Math.atan2(dy, dx)
     var scaledAngle = theta * (3.15 / PI)
     return scaledAngle
+  }
+  private getCameraWorldBounds(): QuadTreeBounds {
+    const padding = 50
+    const halfW = this.displayWidth / 2
+    const halfH = this.displayHeight / 2
+    return {
+      minX: (-halfW - padding) / this.zoom - this.cOutX,
+      maxX: (halfW + padding) / this.zoom - this.cOutX,
+      minY: (-halfH - padding) / this.zoom - this.cOutY,
+      maxY: (halfH + padding) / this.zoom - this.cOutY
+    }
+  }
+  private rebuildQuadtree(components: Component[]): void {
+    if (components.length === 0) { this._quadtree = null; this._isQuadtreeDirty = false; return }
+    let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity
+    const boxed: { c: Component; bbox: QuadTreeBounds }[] = []
+    for (const c of components) {
+      if (c.active === false) continue
+      const bbox = this.getComponentBoundaryBox(c)
+      boxed.push({ c, bbox })
+      minX = Math.min(minX, bbox.minX); minY = Math.min(minY, bbox.minY)
+      maxX = Math.max(maxX, bbox.maxX); maxY = Math.max(maxY, bbox.maxY)
+    }
+    const margin = 100
+    const tree = new QuadTree<Component>(
+      { minX: minX - margin, minY: minY - margin, maxX: maxX + margin, maxY: maxY + margin }
+    )
+    for (const { c, bbox } of boxed) tree.insert(c, bbox)
+    this._quadtree = tree
+    this._isQuadtreeDirty = false
   }
   private isComponentInCamera(bbox: { minX: number, minY: number, maxX: number, maxY: number }): boolean {
     const padding = 50
@@ -663,7 +700,17 @@ export class GraphicsRenderer {
         return { minX: 0, minY: 0, maxX: 0, maxY: 0 }
     }
   }
-  drawAllComponents(components: Component[], moveByX: number, moveByY: number) {
+  drawAllComponents(components: Component[], moveByX: number, moveByY: number, useSpatialIndex: boolean = false) {
+    if (useSpatialIndex) {
+      if (this._isQuadtreeDirty || !this._quadtree) this.rebuildQuadtree(components)
+      const candidates = this._quadtree ? this._quadtree.query(this.getCameraWorldBounds()) : components
+      for (const component of candidates) {
+        if (component.active == false) continue;
+        if (!this.isComponentInCamera(this.getComponentBoundaryBox(component))) continue;
+        this.drawComponent(component, moveByX, moveByY)
+      }
+      return
+    }
     for (let i = 0; i < components.length; i++) {
       if (components[i].active == false) continue;
       if (!this.isComponentInCamera(this.getComponentBoundaryBox(components[i]))) continue;
@@ -972,65 +1019,55 @@ export class GraphicsRenderer {
       }
     }
   }
-  drawLine(
-    x1: number,
-    y1: number,
-    x2: number,
-    y2: number,
-    color: string,
-    radius: number,
-    opacity: number
-  ) {
-    if (this.context) {
-      this.context.lineWidth = radius * this.zoom
-      this.context.fillStyle = this.getColorWithOpacityFromCache(color, opacity);
-      this.context.strokeStyle = this.getColorWithOpacityFromCache(color, opacity);
-      this.context.lineCap = 'round'
-      this.context.beginPath()
-      this.context.moveTo((x1 + this.cOutX) * this.zoom, (y1 + this.cOutY) * this.zoom)
-      this.context.lineTo((x2 + this.cOutX) * this.zoom, (y2 + this.cOutY) * this.zoom)
-      this.context.stroke()
+  private getBatchPath(strokeStyle: string, lineWidth: number): Path2D {
+    const key = strokeStyle + '|' + lineWidth
+    let bucket = this._pathBatches.get(key)
+    if (!bucket) {
+      bucket = { path: new Path2D(), strokeStyle, lineWidth }
+      this._pathBatches.set(key, bucket)
     }
+    return bucket.path
   }
-  drawCircle(
-    x1: number,
-    y1: number,
-    x2: number,
-    y2: number,
-    color: string,
-    radius: number,
-    opacity: number
-  ) {
-    if (this.context) {
-      this.context.lineWidth = radius * this.zoom
-      this.context.fillStyle = this.getColorWithOpacityFromCache(color, opacity);
-      this.context.strokeStyle = this.getColorWithOpacityFromCache(color, opacity);
-      this.context.beginPath()
-      this.context.arc(
-        (x1 + this.cOutX) * this.zoom,
-        (y1 + this.cOutY) * this.zoom,
-        this.getDistance(x1, y1, x2, y2) * this.zoom,
-        0,
-        3.14159 * 2,
-        false
-      )
-      this.context.closePath()
-      this.context.stroke()
+
+  flushBatchedPaths(): void {
+    if (!this.context || this._pathBatches.size === 0) return
+    this.context.lineCap = 'round'
+    for (const { path, strokeStyle, lineWidth } of this._pathBatches.values()) {
+      this.context.strokeStyle = strokeStyle
+      this.context.lineWidth = lineWidth
+      this.context.stroke(path)
     }
+    this._pathBatches.clear()
   }
+
+  drawLine(x1: number, y1: number, x2: number, y2: number, color: string, radius: number, opacity: number) {
+    if (!this.context) return
+    const strokeStyle = this.getColorWithOpacityFromCache(color, opacity)
+    const path = this.getBatchPath(strokeStyle, radius * this.zoom)
+    path.moveTo((x1 + this.cOutX) * this.zoom, (y1 + this.cOutY) * this.zoom)
+    path.lineTo((x2 + this.cOutX) * this.zoom, (y2 + this.cOutY) * this.zoom)
+  }
+
+  drawCircle(x1: number, y1: number, x2: number, y2: number, color: string, radius: number, opacity: number) {
+    if (!this.context) return
+    const strokeStyle = this.getColorWithOpacityFromCache(color, opacity)
+    const path = this.getBatchPath(strokeStyle, radius * this.zoom)
+    const cx = (x1 + this.cOutX) * this.zoom
+    const cy = (y1 + this.cOutY) * this.zoom
+    const r = this.getDistance(x1, y1, x2, y2) * this.zoom
+    path.moveTo(cx + r, cy) // moveTo before arc avoids a stray connecting line to the previous subpath
+    path.arc(cx, cy, r, 0, Math.PI * 2, false)
+  }
+
   drawRectangle(x1: number, y1: number, x2: number, y2: number, color: string, radius: number, opacity: number) {
-    const stroke = this.getColorWithOpacityFromCache(color, opacity)
-    const ctx = this.context!
-    ctx.lineWidth = radius * this.zoom
-    ctx.strokeStyle = stroke
-    ctx.lineCap = 'round'
-    ctx.beginPath()
-    ctx.moveTo((x1 + this.cOutX) * this.zoom, (y1 + this.cOutY) * this.zoom)
-    ctx.lineTo((x2 + this.cOutX) * this.zoom, (y1 + this.cOutY) * this.zoom)
-    ctx.lineTo((x2 + this.cOutX) * this.zoom, (y2 + this.cOutY) * this.zoom)
-    ctx.lineTo((x1 + this.cOutX) * this.zoom, (y2 + this.cOutY) * this.zoom)
-    ctx.lineTo((x1 + this.cOutX) * this.zoom, (y1 + this.cOutY) * this.zoom)
-    ctx.stroke() // one path, one state set, one stroke instead of 4 drawLine calls
+    if (!this.context) return
+    const strokeStyle = this.getColorWithOpacityFromCache(color, opacity)
+    const path = this.getBatchPath(strokeStyle, radius * this.zoom)
+    path.moveTo((x1 + this.cOutX) * this.zoom, (y1 + this.cOutY) * this.zoom)
+    path.lineTo((x2 + this.cOutX) * this.zoom, (y1 + this.cOutY) * this.zoom)
+    path.lineTo((x2 + this.cOutX) * this.zoom, (y2 + this.cOutY) * this.zoom)
+    path.lineTo((x1 + this.cOutX) * this.zoom, (y2 + this.cOutY) * this.zoom)
+    path.lineTo((x1 + this.cOutX) * this.zoom, (y1 + this.cOutY) * this.zoom)
   }
   drawArrowhead(
     x: number,
@@ -1071,6 +1108,7 @@ export class GraphicsRenderer {
     textAlign: 'left' | 'center' = 'left',
     textBaseline: 'middle' | 'top' | 'bottom' = 'bottom'
   ) {
+    this.cleanLog(`Getting text for ${text}`);
     if (!this.context) return;
 
     const glyphs = this._internal_getGlyphsInASynchronousManner(text);
@@ -1360,27 +1398,20 @@ export class GraphicsRenderer {
   }
   drawPicture(x: number, y: number, basedURL: string, opacity: number) {
     this.drawPoint(x, y, '#00ffff', 2, opacity)
-    if (!this.imageCache[basedURL]) {
+    if (!this.imageCache.has(basedURL)) {
       const img = new Image()
       img.crossOrigin = 'anonymous'
       img.src = basedURL
-      img.onerror = () => {
-        this.imageCache[basedURL] = 'ERROR' // Use a specific error marker
-      }
+      img.onerror = () => { this.imageCache.set(basedURL, 'ERROR') }
       img.onload = () => {
-        this.imageCache[basedURL] = img
+        this.imageCache.set(basedURL, img)
         this.renderImage(x, y, img, opacity)
       }
     } else {
-      // Check if cached value is an error marker
-      if (this.imageCache[basedURL] === 'ERROR') {
-        this.renderImage(x, y, null, opacity) // Pass null to trigger error shape
-      } else {
-        this.renderImage(x, y, this.imageCache[basedURL], opacity)
-      }
+      const cached = this.imageCache.get(basedURL)
+      this.renderImage(x, y, cached === 'ERROR' ? null : (cached as HTMLImageElement), opacity)
     }
   }
-
   renderImage(
     x: number,
     y: number,
@@ -2628,8 +2659,145 @@ export class GraphicsRenderer {
 
     this.drawAllComponents(this.logicDisplay!.components, 0, 0)
     if (this.temporaryComponentType != null) this.drawTemporaryComponent()
+    this.flushBatchedPaths();
     this.drawRules()
     this.refreshSelectionTools()
+    if (this._debugMode) {
+      const defaultDebugTextSizeMultiplier = 2 * (1 / this.zoom)
+      this.drawRawFontobeneAtLocation(
+        -((this.displayWidth / 2) - 80),
+        -(this.displayHeight / 2 - 40),
+        `${fps} FPS`,
+        '#00ff00',
+        1.5,
+        defaultDebugTextSizeMultiplier,
+        100,
+        0,
+        'left',
+        'bottom'
+      );
+      this.drawRawFontobeneAtLocation(
+        -((this.displayWidth / 2) - 80),
+        -(this.displayHeight / 2 - 60),
+        `framestat: ${this._dirty ? 'dirty' : 'clean'}`,
+        '#00ff00',
+        1.5,
+        defaultDebugTextSizeMultiplier,
+        100,
+        0,
+        'left',
+        'bottom'
+      );
+      this.drawRawFontobeneAtLocation(
+        -((this.displayWidth / 2) - 80),
+        -(this.displayHeight / 2 - 80),
+        `OMC map: ${this.onModeChange != null ? 'OMC mapped' : 'OMC unmapped'}`,
+        '#00ff00',
+        1.5,
+        defaultDebugTextSizeMultiplier,
+        100,
+        0,
+        'left',
+        'bottom'
+      );
+      this.drawRawFontobeneAtLocation(
+        -((this.displayWidth / 2) - 80),
+        -(this.displayHeight / 2 - 100),
+        `raw cur: x=${this.getCursorXRaw()},y=${this.getCursorYRaw()}`,
+        '#00ff00',
+        1.5,
+        defaultDebugTextSizeMultiplier,
+        100,
+        0,
+        'left',
+        'bottom'
+      );
+      this.drawRawFontobeneAtLocation(
+        -((this.displayWidth / 2) - 80),
+        -(this.displayHeight / 2 - 120),
+        `off: x=${this.offsetX},y=${this.offsetY}`,
+        '#00ff00',
+        1.5,
+        defaultDebugTextSizeMultiplier,
+        100,
+        0,
+        'left',
+        'bottom'
+      );
+      this.drawRawFontobeneAtLocation(
+        -((this.displayWidth / 2) - 80),
+        -(this.displayHeight / 2 - 140),
+        `camout: x=${this.cOutX},y=${this.cOutY}`,
+        '#00ff00',
+        1.5,
+        defaultDebugTextSizeMultiplier,
+        100,
+        0,
+        'left',
+        'bottom'
+      );
+      this.drawRawFontobeneAtLocation(
+        -((this.displayWidth / 2) - 80),
+        -(this.displayHeight / 2 - 160),
+        `hidpi: ${this.enableHighDPI ? 'yes' : 'no'}, dpr: ${window.devicePixelRatio}`,
+        '#00ff00',
+        1.5,
+        defaultDebugTextSizeMultiplier,
+        100,
+        0,
+        'left',
+        'bottom'
+      );
+      this.drawRawFontobeneAtLocation(
+        -((this.displayWidth / 2) - 80),
+        -(this.displayHeight / 2 - 180),
+        `comp len: ${this.logicDisplay?.components.length}`,
+        '#00ff00',
+        1.5,
+        defaultDebugTextSizeMultiplier,
+        100,
+        0,
+        'left',
+        'bottom'
+      );
+
+      this.drawRawFontobeneAtLocation(
+        -((this.displayWidth / 2) - 80),
+        (this.displayHeight / 2 - 100),
+        `CompassCAD NEXT engine debug mode`,
+        '#00ff00',
+        1.5,
+        defaultDebugTextSizeMultiplier,
+        100,
+        0,
+        'left',
+        'bottom'
+      );
+      this.drawRawFontobeneAtLocation(
+        -((this.displayWidth / 2) - 80),
+        (this.displayHeight / 2 - 80),
+        `to turn off, set this._debugMode to false`,
+        '#00ff00',
+        1.5,
+        defaultDebugTextSizeMultiplier,
+        100,
+        0,
+        'left',
+        'bottom'
+      );
+      this.drawRawFontobeneAtLocation(
+        -((this.displayWidth / 2) - 80),
+        (this.displayHeight / 2 - 60),
+        `ALWAYS TURN OFF BEFORE DEPLOYING TO PROD`,
+        '#00ff00',
+        1.5,
+        defaultDebugTextSizeMultiplier,
+        100,
+        0,
+        'left',
+        'bottom'
+      );
+    }
     if (this.recordingMode) {
       this.drawUserCursor(
         (this.getCursorXRaw() + this.camX) * this.zoom,
