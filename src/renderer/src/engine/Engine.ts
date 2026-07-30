@@ -656,6 +656,23 @@ export class GraphicsRenderer {
       screenMinY <= halfH + padding
     )
   }
+  // Shared so bbox and drawLabel can never disagree about wrapping.
+  private wrapLabelLines(text: string, maxLength = 24): string[] {
+    const words = (text ?? '').split(' ')
+    const lines: string[] = []
+    let tmpLength = 0, tmpText = ''
+    for (const w of words) {
+      tmpLength += w.length + 1
+      tmpText += (tmpText ? ' ' : '') + w
+      if (tmpLength > maxLength) {
+        lines.push(tmpText)
+        tmpLength = 0
+        tmpText = ''
+      }
+    }
+    if (tmpText.trim().length > 0) lines.push(tmpText)
+    return lines.length > 0 ? lines : ['']
+  }
   private getComponentBoundaryBox(component: Component): { minX: number, minY: number, maxX: number, maxY: number } {
     switch (component.type) {
       case componentTypes.point:
@@ -668,7 +685,8 @@ export class GraphicsRenderer {
         break;
       case componentTypes.circle:
         const c = component as Circle
-        return { minX: Math.min(c.x1, c.x2), minY: Math.min(c.y1, c.y2), maxX: Math.max(c.x1, c.x2), maxY: Math.max(c.y1, c.y2) }
+        const cRadius = this.getDistance(c.x1, c.y1, c.x2, c.y2)
+        return { minX: c.x1 - cRadius, minY: c.y1 - cRadius, maxX: c.x1 + cRadius, maxY: c.y1 + cRadius }
         break;
       case componentTypes.rectangle:
         const r = component as Rectangle
@@ -696,9 +714,27 @@ export class GraphicsRenderer {
         return { minX: Math.min(b.x1, b.x2), minY: Math.min(b.y1, b.y2), maxX: Math.max(b.x1, b.x2), maxY: Math.max(b.y1, b.y2) }
       }
       case componentTypes.label: {
-        const lbl = component as Label;
-        const approxWidth = 150, approxHeight = 20 * (lbl.text?.split(' ').length ?? 1)
-        return { minX: lbl.x, minY: lbl.y, maxX: lbl.x + approxWidth, maxY: lbl.y + approxHeight }
+        const lbl = component as Label
+        const fontSize = lbl.fontSize ?? 14
+        const localDiff = 30
+        const rowStep = localDiff + fontSize / 2          // matches drawLabel's currentLineY step
+        const avgCharWidth = fontSize * 0.6
+
+        // Use the SAME wrap logic as drawLabel, not raw '\n' splitting.
+        const wrappedLines = (lbl.text ?? '').split('\n').flatMap(l => this.wrapLabelLines(l))
+        const longestLineLen = Math.max(1, ...wrappedLines.map(l => l.length))
+
+        const approxWidth = longestLineLen * avgCharWidth
+        const totalRows = wrappedLines.length
+        const approxHeight = (totalRows - 1) * rowStep + fontSize * 1.2
+
+        const verticalPad = fontSize * 1.5
+        return {
+          minX: lbl.x - avgCharWidth,          // small horizontal pad (draw uses x - 5 offset)
+          minY: lbl.y - approxHeight - verticalPad,
+          maxX: lbl.x + approxWidth,
+          maxY: lbl.y + verticalPad
+        }
       }
       case componentTypes.shape: {
         const shp = component as Shape
