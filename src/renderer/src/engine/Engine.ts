@@ -226,6 +226,8 @@ export class GraphicsRenderer {
   private _lastOffsetY = NaN;
   private _glyphLayoutCache: Map<string, any> = new Map();
   private _textWidthCache: Map<string, number> = new Map();
+  private _bulkImportActive: boolean = false;
+  private static readonly MIN_VISIBLE_PX = 1
 
   private _measureTextCached(text: string): number {
     let w = this._textWidthCache.get(text)
@@ -582,7 +584,9 @@ export class GraphicsRenderer {
       this.markDirty('Camera updated')
     }
   }
+  // modify saveState() to respect the guard
   saveState() {
+    if (this._bulkImportActive) return // suppressed during bulk import; caller snapshots once at the end
     this.cleanLog('saving state')
     this.undoStack.push(JSON.stringify(this.logicDisplay?.components))
     this.cleanLog(this.undoStack)
@@ -590,7 +594,7 @@ export class GraphicsRenderer {
       this.undoStack.shift()
     }
     this.redoStack = []
-    this._isQuadtreeDirty = true;
+    this._isQuadtreeDirty = true
     if (this.onComponentArrayChanged) {
       this.cleanLog('array changed defined, firing')
       this.onComponentArrayChanged()
@@ -696,8 +700,40 @@ export class GraphicsRenderer {
         const approxWidth = 150, approxHeight = 20 * (lbl.text?.split(' ').length ?? 1)
         return { minX: lbl.x, minY: lbl.y, maxX: lbl.x + approxWidth, maxY: lbl.y + approxHeight }
       }
+      case componentTypes.shape: {
+        const shp = component as Shape
+        if (!shp.components || shp.components.length === 0) {
+          return { minX: shp.x, minY: shp.y, maxX: shp.x, maxY: shp.y }
+        }
+        let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity
+        for (const child of shp.components) {
+          const cb = this.getComponentBoundaryBox(child)
+          minX = Math.min(minX, cb.minX); minY = Math.min(minY, cb.minY)
+          maxX = Math.max(maxX, cb.maxX); maxY = Math.max(maxY, cb.maxY)
+        }
+        return { minX: minX + shp.x, minY: minY + shp.y, maxX: maxX + shp.x, maxY: maxY + shp.y }
+      }
       default:
         return { minX: 0, minY: 0, maxX: 0, maxY: 0 }
+    }
+  }
+  private getScreenFootprintPx(component: Component, bbox: QuadTreeBounds): number {
+    switch (component.type) {
+      case componentTypes.point:
+        return (component as Point).radius * this.zoom * 2
+      case componentTypes.label:
+        return (component as Label).fontSize * this.zoom
+      case componentTypes.picture:
+        return Number.POSITIVE_INFINITY // never LOD-cull; treated as always-visible
+      default: {
+        // Lines/circles/rects/arcs/polygons/boundboxes: use the larger bbox
+        // dimension as a cheap footprint estimate. A perfectly horizontal
+        // line has zero bbox height but nonzero width, so this correctly
+        // doesn't cull it — only genuinely tiny/degenerate geometry gets cut.
+        const w = (bbox.maxX - bbox.minX) * this.zoom
+        const h = (bbox.maxY - bbox.minY) * this.zoom
+        return Math.max(w, h)
+      }
     }
   }
   drawAllComponents(components: Component[], moveByX: number, moveByY: number, useSpatialIndex: boolean = false) {
@@ -706,14 +742,18 @@ export class GraphicsRenderer {
       const candidates = this._quadtree ? this._quadtree.query(this.getCameraWorldBounds()) : components
       for (const component of candidates) {
         if (component.active == false) continue;
-        if (!this.isComponentInCamera(this.getComponentBoundaryBox(component))) continue;
+        const bbox = this.getComponentBoundaryBox(component)
+        if (!this.isComponentInCamera(bbox)) continue;
+        if (this.getScreenFootprintPx(component, bbox) < GraphicsRenderer.MIN_VISIBLE_PX) continue;
         this.drawComponent(component, moveByX, moveByY)
       }
       return
     }
     for (let i = 0; i < components.length; i++) {
       if (components[i].active == false) continue;
-      if (!this.isComponentInCamera(this.getComponentBoundaryBox(components[i]))) continue;
+      const bbox = this.getComponentBoundaryBox(components[i])
+      if (!this.isComponentInCamera(bbox)) continue;
+      if (this.getScreenFootprintPx(components[i], bbox) < GraphicsRenderer.MIN_VISIBLE_PX) continue;
       this.drawComponent(components[i], moveByX, moveByY)
     }
   }
@@ -1393,7 +1433,7 @@ export class GraphicsRenderer {
     }
   }
   drawShape(shape: Shape) {
-    this.drawAllComponents(shape.components, shape.x, shape.y)
+    this.drawAllComponents(shape.components, shape.x, shape.y, false)
     this.drawPoint(shape.x, shape.y, shape.color, shape.radius, shape.opacity)
   }
   drawPicture(x: number, y: number, basedURL: string, opacity: number) {
@@ -1526,6 +1566,9 @@ export class GraphicsRenderer {
         this.context.stroke()
       }
     }
+  }
+  flagQuadtreeDirty(dirty: boolean) {
+    this._isQuadtreeDirty = dirty;
   }
   drawGrid(camXoff: number, camYoff: number) {
     const ctx = this.context
@@ -2657,15 +2700,16 @@ export class GraphicsRenderer {
 
     if (this.showOrigin) this.drawOrigin(this.cOutX, this.cOutY)
 
-    this.drawAllComponents(this.logicDisplay!.components, 0, 0)
+    this.drawAllComponents(this.logicDisplay!.components, 0, 0, true)
     if (this.temporaryComponentType != null) this.drawTemporaryComponent()
     this.flushBatchedPaths();
     this.drawRules()
     this.refreshSelectionTools()
     if (this._debugMode) {
-      const defaultDebugTextSizeMultiplier = 2 * (1 / this.zoom)
+      const defaultDebugTextSizeMultiplier = 2 * (1 / this.zoom);
+      const debugTextX = -((this.displayWidth / 2) - 80);
       this.drawRawFontobeneAtLocation(
-        -((this.displayWidth / 2) - 80),
+        debugTextX,
         -(this.displayHeight / 2 - 40),
         `${fps} FPS`,
         '#00ff00',
@@ -2677,7 +2721,7 @@ export class GraphicsRenderer {
         'bottom'
       );
       this.drawRawFontobeneAtLocation(
-        -((this.displayWidth / 2) - 80),
+        debugTextX,
         -(this.displayHeight / 2 - 60),
         `framestat: ${this._dirty ? 'dirty' : 'clean'}`,
         '#00ff00',
@@ -2689,7 +2733,7 @@ export class GraphicsRenderer {
         'bottom'
       );
       this.drawRawFontobeneAtLocation(
-        -((this.displayWidth / 2) - 80),
+        debugTextX,
         -(this.displayHeight / 2 - 80),
         `OMC map: ${this.onModeChange != null ? 'OMC mapped' : 'OMC unmapped'}`,
         '#00ff00',
@@ -2701,7 +2745,7 @@ export class GraphicsRenderer {
         'bottom'
       );
       this.drawRawFontobeneAtLocation(
-        -((this.displayWidth / 2) - 80),
+        debugTextX,
         -(this.displayHeight / 2 - 100),
         `raw cur: x=${this.getCursorXRaw()},y=${this.getCursorYRaw()}`,
         '#00ff00',
@@ -2713,7 +2757,7 @@ export class GraphicsRenderer {
         'bottom'
       );
       this.drawRawFontobeneAtLocation(
-        -((this.displayWidth / 2) - 80),
+        debugTextX,
         -(this.displayHeight / 2 - 120),
         `off: x=${this.offsetX},y=${this.offsetY}`,
         '#00ff00',
@@ -2725,7 +2769,7 @@ export class GraphicsRenderer {
         'bottom'
       );
       this.drawRawFontobeneAtLocation(
-        -((this.displayWidth / 2) - 80),
+        debugTextX,
         -(this.displayHeight / 2 - 140),
         `camout: x=${this.cOutX},y=${this.cOutY}`,
         '#00ff00',
@@ -2737,7 +2781,7 @@ export class GraphicsRenderer {
         'bottom'
       );
       this.drawRawFontobeneAtLocation(
-        -((this.displayWidth / 2) - 80),
+        debugTextX,
         -(this.displayHeight / 2 - 160),
         `hidpi: ${this.enableHighDPI ? 'yes' : 'no'}, dpr: ${window.devicePixelRatio}`,
         '#00ff00',
@@ -2749,7 +2793,7 @@ export class GraphicsRenderer {
         'bottom'
       );
       this.drawRawFontobeneAtLocation(
-        -((this.displayWidth / 2) - 80),
+        debugTextX,
         -(this.displayHeight / 2 - 180),
         `comp len: ${this.logicDisplay?.components.length}`,
         '#00ff00',
@@ -2760,9 +2804,33 @@ export class GraphicsRenderer {
         'left',
         'bottom'
       );
-
       this.drawRawFontobeneAtLocation(
-        -((this.displayWidth / 2) - 80),
+        debugTextX,
+        -(this.displayHeight / 2 - 200),
+        `quadtree obj: ${this._quadtree}`,
+        '#00ff00',
+        1.5,
+        defaultDebugTextSizeMultiplier,
+        100,
+        0,
+        'left',
+        'bottom'
+      );
+      this.drawRawFontobeneAtLocation(
+        debugTextX,
+        -(this.displayHeight / 2 - 220),
+        `is QuadT dirty: ${this._isQuadtreeDirty}`,
+        '#00ff00',
+        1.5,
+        defaultDebugTextSizeMultiplier,
+        100,
+        0,
+        'left',
+        'bottom'
+      );
+      // Some warnings
+      this.drawRawFontobeneAtLocation(
+        debugTextX,
         (this.displayHeight / 2 - 100),
         `CompassCAD NEXT engine debug mode`,
         '#00ff00',
@@ -2774,7 +2842,7 @@ export class GraphicsRenderer {
         'bottom'
       );
       this.drawRawFontobeneAtLocation(
-        -((this.displayWidth / 2) - 80),
+        debugTextX,
         (this.displayHeight / 2 - 80),
         `to turn off, set this._debugMode to false`,
         '#00ff00',
@@ -2786,7 +2854,7 @@ export class GraphicsRenderer {
         'bottom'
       );
       this.drawRawFontobeneAtLocation(
-        -((this.displayWidth / 2) - 80),
+        debugTextX,
         (this.displayHeight / 2 - 60),
         `ALWAYS TURN OFF BEFORE DEPLOYING TO PROD`,
         '#00ff00',

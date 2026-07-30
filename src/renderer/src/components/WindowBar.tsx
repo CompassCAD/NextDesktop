@@ -43,6 +43,8 @@ function RNGSpamGen(): React.ReactElement {
       }
     });
     renderer!.logicDisplay?.importJSON(design, renderer!.logicDisplay!.components);
+    renderer?.flagQuadtreeDirty(true);
+    renderer?.markDirty('RNG import hehe');
   }
 
   return (
