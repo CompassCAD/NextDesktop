@@ -1372,7 +1372,7 @@ export class GraphicsRenderer {
 
       // Calculate the absolute baseline Y coordinate for this specific line
       // Fontobene internal glyph lines move upwards/downwards based on targetFontScale
-      const currentLineY = y + (lineIndex * (30 + localDiff));
+      const currentLineY = y + (lineIndex * (localDiff + (fontSize / 2)));
 
       // 3. Setup Canvas Stroke styles for Fontobene vector rendering
       this.context.strokeStyle = this.getColorWithOpacityFromCache(color, opacity);
