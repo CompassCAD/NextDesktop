@@ -2823,7 +2823,7 @@ export class GraphicsRenderer {
         `raw cur: x=${this.getCursorXRaw()},y=${this.getCursorYRaw()}`,
         `off: x=${this.offsetX},y=${this.offsetY}`,
         `camout: x=${this.cOutX},y=${this.cOutY}`,
-        `hidpi: ${this.enableHighDPI ? 'yes' : 'no'}, dpr: ${window.devicePixelRatio}, width: ${this.displayWidth}, height: ${this.displayHeight}`,
+        `hidpi: ${this.enableHighDPI ? 'yes' : 'no'}, dpr: ${window.devicePixelRatio}, width: ${this.displayWidth * window.devicePixelRatio} (vp:${this.displayWidth}), height: ${this.displayHeight * window.devicePixelRatio} (vp:${this.displayHeight})`,
         `comp len: ${this.logicDisplay?.components.length}`,
         `quadtree obj: ${this._quadtree}`,
         `is QuadT dirty: ${this._isQuadtreeDirty}`,
