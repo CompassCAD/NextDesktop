@@ -52,6 +52,7 @@ function RNGSpamGen(): React.ReactElement {
       <input type="number" min="0" max="2147483647" defaultValue="15" placeholder="Count" onChange={(e) => setRngGeneratorConfig({ ...rngGeneratorConfig, count: parseInt(e.target.value) })} />
       <br />
       <button onClick={generateDesign}>Generate</button>
+      <button onClick={() => renderer?.logicDisplay?.uhh_yeah()}>Test stuffs (?)</button>
     </>
   )
 }
