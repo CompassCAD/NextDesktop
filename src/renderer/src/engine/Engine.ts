@@ -125,6 +125,8 @@ export class GraphicsRenderer {
   private _colorCache: Map<string, string>;
   private _quadtree: QuadTree<Component> | null = null;
   private _isQuadtreeDirty: boolean = true;
+  private _componentIndexes: Map<Component, number> = new Map();
+  private _dragDidModify: boolean = false;
   private _pathBatches: Map<string, { path: Path2D; strokeStyle: string; lineWidth: number }> = new Map();
   private _WARNING_MAYLAGSHIT_debugMode: boolean;
 
@@ -322,6 +324,8 @@ export class GraphicsRenderer {
   cleanUpBeforeImport() {
     this._quadtree = null;
     this._isQuadtreeDirty = true;
+    this._componentIndexes.clear();
+    this.markDirty('import started');
   }
   refreshSelectionTools() {
     if (this.selectedComponent !== null && this.logicDisplay?.components[this.selectedComponent]) {
@@ -589,7 +593,7 @@ export class GraphicsRenderer {
     }
   }
   // modify saveState() to respect the guard
-  saveState() {
+  saveState(invalidateSpatialIndex: boolean = true) {
     if (this._bulkImportActive) return // suppressed during bulk import; caller snapshots once at the end
     this.cleanLog('saving state')
     this.undoStack.push(JSON.stringify(this.logicDisplay?.components))
@@ -598,7 +602,7 @@ export class GraphicsRenderer {
       this.undoStack.shift()
     }
     this.redoStack = []
-    this._isQuadtreeDirty = true
+    if (invalidateSpatialIndex) this._isQuadtreeDirty = true
     if (this.onComponentArrayChanged) {
       this.cleanLog('array changed defined, firing')
       this.onComponentArrayChanged()
@@ -629,21 +633,36 @@ export class GraphicsRenderer {
   private rebuildQuadtree(components: Component[]): void {
     if (components.length === 0) { this._quadtree = null; this._isQuadtreeDirty = false; return }
     let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity
-    const boxed: { c: Component; bbox: QuadTreeBounds }[] = []
-    for (const c of components) {
+    const boxed: { c: Component; bbox: QuadTreeBounds; index: number }[] = []
+    this._componentIndexes.clear()
+    for (let index = 0; index < components.length; index++) {
+      const c = components[index]
       if (c.active === false) continue
       const bbox = this.getComponentBoundaryBox(c)
-      boxed.push({ c, bbox })
+      boxed.push({ c, bbox, index })
       minX = Math.min(minX, bbox.minX); minY = Math.min(minY, bbox.minY)
       maxX = Math.max(maxX, bbox.maxX); maxY = Math.max(maxY, bbox.maxY)
+    }
+    if (boxed.length === 0) {
+      this._quadtree = null
+      this._isQuadtreeDirty = false
+      return
     }
     const margin = 100
     const tree = new QuadTree<Component>(
       { minX: minX - margin, minY: minY - margin, maxX: maxX + margin, maxY: maxY + margin }
     )
-    for (const { c, bbox } of boxed) tree.insert(c, bbox)
+    for (const { c, bbox, index } of boxed) {
+      tree.insert(c, bbox)
+      this._componentIndexes.set(c, index)
+    }
     this._quadtree = tree
     this._isQuadtreeDirty = false
+  }
+  private updateQuadtreeEntry(component: Component): void {
+    if (!this._quadtree || this._isQuadtreeDirty || !this._quadtree.update(component, this.getComponentBoundaryBox(component))) {
+      this._isQuadtreeDirty = true
+    }
   }
   private isComponentInCamera(bbox: { minX: number, minY: number, maxX: number, maxY: number }): boolean {
     const padding = 50
@@ -681,7 +700,7 @@ export class GraphicsRenderer {
     switch (component.type) {
       case componentTypes.point:
         const p = component as Point
-        return { minX: p.x, minY: p.y, maxX: p.x, maxY: p.y }
+        return { minX: p.x - p.radius, minY: p.y - p.radius, maxX: p.x + p.radius, maxY: p.y + p.radius }
         break;
       case componentTypes.line:
         const l = component as Line
@@ -702,7 +721,10 @@ export class GraphicsRenderer {
         break;
       case componentTypes.arc:
         const arc = component as Arc
-        return { minX: Math.min(arc.x1, arc.x2, arc.x3), minY: Math.min(arc.y1, arc.y2, arc.y3), maxX: Math.max(arc.x1, arc.x2, arc.x3), maxY: Math.max(arc.y1, arc.y2, arc.y3) }
+        // The rendered segment can pass outside its three control points.
+        // Indexing the full circle is conservative but never frustum-culls it.
+        const arcRadius = this.getDistance(arc.x1, arc.y1, arc.x2, arc.y2) + arc.radius / 2
+        return { minX: arc.x1 - arcRadius, minY: arc.y1 - arcRadius, maxX: arc.x1 + arcRadius, maxY: arc.y1 + arcRadius }
         break;
       case componentTypes.polygon: {
         const poly = component as Polygon
@@ -711,7 +733,10 @@ export class GraphicsRenderer {
       }
       case componentTypes.picture: {
         const pic = component as Picture
-        return { minX: pic.x, minY: pic.y, maxX: pic.x, maxY: pic.y } // widen with image dims if known
+        const cached = this.imageCache.get(pic.pictureSource)
+        const width = cached && cached !== 'ERROR' ? cached.naturalWidth : 512
+        const height = cached && cached !== 'ERROR' ? cached.naturalHeight : 512
+        return { minX: pic.x - pic.radius, minY: pic.y - pic.radius, maxX: pic.x + width, maxY: pic.y + height }
       }
       case componentTypes.boundBox: {
         const b = component as BoundBox
@@ -751,7 +776,10 @@ export class GraphicsRenderer {
           minX = Math.min(minX, cb.minX); minY = Math.min(minY, cb.minY)
           maxX = Math.max(maxX, cb.maxX); maxY = Math.max(maxY, cb.maxY)
         }
-        return { minX: minX + shp.x, minY: minY + shp.y, maxX: maxX + shp.x, maxY: maxY + shp.y }
+        return {
+          minX: Math.min(shp.x, minX + shp.x), minY: Math.min(shp.y, minY + shp.y),
+          maxX: Math.max(shp.x, maxX + shp.x), maxY: Math.max(shp.y, maxY + shp.y)
+        }
       }
       default:
         return { minX: 0, minY: 0, maxX: 0, maxY: 0 }
@@ -779,8 +807,9 @@ export class GraphicsRenderer {
   drawAllComponents(components: Component[], moveByX: number, moveByY: number, useSpatialIndex: boolean = false) {
     if (useSpatialIndex) {
       if (this._isQuadtreeDirty || !this._quadtree) this.rebuildQuadtree(components)
+      const viewport = this.getCameraWorldBounds()
       const candidates = this._quadtree
-        ? this._quadtree.query(this.getCameraWorldBounds())
+        ? this._quadtree.query(viewport)
         : components.map(c => ({ item: c, bbox: this.getComponentBoundaryBox(c) }))
       for (const { item: component, bbox } of candidates) {
         if (component.active == false) continue;
@@ -1486,7 +1515,10 @@ export class GraphicsRenderer {
       img.onerror = () => { this.imageCache.set(basedURL, 'ERROR') }
       img.onload = () => {
         this.imageCache.set(basedURL, img)
-        this.renderImage(x, y, img, opacity)
+        // Image dimensions change the spatial bounds; redraw through the
+        // normal frame path so the index and culling agree.
+        this._isQuadtreeDirty = true
+        this.markDirty('picture dimensions resolved')
       }
     } else {
       const cached = this.imageCache.get(basedURL)
@@ -1685,7 +1717,7 @@ export class GraphicsRenderer {
       }
     }
   }
-  moveComponent(index: number, x: number, y: number) {
+  moveComponent(index: number, x: number, y: number): boolean {
     if (index !== null && this.logicDisplay) {
       const component = this.logicDisplay.components[index]
 
@@ -1727,8 +1759,11 @@ export class GraphicsRenderer {
           arc.y3 += dy3
           break
       }
+      this.updateQuadtreeEntry(component)
       this.markDirty('Component moved');
+      return true
     }
+    return false
   }
   selectComponent(index: number) {
     this.selectedComponent = index
@@ -1796,9 +1831,16 @@ export class GraphicsRenderer {
     const intersections: Intersection[] = []
     const snapBox = this.snapTolerance / this.zoom
 
-    // First pass: collect all intersections
-    for (let i = this.logicDisplay.components.length - 1; i >= 0; i--) {
-      if (this.logicDisplay.components[i].active == false) continue
+    if (this._isQuadtreeDirty || !this._quadtree) this.rebuildQuadtree(this.logicDisplay.components)
+    const candidates = this._quadtree
+      ? this._quadtree.query({ minX: x - snapBox, minY: y - snapBox, maxX: x + snapBox, maxY: y + snapBox })
+      : this.logicDisplay.components.map(item => ({ item, bbox: this.getComponentBoundaryBox(item) }))
+
+    // Querying the spatial index reduces pointer work from O(all components)
+    // to O(nearby components). Keep original indexes for existing priorities.
+    for (const { item } of candidates) {
+      const i = this._componentIndexes.get(item)
+      if (i === undefined || item.active === false) continue
 
       // Calculate intersection data
       const intersection = this.calculateIntersection(i, x, y)
@@ -1959,6 +2001,7 @@ export class GraphicsRenderer {
       if (lastState) {
         this.logicDisplay!.components = []
         this.logicDisplay?.importJSON(JSON.parse(lastState), this.logicDisplay.components)
+        this.cleanUpBeforeImport()
         if (this.onComponentArrayChanged) {
           this.cleanLog('[renderer] array changed defined, firing')
           this.onComponentArrayChanged()
@@ -1988,6 +2031,7 @@ export class GraphicsRenderer {
         JSON.parse(state != null ? state : '[]'),
         this.logicDisplay.components
       )
+      this.cleanUpBeforeImport()
       if (this.onComponentArrayChanged) {
         this.cleanLog('[renderer] array changed defined, firing')
         this.onComponentArrayChanged()
@@ -2394,12 +2438,11 @@ export class GraphicsRenderer {
               this.findIntersectionWith(this.getCursorXLocal(), this.getCursorYLocal()) ?? null
           } else {
             if (this.logicDisplay) {
-              this.moveComponent(
+              if (this.moveComponent(
                 this.selectedComponent,
                 this.getCursorXLocal(),
                 this.getCursorYLocal()
-              )
-              this.saveState()
+              )) this._dragDidModify = true
             }
           }
         } else if (action === this.mouseAction.Down) {
@@ -2407,7 +2450,10 @@ export class GraphicsRenderer {
             this.selectedComponent = this.temporarySelectedComponent
           } else {
             this.selectedComponent = null
-            this.saveState()
+            if (this._dragDidModify) {
+              this.saveState(false)
+              this._dragDidModify = false
+            }
           }
         }
         this.tooltip = 'Move (click a node point to select, esc to cancel)'
@@ -2567,7 +2613,8 @@ export class GraphicsRenderer {
                     break
                 }
                 if (componentModified) {
-                  this.saveState()
+                  this._dragDidModify = true
+                  this.updateQuadtreeEntry(component)
                   // Notify the client that the component has changed
                   this.notifyComponentChange()
                 }
@@ -2645,6 +2692,12 @@ export class GraphicsRenderer {
             }
           }
         } else if (action == this.mouseAction.Up) {
+          if (this._dragDidModify) {
+            // Snapshot once per completed drag; serializing 100k components on
+            // every pointer event was the main source of render starvation.
+            this.saveState(false)
+            this._dragDidModify = false
+          }
           this.dragHandle = null
           this.displayRef!.style.cursor = 'url("../") 0 0, default'
           // After releasing the drag, ensure the state is up-to-date
@@ -2774,6 +2827,7 @@ export class GraphicsRenderer {
         `comp len: ${this.logicDisplay?.components.length}`,
         `quadtree obj: ${this._quadtree}`,
         `is QuadT dirty: ${this._isQuadtreeDirty}`,
+        `bulk import: ${this._bulkImportActive ? 'yes' : 'no'}`
       ];
 
       topLines.forEach((text, i) => {

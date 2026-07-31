@@ -34,6 +34,8 @@ export interface QuadTreeEntry<T> { bbox: QuadTreeBounds; item: T }
 export class QuadTree<T> {
   private entries: QuadTreeEntry<T>[] = [];
   private children: QuadTree<T>[] | null = null;
+  // Kept on the public/root instance so updates can visit only the old path.
+  private itemBounds: Map<T, QuadTreeBounds> = new Map();
   private isDegenerate = false; // set once we prove subdividing this node can't help
 
   constructor(
@@ -97,6 +99,45 @@ export class QuadTree<T> {
   insert(item: T, bbox: QuadTreeBounds): void {
     if (!this.intersects(this.bounds, bbox)) return;
     this.place(item, bbox);
+    this.itemBounds.set(item, bbox);
+  }
+
+  /**
+   * Replace an item's bounds without rebuilding the whole tree.  Returning
+   * false tells the caller that the new bounds no longer fit the root and a
+   * rebuild with a larger root is required.
+   */
+  update(item: T, bbox: QuadTreeBounds): boolean {
+    if (!this.intersects(this.bounds, bbox)) return false;
+    const oldBounds = this.itemBounds.get(item);
+    if (oldBounds) this.removeWithin(item, oldBounds);
+    this.place(item, bbox);
+    this.itemBounds.set(item, bbox);
+    return true;
+  }
+
+  remove(item: T): boolean {
+    const oldBounds = this.itemBounds.get(item);
+    if (!oldBounds) return false;
+    const removed = this.removeWithin(item, oldBounds);
+    if (removed) this.itemBounds.delete(item);
+    return removed;
+  }
+
+  private removeWithin(item: T, range: QuadTreeBounds): boolean {
+    let removed = false;
+    for (let i = this.entries.length - 1; i >= 0; i--) {
+      if (this.entries[i].item === item) {
+        this.entries.splice(i, 1);
+        removed = true;
+      }
+    }
+    if (this.children) {
+      for (const child of this.children) {
+        if (this.intersects(child.bounds, range)) removed = child.removeWithin(item, range) || removed;
+      }
+    }
+    return removed;
   }
 
   // Returns {item, bbox} pairs so callers reuse the bbox computed here
