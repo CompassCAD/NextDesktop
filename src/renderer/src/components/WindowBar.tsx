@@ -92,40 +92,14 @@ export default function WindowBar(): React.ReactElement {
   const [isMaximized, setMaximized] = useState<boolean>(false)
   const [zoom, setZoom] = useState<number>(1)
   const [menuOpened, setMenuOpened] = useState<boolean>(false)
-  const renderer = useRef<GraphicsRenderer | null>(null)
+  const { renderer } = useRenderer();
   window.electron.ipcRenderer.on('isMaximized', (_event, isMaximized: boolean) => {
     console.log(`[windowbar] isMaximized: ${isMaximized}`)
     setMaximized(isMaximized);
-    renderer.current?.markDirty('maximize state refresh (requires canvas resize)');
+    renderer?.markDirty('maximize state refresh (requires canvas resize)');
   })
   useEffect(() => {
-    const checkForRenderer = (): void => {
-      const rendererInstance = getRendererIfAvailable()
-      if (rendererInstance) {
-        console.log('[windowbar] Renderer instance found!', rendererInstance)
-        renderer.current = rendererInstance
-        // Set initial zoom value
-        setZoom(renderer.current.zoom)
-        // Setup the callback for future zoom updates
-        renderer.current.onZoomUpdate = () => {
-          if (renderer.current) {
-            setZoom(renderer.current.zoom)
-          }
-        }
-
-        // Once found, we don't need to check anymore
-        clearInterval(rendererInterval)
-      }
-    }
-    // Poll for the renderer instance every 100ms
-    const rendererInterval = setInterval(checkForRenderer, 100)
-    // Cleanup function to clear interval and callback on component unmount
-    return () => {
-      clearInterval(rendererInterval)
-      if (renderer.current) {
-        renderer.current.onZoomUpdate = null
-      }
-    }
+    if (!renderer) return;
   }, []) // Empty dependency array ensures this runs only once on mount
   window.addEventListener('click', (event) => {
     const target = event.target as HTMLElement
@@ -175,8 +149,9 @@ export default function WindowBar(): React.ReactElement {
       const fileContent = window.api.readFile(filePath);
       try {
         const parsedData = JSON.parse(fileContent);
-        renderer.current!.logicDisplay!.components = [];
-        renderer.current?.logicDisplay?.importJSON(parsedData, renderer.current.logicDisplay.components);
+        renderer!.logicDisplay!.components = [];
+        renderer?.cleanUpBeforeImport();
+        renderer!.logicDisplay?.importJSON(parsedData, renderer!.logicDisplay.components);
       } catch (e) {
         console.error('[windowbar] failed to open file: ', e);
       }
@@ -187,9 +162,9 @@ export default function WindowBar(): React.ReactElement {
   }
   const resetZoom = (): void => {
     console.log('resetting zoom!');
-    const zoomFactor: number = 1 / renderer.current!.zoom;
-    renderer.current?.setZoom(zoomFactor);
-    renderer.current?.markDirty('zoom reset');
+    const zoomFactor: number = 1 / renderer!.zoom;
+    renderer!.setZoom(zoomFactor);
+    renderer!.markDirty('zoom reset');
   }
   const spawnModal = (): void => {
     openModal('Counting', <ModalShit />)

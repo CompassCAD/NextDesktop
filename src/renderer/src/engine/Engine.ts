@@ -319,6 +319,10 @@ export class GraphicsRenderer {
     this.context?.closePath();
     this.context?.stroke();
   }
+  cleanUpBeforeImport() {
+    this._quadtree = null;
+    this._isQuadtreeDirty = true;
+  }
   refreshSelectionTools() {
     if (this.selectedComponent !== null && this.logicDisplay?.components[this.selectedComponent]) {
       // we gonna draw a line bois
@@ -775,10 +779,11 @@ export class GraphicsRenderer {
   drawAllComponents(components: Component[], moveByX: number, moveByY: number, useSpatialIndex: boolean = false) {
     if (useSpatialIndex) {
       if (this._isQuadtreeDirty || !this._quadtree) this.rebuildQuadtree(components)
-      const candidates = this._quadtree ? this._quadtree.query(this.getCameraWorldBounds()) : components
-      for (const component of candidates) {
+      const candidates = this._quadtree
+        ? this._quadtree.query(this.getCameraWorldBounds())
+        : components.map(c => ({ item: c, bbox: this.getComponentBoundaryBox(c) }))
+      for (const { item: component, bbox } of candidates) {
         if (component.active == false) continue;
-        const bbox = this.getComponentBoundaryBox(component)
         if (!this.isComponentInCamera(bbox)) continue;
         if (this.getScreenFootprintPx(component, bbox) < GraphicsRenderer.MIN_VISIBLE_PX) continue;
         this.drawComponent(component, moveByX, moveByY)
@@ -2744,163 +2749,47 @@ export class GraphicsRenderer {
     if (this._debugMode) {
       const defaultDebugTextSizeMultiplier = 2 * (1 / this.zoom);
       const debugTextX = -((this.displayWidth / 2) - 80);
-      this.drawRawFontobeneAtLocation(
-        debugTextX,
-        -(this.displayHeight / 2 - 40),
+      const drawDebugLine = (y, text) =>
+        this.drawRawFontobeneAtLocation(
+          debugTextX,
+          y,
+          text,
+          '#00ff00',
+          1.5,
+          defaultDebugTextSizeMultiplier,
+          100,
+          0,
+          'left',
+          'bottom'
+        );
+
+      const topLines = [
         `${fps} FPS`,
-        '#00ff00',
-        1.5,
-        defaultDebugTextSizeMultiplier,
-        100,
-        0,
-        'left',
-        'bottom'
-      );
-      this.drawRawFontobeneAtLocation(
-        debugTextX,
-        -(this.displayHeight / 2 - 60),
         `framestat: ${this._dirty ? 'dirty' : 'clean'}`,
-        '#00ff00',
-        1.5,
-        defaultDebugTextSizeMultiplier,
-        100,
-        0,
-        'left',
-        'bottom'
-      );
-      this.drawRawFontobeneAtLocation(
-        debugTextX,
-        -(this.displayHeight / 2 - 80),
         `OMC map: ${this.onModeChange != null ? 'OMC mapped' : 'OMC unmapped'}`,
-        '#00ff00',
-        1.5,
-        defaultDebugTextSizeMultiplier,
-        100,
-        0,
-        'left',
-        'bottom'
-      );
-      this.drawRawFontobeneAtLocation(
-        debugTextX,
-        -(this.displayHeight / 2 - 100),
         `raw cur: x=${this.getCursorXRaw()},y=${this.getCursorYRaw()}`,
-        '#00ff00',
-        1.5,
-        defaultDebugTextSizeMultiplier,
-        100,
-        0,
-        'left',
-        'bottom'
-      );
-      this.drawRawFontobeneAtLocation(
-        debugTextX,
-        -(this.displayHeight / 2 - 120),
         `off: x=${this.offsetX},y=${this.offsetY}`,
-        '#00ff00',
-        1.5,
-        defaultDebugTextSizeMultiplier,
-        100,
-        0,
-        'left',
-        'bottom'
-      );
-      this.drawRawFontobeneAtLocation(
-        debugTextX,
-        -(this.displayHeight / 2 - 140),
         `camout: x=${this.cOutX},y=${this.cOutY}`,
-        '#00ff00',
-        1.5,
-        defaultDebugTextSizeMultiplier,
-        100,
-        0,
-        'left',
-        'bottom'
-      );
-      this.drawRawFontobeneAtLocation(
-        debugTextX,
-        -(this.displayHeight / 2 - 160),
-        `hidpi: ${this.enableHighDPI ? 'yes' : 'no'}, dpr: ${window.devicePixelRatio}`,
-        '#00ff00',
-        1.5,
-        defaultDebugTextSizeMultiplier,
-        100,
-        0,
-        'left',
-        'bottom'
-      );
-      this.drawRawFontobeneAtLocation(
-        debugTextX,
-        -(this.displayHeight / 2 - 180),
+        `hidpi: ${this.enableHighDPI ? 'yes' : 'no'}, dpr: ${window.devicePixelRatio}, width: ${this.displayWidth}, height: ${this.displayHeight}`,
         `comp len: ${this.logicDisplay?.components.length}`,
-        '#00ff00',
-        1.5,
-        defaultDebugTextSizeMultiplier,
-        100,
-        0,
-        'left',
-        'bottom'
-      );
-      this.drawRawFontobeneAtLocation(
-        debugTextX,
-        -(this.displayHeight / 2 - 200),
         `quadtree obj: ${this._quadtree}`,
-        '#00ff00',
-        1.5,
-        defaultDebugTextSizeMultiplier,
-        100,
-        0,
-        'left',
-        'bottom'
-      );
-      this.drawRawFontobeneAtLocation(
-        debugTextX,
-        -(this.displayHeight / 2 - 220),
         `is QuadT dirty: ${this._isQuadtreeDirty}`,
-        '#00ff00',
-        1.5,
-        defaultDebugTextSizeMultiplier,
-        100,
-        0,
-        'left',
-        'bottom'
-      );
+      ];
+
+      topLines.forEach((text, i) => {
+        drawDebugLine(-(this.displayHeight / 2 - (40 + i * 20)), text);
+      });
+
       // Some warnings
-      this.drawRawFontobeneAtLocation(
-        debugTextX,
-        (this.displayHeight / 2 - 100),
+      const warningLines = [
         `CompassCAD NEXT engine debug mode`,
-        '#00ff00',
-        1.5,
-        defaultDebugTextSizeMultiplier,
-        100,
-        0,
-        'left',
-        'bottom'
-      );
-      this.drawRawFontobeneAtLocation(
-        debugTextX,
-        (this.displayHeight / 2 - 80),
         `to turn off, set this._debugMode to false`,
-        '#00ff00',
-        1.5,
-        defaultDebugTextSizeMultiplier,
-        100,
-        0,
-        'left',
-        'bottom'
-      );
-      this.drawRawFontobeneAtLocation(
-        debugTextX,
-        (this.displayHeight / 2 - 60),
         `ALWAYS TURN OFF BEFORE DEPLOYING TO PROD`,
-        '#00ff00',
-        1.5,
-        defaultDebugTextSizeMultiplier,
-        100,
-        0,
-        'left',
-        'bottom'
-      );
+      ];
+
+      warningLines.forEach((text, i) => {
+        drawDebugLine(this.displayHeight / 2 - (100 - i * 20), text);
+      });
     }
     if (this.recordingMode) {
       this.drawUserCursor(
