@@ -56,39 +56,6 @@ function RNGSpamGen(): React.ReactElement {
     </>
   )
 }
-
-function ModalShit(): React.ReactElement {
-  const [a, sa] = useState<number>(0)
-  return (
-    <>
-      <h1>Count together!</h1>
-      <p>State: {a}</p>
-      <button
-        onClick={() => {
-          if (a + 1 > 0) {
-            sa(a + 1)
-          } else {
-            console.log('count up clamped')
-          }
-        }}
-      >
-        count up
-      </button>
-      <button
-        onClick={() => {
-          if (a - 1 >= 0) {
-            sa(a - 1)
-          } else {
-            console.log('count down clamped')
-          }
-        }}
-      >
-        count down
-      </button>
-    </>
-  )
-}
-
 export default function WindowBar(): React.ReactElement {
   const [isMaximized, setMaximized] = useState<boolean>(false)
   const [zoom, setZoom] = useState<number>(1)
@@ -101,13 +68,16 @@ export default function WindowBar(): React.ReactElement {
   })
   useEffect(() => {
     if (!renderer) return;
+    renderer.onZoomUpdate = () => {
+      setZoom(renderer!.zoom);
+    }
   }, []) // Empty dependency array ensures this runs only once on mount
   window.addEventListener('click', (event) => {
     const target = event.target as HTMLElement
     if (!target.closest('#menu-opener') && menuOpened) {
       setMenuOpened(false)
     }
-  })
+  });
   window.onkeydown = (e: KeyboardEvent) => {
     if (e.key === 'Alt') {
       setMenuOpened(!menuOpened)
@@ -166,9 +136,6 @@ export default function WindowBar(): React.ReactElement {
     const zoomFactor: number = 1 / renderer!.zoom;
     renderer!.setZoom(zoomFactor);
     renderer!.markDirty('zoom reset');
-  }
-  const spawnModal = (): void => {
-    openModal('Counting', <ModalShit />)
   }
   const _internal_spawnRngModal = (): void => {
     openModal('RNG Gen', <RNGSpamGen />)
@@ -255,8 +222,7 @@ export default function WindowBar(): React.ReactElement {
           <MenuContext icon={SaveDesignIcon} title="Save Design" keyCombinations={['Ctrl', 'S']} />
           <MenuContext icon={SaveDesignAsIcon} title="Save as" keyCombinations={['Ctrl', 'Alt', 'S']} />
           <MenuContext icon={ExportIcon} title="Export to SVG" keyCombinations={['Ctrl', 'E']} />
-          <MenuContext onAction={spawnModal} title="TEST MODAL SHIT AHHAHAHAHA" />
-          <MenuContext onAction={_internal_spawnRngModal} title="RNG Design Generator" />
+          <MenuContext onAction={_internal_spawnRngModal} title="RNG Design Generator (choke test only)" />
           <MenuContext onAction={spawnAboutModal} title="About CompassCAD NEXT" />
         </MenuProvider>
       )}

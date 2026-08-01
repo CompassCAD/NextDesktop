@@ -127,7 +127,7 @@ export class GraphicsRenderer {
   private _isQuadtreeDirty: boolean = true;
   private _componentIndexes: Map<Component, number> = new Map();
   private _dragDidModify: boolean = false;
-  private _pathBatches: Map<string, { path: Path2D; strokeStyle: string; lineWidth: number }> = new Map();
+  private _pathBatches: Map<string, { path: Path2D; strokeStyle: string; lineWidth: number; lineJoin: CanvasLineJoin }> = new Map();
   private _WARNING_MAYLAGSHIT_debugMode: boolean;
 
   constructor(displayRef: HTMLCanvasElement | null, width: number, height: number) {
@@ -218,7 +218,7 @@ export class GraphicsRenderer {
     this._colorCache = new Map();
     this.fb = new FontobeneParser(AnsiFont)
     this._WARNING_MAYLAGSHIT_debugMode = false;
-    this._debugMode = true;
+    this._debugMode = import.meta.env.DEV;
   }
 
   private _lastCamX = NaN;
@@ -1100,40 +1100,34 @@ export class GraphicsRenderer {
     this.context!.lineWidth = 1
     this.context?.stroke()
   }
+  // drawPoint — hot path (thousands/frame). Was: beginPath(); arc(); stroke() per point.
   drawPoint(x: number, y: number, color: string, radius: number, opacity: number) {
-    if (this.context) {
-      if (this.selectedComponent != null || this.mode == this.modes.Move) {
-        this.context.lineWidth = 2
-        this.context.fillStyle = '#ffffff'
-        this.context.strokeStyle = this.selectedColor
-        this.context.beginPath()
-        this.context.rect((x + this.cOutX) * this.zoom - 4, (y + this.cOutY) * this.zoom - 4, 8, 8)
-        this.context.closePath()
-        this.context.fill()
-        this.context.stroke()
-      } else {
-        this.context.lineWidth = 3 * this.zoom
-        this.context.fillStyle = this.getColorWithOpacityFromCache(color, opacity);
-        this.context.strokeStyle = this.getColorWithOpacityFromCache(color, opacity);
-        this.context.beginPath()
-        this.context.arc(
-          (x + this.cOutX) * this.zoom,
-          (y + this.cOutY) * this.zoom,
-          2 * this.zoom,
-          0,
-          3.14159 * 2,
-          false
-        )
-        this.context.closePath()
-        this.context.stroke()
-      }
+    if (!this.context) return
+    if (this.selectedComponent != null || this.mode == this.modes.Move) {
+      // rare (0-1/frame) — immediate mode is fine here, leave as-is
+      this.context.lineWidth = 2
+      this.context.fillStyle = '#ffffff'
+      this.context.strokeStyle = this.selectedColor
+      this.context.beginPath()
+      this.context.rect((x + this.cOutX) * this.zoom - 4, (y + this.cOutY) * this.zoom - 4, 8, 8)
+      this.context.closePath()
+      this.context.fill()
+      this.context.stroke()
+      return
     }
+    const strokeStyle = this.getColorWithOpacityFromCache(color, opacity)
+    const path = this.getBatchPath(strokeStyle, 3 * this.zoom)
+    const cx = (x + this.cOutX) * this.zoom
+    const cy = (y + this.cOutY) * this.zoom
+    const r = 2 * this.zoom
+    path.moveTo(cx + r, cy) // avoid a stray connecting line into the shared subpath
+    path.arc(cx, cy, r, 0, Math.PI * 2, false)
   }
-  private getBatchPath(strokeStyle: string, lineWidth: number): Path2D {
-    const key = strokeStyle + '|' + lineWidth
+  private getBatchPath(strokeStyle: string, lineWidth: number, lineJoin: CanvasLineJoin = 'miter'): Path2D {
+    const key = strokeStyle + '|' + lineWidth + '|' + lineJoin
     let bucket = this._pathBatches.get(key)
     if (!bucket) {
-      bucket = { path: new Path2D(), strokeStyle, lineWidth }
+      bucket = { path: new Path2D(), strokeStyle, lineWidth, lineJoin }
       this._pathBatches.set(key, bucket)
     }
     return bucket.path
@@ -1142,9 +1136,10 @@ export class GraphicsRenderer {
   flushBatchedPaths(): void {
     if (!this.context || this._pathBatches.size === 0) return
     this.context.lineCap = 'round'
-    for (const { path, strokeStyle, lineWidth } of this._pathBatches.values()) {
+    for (const { path, strokeStyle, lineWidth, lineJoin } of this._pathBatches.values()) {
       this.context.strokeStyle = strokeStyle
       this.context.lineWidth = lineWidth
+      this.context.lineJoin = lineJoin
       this.context.stroke(path)
     }
     this._pathBatches.clear()
@@ -1444,63 +1439,31 @@ export class GraphicsRenderer {
       // Fontobene internal glyph lines move upwards/downwards based on targetFontScale
       const currentLineY = y + (lineIndex * (localDiff + (fontSize / 2)));
 
-      // 3. Setup Canvas Stroke styles for Fontobene vector rendering
-      this.context.strokeStyle = this.getColorWithOpacityFromCache(color, opacity);
-      this.context.lineWidth = (radius / 2) * this.zoom;
-      this.context.lineCap = 'round';
-      this.context.lineJoin = 'round';
-
-      this.context.beginPath();
+      const strokeStyle = this.getColorWithOpacityFromCache(color, opacity)
+      const path = this.getBatchPath(strokeStyle, (radius / 2) * this.zoom, 'round')
       for (const glyph of glyphs) {
         for (const cmd of glyph.commands) {
-          /*
-            CORRECTED MATH:
-            - Scale raw font data (cmd.x, cmd.y) strictly by the target font scale factor.
-            - Scale the global world anchor points (x, currentLineY) by this.zoom.
-            - Apply camera/screen view offset (cOutX, cOutY) scaled by this.zoom.
-          */
-          const px = (cmd.x * targetFontScale) + (this.cOutX + x - 5) * this.zoom;
-          const py = (-cmd.y * targetFontScale) + (this.cOutY + currentLineY) * this.zoom;
-
-          if (cmd.command === 'pendown') {
-            this.context.moveTo(px, py);
-          } else if (cmd.command === 'movepen') {
-            this.context.lineTo(px, py);
-          }
+          const px = (cmd.x * targetFontScale) + (this.cOutX + x - 5) * this.zoom
+          const py = (-cmd.y * targetFontScale) + (this.cOutY + currentLineY) * this.zoom
+          if (cmd.command === 'pendown') path.moveTo(px, py)
+          else if (cmd.command === 'movepen') path.lineTo(px, py)
         }
       }
       this.context.stroke();
     }
   }
-  drawArc(
-    x1: number,
-    y1: number,
-    x2: number,
-    y2: number,
-    x3: number,
-    y3: number,
-    color: string,
-    radius: number,
-    opacity: number
-  ) {
-    if (this.context) {
-      var firstAngle = this.getAngle(x1, y1, x2, y2)
-      var secondAngle = this.getAngle(x1, y1, x3, y3)
-
-      this.context.lineWidth = radius * this.zoom
-      this.context.fillStyle = this.getColorWithOpacityFromCache(color, opacity);
-      this.context.strokeStyle = this.getColorWithOpacityFromCache(color, opacity);
-      this.context.beginPath()
-      this.context.arc(
-        (x1 + this.cOutX) * this.zoom,
-        (y1 + this.cOutY) * this.zoom,
-        this.getDistance(x1, y1, x2, y2) * this.zoom,
-        firstAngle,
-        secondAngle,
-        false
-      )
-      this.context.stroke()
-    }
+  // drawArc — same fix, matches drawCircle's moveTo-before-arc pattern
+  drawArc(x1: number, y1: number, x2: number, y2: number, x3: number, y3: number, color: string, radius: number, opacity: number) {
+    if (!this.context) return
+    const firstAngle = this.getAngle(x1, y1, x2, y2)
+    const secondAngle = this.getAngle(x1, y1, x3, y3)
+    const strokeStyle = this.getColorWithOpacityFromCache(color, opacity)
+    const path = this.getBatchPath(strokeStyle, radius * this.zoom)
+    const cx = (x1 + this.cOutX) * this.zoom
+    const cy = (y1 + this.cOutY) * this.zoom
+    const r = this.getDistance(x1, y1, x2, y2) * this.zoom
+    path.moveTo(cx + r * Math.cos(firstAngle), cy + r * Math.sin(firstAngle))
+    path.arc(cx, cy, r, firstAngle, secondAngle, false)
   }
   drawShape(shape: Shape) {
     this.drawAllComponents(shape.components, shape.x, shape.y, false)
@@ -2839,7 +2802,7 @@ export class GraphicsRenderer {
       // Some warnings
       const warningLines = [
         `CompassCAD NEXT engine debug mode`,
-        `to turn off, set this._debugMode to false`,
+        `to turn off, exit yarn dev`,
         `ALWAYS TURN OFF BEFORE DEPLOYING TO PROD`,
       ];
 
