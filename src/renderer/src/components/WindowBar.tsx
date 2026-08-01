@@ -60,7 +60,10 @@ export default function WindowBar(): React.ReactElement {
   const [isMaximized, setMaximized] = useState<boolean>(false)
   const [zoom, setZoom] = useState<number>(1)
   const [menuOpened, setMenuOpened] = useState<boolean>(false)
+  const [focusedMenuIndex, setFocusedMenuIndex] = useState<number>(-1)
+  const [keyboardNav, setKeyboardNav] = useState<boolean>(false)
   const { renderer } = useRenderer();
+
   window.electron.ipcRenderer.on('isMaximized', (_event, isMaximized: boolean) => {
     console.log(`[windowbar] isMaximized: ${isMaximized}`)
     setMaximized(isMaximized);
@@ -68,9 +71,6 @@ export default function WindowBar(): React.ReactElement {
   })
   useEffect(() => {
     if (!renderer) return;
-    renderer.onZoomUpdate = () => {
-      setZoom(renderer!.zoom);
-    }
   }, []) // Empty dependency array ensures this runs only once on mount
   window.addEventListener('click', (event) => {
     const target = event.target as HTMLElement
@@ -78,29 +78,52 @@ export default function WindowBar(): React.ReactElement {
       setMenuOpened(false)
     }
   });
+  if (renderer) {
+    renderer.onZoomUpdate = () => {
+      setZoom(renderer!.zoom);
+    }
+  }
   window.onkeydown = (e: KeyboardEvent) => {
     if (e.key === 'Alt') {
-      setMenuOpened(!menuOpened)
+      const opening = !menuOpened
+      setMenuOpened(opening)
+      setFocusedMenuIndex(opening ? 0 : -1)
+      setKeyboardNav(opening)
       return
     }
 
     if (menuOpened) {
-      const menuItems = document.querySelectorAll(styles['menu-context'])
-      const currentFocus = document.activeElement
-      const currentIndex = Array.from(menuItems).indexOf(currentFocus as Element)
-
       if (e.key === 'ArrowUp') {
         e.preventDefault()
-        const prevIndex = currentIndex > 0 ? currentIndex - 1 : menuItems.length - 1
-        const element = menuItems[prevIndex] as HTMLElement
-        if (element) element.focus()
-        console.log('[windowbar] focusing prev element')
+        e.stopPropagation()
+        setKeyboardNav(true)
+        setFocusedMenuIndex((prev) => {
+          const count = menuItemDefs.length
+          if (prev <= 0) return count - 1
+          return prev - 1
+        })
       } else if (e.key === 'ArrowDown') {
         e.preventDefault()
-        const nextIndex = currentIndex < menuItems.length - 1 ? currentIndex + 1 : 0
-        const element = menuItems[nextIndex] as HTMLElement
-        if (element) element.focus()
-        console.log('[windowbar] focusing next element')
+        e.stopPropagation()
+        setKeyboardNav(true)
+        setFocusedMenuIndex((prev) => {
+          const count = menuItemDefs.length
+          if (prev < 0 || prev >= count - 1) return 0
+          return prev + 1
+        })
+      } else if (e.key === 'Enter') {
+        // Only act on Enter if focus got here via keyboard nav, not a mouse click
+        if (keyboardNav && focusedMenuIndex >= 0) {
+          e.preventDefault()
+          menuItemDefs[focusedMenuIndex]?.onAction?.()
+          setMenuOpened(false)
+          setFocusedMenuIndex(-1)
+          setKeyboardNav(false)
+        }
+      } else if (e.key === 'Escape') {
+        setMenuOpened(false)
+        setFocusedMenuIndex(-1)
+        setKeyboardNav(false)
       }
     }
   }
@@ -143,6 +166,28 @@ export default function WindowBar(): React.ReactElement {
   const spawnAboutModal = (): void => {
     openModal('About CompassCAD', <AboutModal />)
   }
+
+  interface MenuItemDef {
+    icon?: string
+    title: string
+    keyCombinations?: string[]
+    onAction?: () => void
+  }
+
+  const menuItemDefs: MenuItemDef[] = [
+    { icon: NewFileIcon, title: 'New File', keyCombinations: ['Ctrl', 'N'] },
+    { icon: OpenFileIcon, title: 'Open File', keyCombinations: ['Ctrl', 'O'], onAction: openFileAndParse },
+    { icon: BackupIcon, title: 'Open Backups' },
+    { icon: SaveDesignIcon, title: 'Save Design', keyCombinations: ['Ctrl', 'S'] },
+    { icon: SaveDesignAsIcon, title: 'Save as', keyCombinations: ['Ctrl', 'Alt', 'S'] },
+    { icon: ExportIcon, title: 'Export to SVG', keyCombinations: ['Ctrl', 'E'] },
+    ...(import.meta.env.DEV
+      ? [{ title: 'RNG Design Generator (choke test only)', onAction: _internal_spawnRngModal }]
+      : []),
+    { title: 'About CompassCAD NEXT', onAction: spawnAboutModal }
+  ]
+
+
   return (
     <>
       <div className={styles['window-bar']}>
@@ -175,6 +220,7 @@ export default function WindowBar(): React.ReactElement {
           <button
             className={styles['window-bar-button']}
             id="menu-opener"
+            style={{ outline: 'none' }}
             onClick={toggleMenuState}
           >
             <img src={MenuIcon} />
@@ -216,14 +262,20 @@ export default function WindowBar(): React.ReactElement {
       </div>
       {menuOpened && (
         <MenuProvider offset={{ x: 50, y: 50 }}>
-          <MenuContext icon={NewFileIcon} title="New File" keyCombinations={['Ctrl', 'N']} />
-          <MenuContext icon={ OpenFileIcon } onAction = {openFileAndParse} title="Open File" keyCombinations={['Ctrl', 'O']} />
-          <MenuContext icon={BackupIcon} title="Open Backups" />
-          <MenuContext icon={SaveDesignIcon} title="Save Design" keyCombinations={['Ctrl', 'S']} />
-          <MenuContext icon={SaveDesignAsIcon} title="Save as" keyCombinations={['Ctrl', 'Alt', 'S']} />
-          <MenuContext icon={ExportIcon} title="Export to SVG" keyCombinations={['Ctrl', 'E']} />
-          <MenuContext onAction={_internal_spawnRngModal} title="RNG Design Generator (choke test only)" />
-          <MenuContext onAction={spawnAboutModal} title="About CompassCAD NEXT" />
+          {menuItemDefs.map((item, index) => (
+            <MenuContext
+              key={index}
+              icon={item.icon}
+              title={item.title}
+              keyCombinations={item.keyCombinations}
+              onAction={item.onAction}
+              focused={keyboardNav && focusedMenuIndex === index}
+              onHover={() => {
+                setKeyboardNav(false)
+                setFocusedMenuIndex(-1) // clear keyboard focus entirely, hand off to :hover
+              }}
+            />
+          ))}
         </MenuProvider>
       )}
     </>

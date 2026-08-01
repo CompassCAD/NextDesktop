@@ -14,11 +14,21 @@ interface MenuContextProps {
   title: string
   keyCombinations?: string[]
   onAction?: () => void
+  focused?: boolean
+  onHover?: () => void
 }
 
 export function MenuContext(props: MenuContextProps): React.ReactElement {
   return (
-    <div className={styles['menu-context']} onClick={props.onAction}>
+    <div
+      className={
+        styles['menu-context'] +
+        (props.focused ? ' ' + styles['menu-context-focused'] : '')
+      }
+      onClick={props.onAction}
+      onMouseEnter={props.onHover}
+      tabIndex={0}
+    >
       <img src={props.icon ? props.icon : UnknownIcon}></img>
       <span className={styles['menu-context-title']}>{props.title}</span>
       <div className={styles['menu-context-key-combinations']}>
