@@ -2056,11 +2056,13 @@ export class GraphicsRenderer {
     this.cleanLog('attempting to delete component');
     this.cleanLog('selected component: ' + this.temporarySelectedComponent);
     if (this.temporarySelectedComponent != null) {
+      if (this.logicDisplay!.components.length == 0) this._quadtree = null;
       this.logicDisplay!.components.splice(this.temporarySelectedComponent, 1);
       this.markDirty('component deleted');
       this.temporarySelectedComponent = null;
       this.selectedComponent = null;      // <-- added: was left stale, pointing at a
       this.lastSelectedComponent = null;  // <-- shifted/invalid index after splice,
+      this._isQuadtreeDirty = true;
       this.displayRef?.focus();           //     which threw inside refreshSelectionTools()
     } else {                              //     and got silently swallowed, freezing the canvas
       this.cleanLog('not deleting, nothing was selected');
