@@ -287,8 +287,21 @@
 .inspector-header button:hover {
     background-color: var(--secondary);
 }
+.inspector-content {
+  display: flex;
+  height: calc(100% - 85px);
+  overflow-x: hidden;
+}
+.inspector-bottom {
+  align-self: flex-end;
+  display: flex;
+  flex-wrap: nowrap;
+  gap: 10px;
+  margin-top: 10px;
+  width: 100%;
+}
 .workflow-toolbar::-webkit-scrollbar {
-    display: none;
+  display: none;
 }
 .toolbar-button {
     padding: 5px;

@@ -22,6 +22,12 @@ export default function Inspector() {
           <img src={CollapseToRight} width={20} />
         </button>
       </div>
+      <div className={styles['inspector-content']}>
+        <p>yay nothing</p>
+      </div>
+      <div className={styles['inspector-bottom']}>
+        <p>a</p>
+      </div>
     </div>
   )
 }
