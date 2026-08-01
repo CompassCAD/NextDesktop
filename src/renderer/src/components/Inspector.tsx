@@ -6,8 +6,14 @@ import CollapseToRight from '../assets/icons/collapse-right.svg'
 import PropertiesIcon from '../assets/icons/properties.svg';
 import HierarchyIcon from '../assets/icons/hierarchy.svg';
 
+enum InspectorState {
+  Properties,
+  Hierarchy
+}
+
 export default function Inspector() {
   const { renderer } = useRenderer();
+  const [inspectorState, setInspectorState] = useState<InspectorState>(InspectorState.Properties);
   const [isHidden, setIsHidden] = useState<boolean>(false);
   useEffect(() => {
     if (!renderer) return;
@@ -26,14 +32,25 @@ export default function Inspector() {
         </button>
       </div>
       <div className={styles['inspector-content']}>
-        <p>yay nothing</p>
+        {inspectorState == InspectorState.Properties && (
+          <p>properties</p>
+        )}
+        {inspectorState == InspectorState.Hierarchy && (
+          <p>hierarchy</p>
+        )}
       </div>
       <div className={styles['inspector-bottom']}>
-        <button>
+        <button
+          className={inspectorState == InspectorState.Properties ? styles['active'] : ''}
+          onClick={() => setInspectorState(InspectorState.Properties)}
+        >
           <img width={18} src={PropertiesIcon} />
           <span>Properties</span>
         </button>
-        <button>
+        <button
+          className={inspectorState == InspectorState.Hierarchy ? styles['active'] : ''}
+          onClick={() => setInspectorState(InspectorState.Hierarchy)}
+         >
           <img width={18} src={HierarchyIcon} />
           <span>Hierarchy</span>
         </button>

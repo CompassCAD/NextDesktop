@@ -70,6 +70,9 @@
 * {
   margin: 0;
 }
+*:focus-visible {
+    outline: 1.5px solid var(--theme);
+}
 body {
   background: var(--primary-background);
   color: var(--text);
