@@ -6,7 +6,7 @@ declare global {
     electron: ElectronAPI
     api: {
       readFile: (filePath: string) => string,
-      writeFile: (filePath: string, data: string) => void,
+      writeFile: (filePath: string, data: string | Uint8Array | Buffer) => void,
       showOpenFileDialog: (options?: OpenDialogSyncOptions) => Promise<string[] | undefined>,
       forwardLog: (args: any) => void
     },
