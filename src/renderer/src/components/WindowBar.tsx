@@ -133,7 +133,7 @@ export default function WindowBar(): React.ReactElement {
       filters: [
         { name: 'CompassCAD NEXT Files', extensions: ['cnext'] },
         { name: 'CompassCAD Files', extensions: ['ccad'] },
-        { name: 'QroCAD Files', extensions: [".qrocad", ".qrocad2"] }
+        { name: 'QroCAD Files', extensions: ["qrocad", "qrocad2"] }
       ]
     });
     console.log(file);
