@@ -9,3 +9,4 @@ CompassCAD NEXT (*stylized as CompassCAD NEXT*), also known as **Project Sova**,
 - `src/main`: Main Electron entry code
 - `src/preload`: Preload that exposes certain functions to `renderer/`
 - `src/renderer`: The app frontend
+- `src/renderer/src/engine/fontobene`: The Fontobene stuffs, and the earliest version of Derakuma!
