@@ -3,6 +3,9 @@ import { useEffect, useState } from 'react'
 import { useRenderer } from './RendererContextProvider'
 import CollapseToRight from '../assets/icons/collapse-right.svg'
 
+import PropertiesIcon from '../assets/icons/properties.svg';
+import HierarchyIcon from '../assets/icons/hierarchy.svg';
+
 export default function Inspector() {
   const { renderer } = useRenderer();
   const [isHidden, setIsHidden] = useState<boolean>(false);
@@ -26,7 +29,14 @@ export default function Inspector() {
         <p>yay nothing</p>
       </div>
       <div className={styles['inspector-bottom']}>
-        <p>a</p>
+        <button>
+          <img width={18} src={PropertiesIcon} />
+          <span>Properties</span>
+        </button>
+        <button>
+          <img width={18} src={HierarchyIcon} />
+          <span>Hierarchy</span>
+        </button>
       </div>
     </div>
   )
