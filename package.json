@@ -3,7 +3,7 @@
   "version": "2.2.0",
   "description": "the next generation CAD software",
   "main": "./out/main/index.js",
-  "license": "AGPL-3.0-only",
+  "license": "GPL-2.0-only",
   "author": "zeankun <zean@zeankun.dev>",
   "homepage": "https://compass-cad.web.app",
   "scripts": {
