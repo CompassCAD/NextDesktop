@@ -10,3 +10,8 @@ CompassCAD NEXT (*stylized as CompassCAD NEXT*), also known as **Project Sova**,
 - `src/preload`: Preload that exposes certain functions to `renderer/`
 - `src/renderer`: The app frontend
 - `src/renderer/src/engine/fontobene`: The Fontobene stuffs, and the earliest version of Derakuma!
+
+## 📑 Credits and thanks
+- The [original CompassCAD](https://github.com/zeankundev/CompassCAD)
+- [WebCAD5](https://github.com/hacklabcz/WebCAD5) as the basis for this engine (+ optimizations from NEXT)
+- Cadence Allegro's `ansifont.dat`, now sitting nicely as `ansifont.bene`.
