@@ -25,6 +25,7 @@ import Nwse2 from '../assets/cursors/nwse-2.svg'
 import { callTextPrompt } from '@renderer/components/TextPrompt'
 import FontobeneParser from './fontobene/FontobeneParser'
 import AnsiFont from './fontobene/ansifont.bene'
+import AnsiCJK from './fontobene/ansifont-beta-cjk.bene'
 import * as Types from '../engine/Types'
 import { LRUCache, QuadTree, QuadTreeBounds } from './CacheDatas'
 
@@ -129,6 +130,7 @@ export class GraphicsRenderer {
   private _dragDidModify: boolean = false;
   private _pathBatches: Map<string, { path: Path2D; strokeStyle: string; lineWidth: number; lineJoin: CanvasLineJoin }> = new Map();
   private _WARNING_MAYLAGSHIT_debugMode: boolean;
+  private _test_enableExperimentalCJK: boolean;
 
   constructor(displayRef: HTMLCanvasElement | null, width: number, height: number) {
     this.modes = {
@@ -216,7 +218,8 @@ export class GraphicsRenderer {
     this.lastSelectedComponent = null
     this._dirty = false;
     this._colorCache = new Map();
-    this.fb = new FontobeneParser(AnsiFont)
+    this._test_enableExperimentalCJK = true;
+    this.fb = new FontobeneParser(this._test_enableExperimentalCJK ? AnsiCJK : AnsiFont);
     this._WARNING_MAYLAGSHIT_debugMode = false;
     this._debugMode = import.meta.env.DEV;
   }
@@ -229,7 +232,7 @@ export class GraphicsRenderer {
   private _glyphLayoutCache: Map<string, any> = new Map();
   private _textWidthCache: Map<string, number> = new Map();
   private _bulkImportActive: boolean = false;
-  private static readonly MIN_VISIBLE_PX = 1
+  private static readonly MIN_VISIBLE_PX = 1;
 
   private _measureTextCached(text: string): number {
     let w = this._textWidthCache.get(text)
