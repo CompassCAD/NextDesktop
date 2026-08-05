@@ -3049,7 +3049,7 @@ export class GraphicsRenderer {
 
       // Some warnings
       const warningLines = [
-        `CompassCAD NEXT engine debug mode [copy debug info]  [copy image of canvas]  [hide top]`,
+        `CompassCAD NEXT engine debug mode [copy debug info]  [copy image of canvas]  [${this._enableTopDebugStrings ? 'hide' : 'show'} top]`,
         `to turn off, exit development mode.`,
         `to test w/o debugs, enter Simulate Production Mode.`,
       ];
