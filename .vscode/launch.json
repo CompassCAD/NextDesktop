@@ -12,6 +12,16 @@
       "outputCapture": "std"
     },
     {
+      "type": "node",
+      "request": "launch",
+      "name": "Simulate Production Build",
+      "cwd": "${workspaceFolder}",
+      "program": "${workspaceFolder}/node_modules/electron-vite/bin/electron-vite.js",
+      "args": [ "preview", "--", "--inspect=9229", "--remote-debugging-port=9222" ],
+      "console": "internalConsole",
+      "outputCapture": "std"
+    },
+    {
       "type": "pwa-chrome",
       "request": "attach",
       "name": "Attach to Renderer",
