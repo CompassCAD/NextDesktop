@@ -122,6 +122,7 @@ export class GraphicsRenderer {
   dragHandle: string | null
   lastSelectedComponent: number | null;
   _debugMode: boolean;
+  private _debugHitboxes: Map<string, { start: Vector2, end: Vector2, func?: () => void }> = new Map();
   private _dirty: boolean;
   private _colorCache: Map<string, string>;
   private _quadtree: QuadTree<Component> | null = null;
@@ -233,6 +234,33 @@ export class GraphicsRenderer {
   private _textWidthCache: Map<string, number> = new Map();
   private _bulkImportActive: boolean = false;
   private static readonly MIN_VISIBLE_PX = 1;
+  private static SPACE_PER_CHAR = 1.8;
+  private _charSpacingOverrides: Map<string, number> = new Map();
+  private _spacedGlyphLayoutCache: Map<string, any[]> = new Map();
+  private _drawHitBoxBoundaries: boolean = false;
+  private _isEnteringHitbox: boolean = false;
+  private _enableTopDebugStrings: boolean = true;
+  private _copiableDebugStrings: string = "";
+  private _debugToast: {
+    text: string
+    color: string
+    expiresAt: number
+    durationMs: number
+  } | null = null
+
+  private showDebugToast(
+    text: string,
+    options?: { color?: string; durationMs?: number }
+  ) {
+    const durationMs = options?.durationMs ?? 1200
+    this._debugToast = {
+      text,
+      color: options?.color ?? '#ffff00',
+      durationMs,
+      expiresAt: performance.now() + durationMs
+    }
+    this.markDirty(`debug toast: ${text}`)
+  }
 
   private _measureTextCached(text: string): number {
     let w = this._textWidthCache.get(text)
@@ -241,6 +269,49 @@ export class GraphicsRenderer {
       this._textWidthCache.set(text, w)
     }
     return w
+  }
+
+  private appendDebugHitboxes(id: string, start: Vector2, end: Vector2, func?: () => void) {
+    // Store hitboxes in the renderer's canonical coordinate system:
+    // - canvas-local pixel coordinates (origin = top-left) are converted into
+    // - centered canvas coordinates (origin = canvas center) which is what the
+    //   drawing context uses after the translate(this.displayWidth/2, this.displayHeight/2).
+    const canvas = this.displayRef;
+    let startCanvas = { x: start.x, y: start.y };
+    let endCanvas = { x: end.x, y: end.y };
+
+    if (canvas) {
+      const rect = canvas.getBoundingClientRect();
+
+      // Heuristic to accept either canvas-local coords (0..width) or page/client coords.
+      const inCanvasSpace = (p: Vector2) =>
+        p.x >= 0 && p.x <= rect.width && p.y >= 0 && p.y <= rect.height;
+      const inClientSpace = (p: Vector2) =>
+        p.x >= rect.left && p.x <= rect.right && p.y >= rect.top && p.y <= rect.bottom;
+
+      if (inClientSpace(start) || inClientSpace(end)) {
+        // Convert from page/client coordinates -> canvas-local
+        startCanvas = { x: start.x - rect.left, y: start.y - rect.top };
+        endCanvas = { x: end.x - rect.left, y: end.y - rect.top };
+      } else if (!inCanvasSpace(start) || !inCanvasSpace(end)) {
+        // If neither heuristic matches, still attempt to interpret them as canvas-local
+        // but clamp to bounds to avoid wildly off-screen values.
+        startCanvas = {
+          x: Math.max(0, Math.min(rect.width, startCanvas.x)),
+          y: Math.max(0, Math.min(rect.height, startCanvas.y))
+        };
+        endCanvas = {
+          x: Math.max(0, Math.min(rect.width, endCanvas.x)),
+          y: Math.max(0, Math.min(rect.height, endCanvas.y))
+        };
+      }
+    }
+
+    // Convert to centered coords (matching the translated drawing origin).
+    const centeredStart = { x: startCanvas.x - this.displayWidth / 2, y: startCanvas.y - this.displayHeight / 2 };
+    const centeredEnd = { x: endCanvas.x - this.displayWidth / 2, y: endCanvas.y - this.displayHeight / 2 };
+
+    this._debugHitboxes.set(id, { start: centeredStart, end: centeredEnd, func });
   }
 
   private _internal_getGlyphsInASynchronousManner(text: string): any[] | null {
@@ -252,6 +323,45 @@ export class GraphicsRenderer {
     this._glyphLayoutCache.set(text, glyphs);
     this.markDirty('resolving glyph layout: ' + text);
     return glyphs; // was `return null` — caller got nothing on the first lookup
+  }
+
+  setIndividualCharacterSpacing(char: string, spacing: number) {
+    this._charSpacingOverrides.set(char, spacing)
+    this._spacedGlyphLayoutCache.clear()
+    this.markDirty(`character spacing updated for '${char}'`)
+  }
+
+  setSentencedCharacterSpacings(spacings: Record<string, number>) {
+    for (const [char, spacing] of Object.entries(spacings)) {
+      this._charSpacingOverrides.set(char, spacing)
+    }
+    this._spacedGlyphLayoutCache.clear()
+    this.markDirty('bulk character spacing update')
+  }
+
+  private _getCharSpacing(char: string): number {
+    return this._charSpacingOverrides.get(char) ?? GraphicsRenderer.SPACE_PER_CHAR
+  }
+
+  private _getSpacedGlyphs(text: string): any[] | null {
+    const cached = this._spacedGlyphLayoutCache.get(text)
+    if (cached) return cached
+
+    const rawGlyphs = this._internal_getGlyphsInASynchronousManner(text)
+    if (!rawGlyphs) return null
+
+    let cumulativeOffset = 0
+    const spaced = rawGlyphs.map((glyph, i) => {
+      const shifted = {
+        ...glyph,
+        commands: glyph.commands.map((cmd: any) => ({ ...cmd, x: cmd.x + cumulativeOffset }))
+      }
+      cumulativeOffset += this._getCharSpacing(text[i] ?? '')
+      return shifted
+    })
+
+    this._spacedGlyphLayoutCache.set(text, spaced)
+    return spaced
   }
 
   markDirty(why: string = 'unknown') {
@@ -286,6 +396,86 @@ export class GraphicsRenderer {
     return true
   }
 
+  private drawDebugToast() {
+    if (!this._debugToast) return
+
+    const now = performance.now()
+    if (now >= this._debugToast.expiresAt) {
+      this._debugToast = null
+      return
+    }
+
+    // Keep repainting while visible
+    this.markDirty('debug toast active')
+
+    const remaining = this._debugToast.expiresAt - now
+    const fadeMs = Math.min(250, this._debugToast.durationMs * 0.25)
+    const opacity01 = remaining < fadeMs ? remaining / fadeMs : 1
+
+    // drawRawFontobeneAtLocation expects opacity in 0..100 in your codebase
+    const opacity = Math.max(0, Math.min(100, Math.round(opacity01 * 100)))
+
+    this.drawRawFontobeneAtLocation(
+      0, // center of translated canvas
+      0,
+      this._debugToast.text,
+      this._debugToast.color,
+      2.2,
+      1.5,
+      opacity,
+      0,
+      'center',
+      'middle'
+    )
+  }
+
+  copyDebugStrings = async () => {
+    try {
+      await navigator.clipboard.writeText(this._copiableDebugStrings)
+      this.showDebugToast('Copied debug info to clipboard', {
+        color: '#ffff00',
+        durationMs: 1500
+      })
+    } catch (err) {
+      this.showDebugToast('Failed to copy debug info', {
+        color: '#ff6666',
+        durationMs: 1800
+      })
+      this.cleanLog(err)
+    }
+  }
+
+  copyDebugSnapshot = () => {
+    this.displayRef?.toBlob(async (blob) => {
+      if (!blob) {
+        this.showDebugToast('CANNOT generate blob', {
+          color: '#ff6666',
+          durationMs: 1800
+        });
+        return; // important: stop here
+      }
+
+      try {
+        const item = new ClipboardItem({ "image/png": blob });
+        await navigator.clipboard.write([item]);
+
+        this.showDebugToast('Copied canvas snapshot to clipboard', {
+          color: '#ffff00',
+          durationMs: 1500
+        });
+      } catch (e) {
+        this.showDebugToast(`CANNOT copy (why: ${String(e)})`, {
+          color: '#ff6666',
+          durationMs: 1800
+        });
+      }
+    }, "image/png");
+  };
+
+  toggleTopDebug = () => {
+    this._enableTopDebugStrings = !this._enableTopDebugStrings;
+  }
+
   async start() {
     this.markDirty('Engine started');
     this.logicDisplay = new LogicDisplay()
@@ -299,6 +489,9 @@ export class GraphicsRenderer {
       throw new Error('Failed to get 2D context')
     }
     this.context = context;
+    this.appendDebugHitboxes('test', { x: 560, y: 552 }, { x: 775, y: 580 }, this.copyDebugStrings);
+    this.appendDebugHitboxes('test1', { x: 800, y: 552 }, { x: 1090, y: 580 }, this.copyDebugSnapshot);
+    this.appendDebugHitboxes('test2', { x: 1110, y: 552 }, { x: 1235, y: 580 }, this.toggleTopDebug);
     await this.fb.ready();
     this.markDirty('after font load');
   }
@@ -1221,7 +1414,7 @@ export class GraphicsRenderer {
     this.cleanLog(`Getting text for ${text}`);
     if (!this.context) return;
 
-    const glyphs = this._internal_getGlyphsInASynchronousManner(text);
+    const glyphs = this._getSpacedGlyphs(text)
     if (!glyphs) return;
 
     const targetColor = color || '#E9E9E9';
@@ -1322,7 +1515,7 @@ export class GraphicsRenderer {
 
     // Fetch text layout metrics directly from Fontobene helper method execution
     const targetFontSize = 2 * this.zoom;
-    const glyphs = this._internal_getGlyphsInASynchronousManner(distanceText);
+    const glyphs = this._getSpacedGlyphs(distanceText)
     if (!glyphs) return;
     let maxX = 0;
     if (glyphs && glyphs.length > 0) {
@@ -1437,7 +1630,7 @@ export class GraphicsRenderer {
     for (let lineIndex = 0; lineIndex < lines.length; lineIndex++) {
       const lineText = lines[lineIndex];
       // drawLabel — was: const glyphs = await this.fb.layoutText(lineText);
-      const glyphs = this._internal_getGlyphsInASynchronousManner(lineText);
+      const glyphs = this._getSpacedGlyphs(lineText)
       if (!glyphs) continue;
 
       // Calculate the absolute baseline Y coordinate for this specific line
@@ -2036,6 +2229,14 @@ export class GraphicsRenderer {
       this.cleanLog('not deleting, nothing was selected');
     }
   }
+
+  private toDebugCanvasSpace(v: Vector2): Vector2 {
+    return {
+      x: v.x - this.displayWidth / 2,
+      y: v.y - this.displayHeight / 2
+    };
+  }
+
   async performAction(e: MouseEvent, action: number) {
     switch (this.mode) {
       case this.modes.AddPoint:
@@ -2693,6 +2894,42 @@ export class GraphicsRenderer {
         break
     }
     this.markDirty('Action performed: ' + action + ' in mode: ' + this.mode)
+    // Misc event clickers in debug mode
+    // Misc event clickers in debug mode
+    if (this._debugMode) {
+      // Compute cursor position relative to the canvas and then to centered coords
+      const canvas = this.displayRef;
+      if (canvas) {
+        const rect = canvas.getBoundingClientRect();
+        const cursorCanvasX = this.mouse!.cursorXGlobal - rect.left;
+        const cursorCanvasY = this.mouse!.cursorYGlobal - rect.top;
+        const cursor = {
+          x: cursorCanvasX - this.displayWidth / 2,
+          y: cursorCanvasY - this.displayHeight / 2
+        };
+
+        let enteredAny = false;
+        for (const { start, end, func } of this._debugHitboxes.values()) {
+          const minX = Math.min(start.x, end.x), maxX = Math.max(start.x, end.x);
+          const minY = Math.min(start.y, end.y), maxY = Math.max(start.y, end.y);
+
+          if (cursor.x >= minX && cursor.x <= maxX && cursor.y >= minY && cursor.y <= maxY) {
+            enteredAny = true;
+            if (action === this.mouseAction.Move) {
+              this._isEnteringHitbox = true;
+            } else if (action === this.mouseAction.Down) {
+              if (func) {
+                func();
+              }
+            }
+            // continue checking other hitboxes so multiple overlapping ones can trigger if needed
+          }
+        }
+        if (!enteredAny) {
+          this._isEnteringHitbox = false;
+        }
+      }
+    }
   }
   setZoom(zoomFactor: number) {
     var newZoom = this.zoom * zoomFactor
@@ -2770,6 +3007,8 @@ export class GraphicsRenderer {
     this.drawRules()
     this.refreshSelectionTools()
     if (this._debugMode) {
+      this._copiableDebugStrings = "";
+      this.drawDebugToast();
       const defaultDebugTextSizeMultiplier = 2 * (1 / this.zoom);
       const debugTextX = -((this.displayWidth / 2) - 80);
       const drawDebugLine = (y, text) =>
@@ -2787,7 +3026,7 @@ export class GraphicsRenderer {
         );
 
       const topLines = [
-        `${fps} FPS`,
+        `${fps} FPS (avg since last render time ${((1 / fps) * 1000).toFixed(2)} ms)`,
         `framestat: ${this._dirty ? 'dirty' : 'clean'}`,
         `OMC map: ${this.onModeChange != null ? 'OMC mapped' : 'OMC unmapped'}`,
         `raw cur: x=${this.getCursorXRaw()},y=${this.getCursorYRaw()}`,
@@ -2797,18 +3036,22 @@ export class GraphicsRenderer {
         `comp len: ${this.logicDisplay?.components.length}`,
         `quadtree obj: ${this._quadtree}`,
         `is QuadT dirty: ${this._isQuadtreeDirty}`,
-        `bulk import: ${this._bulkImportActive ? 'yes' : 'no'}`
+        `bulk import: ${this._bulkImportActive ? 'yes' : 'no'}`,
+        `entering hitbox: ${this._isEnteringHitbox ? 'yes': 'no'}`
       ];
 
-      topLines.forEach((text, i) => {
-        drawDebugLine(-(this.displayHeight / 2 - (40 + i * 20)), text);
-      });
+      if (this._enableTopDebugStrings) {
+        topLines.forEach((text, i) => {
+          drawDebugLine(-(this.displayHeight / 2 - (40 + i * 20)), text);
+          this._copiableDebugStrings += `${text}\n`;
+        });
+      }
 
       // Some warnings
       const warningLines = [
-        `CompassCAD NEXT engine debug mode`,
-        `to turn off, exit yarn dev`,
-        `ALWAYS TURN OFF BEFORE DEPLOYING TO PROD`,
+        `CompassCAD NEXT engine debug mode [copy debug info]  [copy image of canvas]  [hide top]`,
+        `to turn off, exit development mode.`,
+        `to test w/o debugs, enter Simulate Production Mode.`,
       ];
 
       warningLines.forEach((text, i) => {
@@ -2820,6 +3063,20 @@ export class GraphicsRenderer {
         (this.getCursorXRaw() + this.camX) * this.zoom,
         (this.getCursorYRaw() + this.camY) * this.zoom
       )
+    }
+    if (this._drawHitBoxBoundaries) {
+      // Hitboxes were normalized to centered canvas coordinates in appendDebugHitboxes.
+      this.context!.strokeStyle = '#ff0000';
+      for (const { start, end } of this._debugHitboxes.values()) {
+        const x = Math.min(start.x, end.x);
+        const y = Math.min(start.y, end.y);
+        const w = Math.abs(end.x - start.x);
+        const h = Math.abs(end.y - start.y);
+        // Because the drawing context has already been translated to the canvas center
+        // (see clearGrid() -> translate(this.displayWidth/2, this.displayHeight/2)),
+        // we can draw using centered coordinates directly.
+        this.context?.strokeRect(x, y, w, h);
+      }
     }
     //this.fontobeneTest();
     // Useful event handlers for later on ;)
