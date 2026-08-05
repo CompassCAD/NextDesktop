@@ -23,7 +23,7 @@ import NavigateIdleCursor from '../assets/cursors/navigate-idle.svg'
 import Nwse1 from '../assets/cursors/nwse-1.svg'
 import Nwse2 from '../assets/cursors/nwse-2.svg'
 import { callTextPrompt } from '@renderer/components/TextPrompt'
-import FontobeneParser from './fontobene/FontobeneParser'
+import { DerakumaParser } from './fontobene/Derakuma'
 import AnsiFont from './fontobene/ansifont.bene'
 import AnsiCJK from './fontobene/ansifont-beta-cjk.bene'
 import * as Types from '../engine/Types'
@@ -118,7 +118,7 @@ export class GraphicsRenderer {
   keyboard: KeyboardHandler | null
   mouse: MouseHandler | null
   handles: HandleProperties[]
-  fb: FontobeneParser
+  fb: DerakumaParser
   dragHandle: string | null
   lastSelectedComponent: number | null;
   _debugMode: boolean;
@@ -219,7 +219,7 @@ export class GraphicsRenderer {
     this._dirty = false;
     this._colorCache = new Map();
     this._test_enableExperimentalCJK = true;
-    this.fb = new FontobeneParser(this._test_enableExperimentalCJK ? AnsiCJK : AnsiFont);
+    this.fb = new DerakumaParser(this._test_enableExperimentalCJK ? AnsiCJK : AnsiFont);
     this._WARNING_MAYLAGSHIT_debugMode = false;
     this._debugMode = import.meta.env.DEV;
   }
@@ -247,11 +247,11 @@ export class GraphicsRenderer {
     const cached = this._glyphLayoutCache.get(text);
     if (cached) return cached;
 
-    this.fb.layoutText(text).then(glyphs => {
-      this._glyphLayoutCache.set(text, glyphs);
-      this.markDirty('resolving glyph layout: ' + text);
-    })
-    return null;
+    const glyphs = this.fb.getSentenceCommand(text);
+    this.cleanLog(glyphs);
+    this._glyphLayoutCache.set(text, glyphs);
+    this.markDirty('resolving glyph layout: ' + text);
+    return glyphs; // was `return null` — caller got nothing on the first lookup
   }
 
   markDirty(why: string = 'unknown') {
@@ -286,7 +286,7 @@ export class GraphicsRenderer {
     return true
   }
 
-  start() {
+  async start() {
     this.markDirty('Engine started');
     this.logicDisplay = new LogicDisplay()
     this.zoom = 1
@@ -299,6 +299,8 @@ export class GraphicsRenderer {
       throw new Error('Failed to get 2D context')
     }
     this.context = context;
+    await this.fb.ready();
+    this.markDirty('after font load');
   }
   scaleForHighDPI(dpi: number) {
     if (this.enableHighDPI) {
@@ -1281,9 +1283,9 @@ export class GraphicsRenderer {
         const px = (cmd.x * targetFontSize) + localOffsetX;
         const py = (-cmd.y * targetFontSize) + localOffsetY;
 
-        if (cmd.command === 'pendown') {
+        if (cmd.command === 'PD') {
           this.context.moveTo(px, py);
-        } else if (cmd.command === 'movepen') {
+        } else if (cmd.command === 'MP') {
           this.context.lineTo(px, py);
         }
       }
@@ -1448,8 +1450,8 @@ export class GraphicsRenderer {
         for (const cmd of glyph.commands) {
           const px = (cmd.x * targetFontScale) + (this.cOutX + x - 5) * this.zoom
           const py = (-cmd.y * targetFontScale) + (this.cOutY + currentLineY) * this.zoom
-          if (cmd.command === 'pendown') path.moveTo(px, py)
-          else if (cmd.command === 'movepen') path.lineTo(px, py)
+          if (cmd.command === 'PD') path.moveTo(px, py)
+          else if (cmd.command === 'MP') path.lineTo(px, py)
         }
       }
       this.context.stroke();
@@ -2740,9 +2742,9 @@ export class GraphicsRenderer {
       for (const cmd of glyph.commands) {
         const px = (cmd.x + this.cOutX) * this.zoom;
         const py = (-cmd.y + this.cOutY) * this.zoom;
-        if (cmd.command === 'pendown') this.context?.moveTo(px, py);
-        else if (cmd.command === 'movepen') this.context?.lineTo(px, py);
-        // 'penup' intentionally does nothing — it's just a marker
+        if (cmd.command === 'PD') this.context?.moveTo(px, py);
+        else if (cmd.command === 'MP') this.context?.lineTo(px, py);
+        // 'PU' intentionally does nothing — it's just a marker
       }
     }
     this.context?.stroke();
