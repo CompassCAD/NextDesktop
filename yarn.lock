@@ -1714,6 +1714,11 @@ delegates@^1.0.0:
   resolved "https://registry.yarnpkg.com/delegates/-/delegates-1.0.0.tgz#84c6e159b81904fdca59a0ef44cd870d31250f9a"
   integrity sha512-bd2L678uiWATM6m5Z1VzNCErI3jiGzt6HGY8OVICs40JQq/HALfbyNJmp0UDakEY4pMMaN0Ly5om/B1VI/+xfQ==
 
+derakuma@0.6.7:
+  version "0.6.7"
+  resolved "https://registry.yarnpkg.com/derakuma/-/derakuma-0.6.7.tgz#5c8d752bf263cf763517835e4d7a84b859440269"
+  integrity sha512-Cgx7rvLsFxaVHDVIyKKKmoUELjtUIaY8URFp8IecTwz4ys15EVBncBUW0RQU8t4HEkqK4rAyOxbXylskxHTHXw==
+
 detect-libc@^2.0.1:
   version "2.0.4"
   resolved "https://registry.yarnpkg.com/detect-libc/-/detect-libc-2.0.4.tgz#f04715b8ba815e53b4d8109655b6508a6865a7e8"
@@ -1855,10 +1860,10 @@ electron-vite@^4.0.0:
     magic-string "^0.30.17"
     picocolors "^1.1.1"
 
-electron@^43.1.0:
-  version "43.1.0"
-  resolved "https://registry.yarnpkg.com/electron/-/electron-43.1.0.tgz#bf620e32bb919009f564a05804f6e89477ef9ec2"
-  integrity sha512-DPfxpQLd4NL3BJ8DBxYAfmLUKKesF5Rx9dQx5FyczAP8bhOPScjHE48GArVeXu68LlAainuwkmQTQvdZwpIIAQ==
+electron@^43.3.0:
+  version "43.3.0"
+  resolved "https://registry.yarnpkg.com/electron/-/electron-43.3.0.tgz#8517cbd9402db97e7267cded33c0129fff3bdcb8"
+  integrity sha512-nLlvu0WFjftWsSaTkV2B/c4NDuJBspTyXu8vKSQ6vLvFt8uG3NgN49LLKcXddwX0GqVvAQDhciWp+4xOdTdhew==
   dependencies:
     "@electron-internal/extract-zip" "^1.0.1"
     "@electron/get" "^5.0.0"

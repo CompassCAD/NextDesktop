@@ -1373,7 +1373,7 @@ export class GraphicsRenderer {
       distanceText,
       color,
       targetFontSize,
-      radius,             // stroke thickness scale 
+      radius,             // stroke thickness scale
       opacity,
       angle,
       'center',                       // Horizontal alignment style

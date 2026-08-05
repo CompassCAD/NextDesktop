@@ -24,6 +24,7 @@
   "dependencies": {
     "@electron-toolkit/preload": "^3.0.2",
     "@electron-toolkit/utils": "^4.0.0",
+    "derakuma": "0.6.7",
     "electron-updater": "^6.3.9"
   },
   "devDependencies": {
@@ -34,7 +35,7 @@
     "@types/react": "^19.1.8",
     "@types/react-dom": "^19.1.6",
     "@vitejs/plugin-react": "^4.7.0",
-    "electron": "^43.1.0",
+    "electron": "^43.3.0",
     "electron-builder": "^25.1.8",
     "electron-vite": "^4.0.0",
     "eslint": "^9.31.0",
