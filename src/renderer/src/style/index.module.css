@@ -324,6 +324,10 @@
 .inspector-bottom button:hover, .inspector-bottom button.active {
     background-color: var(--secondary);
 }
+.hierarchy-componentlist {
+  display: flex;
+  flex-direction: column;
+}
 .workflow-toolbar::-webkit-scrollbar {
   display: none;
 }

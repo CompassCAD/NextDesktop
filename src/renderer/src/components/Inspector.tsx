@@ -1,5 +1,5 @@
 import styles from '../style/index.module.css'
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useMemo } from 'react'
 import { useRenderer } from './RendererContextProvider'
 import CollapseToRight from '../assets/icons/collapse-right.svg'
 
@@ -42,23 +42,46 @@ export default function Inspector() {
   const [inspectorState, setInspectorState] = useState<InspectorState>(InspectorState.Properties);
   const [component, setComponent] = useState<AnyComponent | null>(null);
   const [isHidden, setIsHidden] = useState<boolean>(false);
+  const [hierarchySearch, setHierarchySearch] = useState<string>("");
+  const [componentArray, setComponentArray] = useState<Component[]>([]);
+
+  const filteredComponents = useMemo(() => {
+    return componentArray
+      .map((comp, i) => {
+        return { comp: comp, originalIndex: i };
+      })
+      .filter((item) => {
+        return item.comp.name
+          .toLowerCase()
+          .includes(hierarchySearch.toLowerCase());
+      });
+  }, [componentArray, hierarchySearch]);
 
   useEffect(() => {
     if (!renderer) return;
   }, []);
 
-  if (renderer) {
+  useEffect(() => {
+    if (!renderer) return;
+
     renderer.onComponentChangeCallback = () => {
-      console.log('component changes, fired from Inspector');
       setComponent(null);
       if (renderer.selectedComponent != null) {
-        const selected = renderer.logicDisplay?.components[renderer!.selectedComponent];
+        const selected = renderer.logicDisplay?.components[renderer.selectedComponent];
         setComponent(selected as AnyComponent);
-      } else {
-        setComponent(null);
       }
-    }
-  }
+    };
+
+    renderer.onComponentArrayChanged = () => {
+      setComponentArray([...(renderer.logicDisplay?.components ?? [])]);
+    };
+
+    // optional cleanup
+    return () => {
+      renderer.onComponentChangeCallback = undefined as any;
+      renderer.onComponentArrayChanged = undefined as any;
+    };
+  }, [renderer]);
 
   const handleComponentChange = (key: string, value: string | boolean | number): void => {
     setComponent((prev) => {
@@ -73,6 +96,7 @@ export default function Inspector() {
         renderer.logicDisplay.components[renderer.selectedComponent] = finalComponent;
         renderer.markDirty('instantaneous component change');
         renderer.saveState();
+        setComponentArray(renderer.logicDisplay.components);
       }
       return finalComponent;
     })
@@ -105,7 +129,19 @@ export default function Inspector() {
           )
         )}
         {inspectorState == InspectorState.Hierarchy && (
-          <p>hierarchy</p>
+          filteredComponents.length > 0 ? (
+            <div className={styles['hierarchy-componentlist']}>
+              {filteredComponents.map(({ comp, originalIndex }) => (
+                <div key={originalIndex}>
+                  {comp.name} (index {originalIndex})
+                </div>
+              ))}
+            </div>
+          ) : (
+            <>
+              <p>nope</p>
+            </>
+          )
         )}
       </div>
       <div className={styles['inspector-bottom']}>
