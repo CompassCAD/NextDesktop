@@ -18,14 +18,17 @@ export class Component {
     color: string;
     radius: number;
     opacity: number;
+    rotation: number;
     name: string;
+    
     constructor() {
         this.active = true;
         this.type = 0;
         this.color = '#ffffff';
-        this.radius = 2;
+        this.radius = 1;
         this.opacity = 100;
         this.name = 'Component';
+        this.rotation = 0;
     }
     setActive?(state: boolean) {
         this.active = state;
@@ -40,7 +43,7 @@ export class Point extends Component {
     y: number;
     constructor(x: number, y: number, opacity?: number, name?: string) {
         super();
-        this.radius = 5;
+        this.radius = 3;
         this.type = componentTypes.point;
         this.x = x != undefined ? x : 0;
         this.y = y != undefined ? y : 0;
@@ -141,10 +144,10 @@ export class Label extends Point {
         name?: string
     ) {
         super(x, y);
+        this.fontSize = fontSize != undefined ? fontSize : 18;
         this.type = componentTypes.label;
         this.color = '#eeeeee';
         this.text = text != undefined ? text : 'Sample text';
-        this.fontSize = fontSize != undefined ? fontSize : 18;
         this.opacity = opacity != undefined ? opacity : 100;
         this.name = name != undefined ? name : 'Label';
     }

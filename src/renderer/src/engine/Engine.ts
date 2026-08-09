@@ -1589,7 +1589,7 @@ export class GraphicsRenderer {
       { x: 5, y: 5 }
     ];
 
-    this.drawUnscalableStrokeVector(markerVectors, x, y);
+    // this.drawUnscalableStrokeVector(markerVectors, x, y);
 
     // 1. Handle zoom adjustments
     let localZoom = this.zoom;
@@ -1601,17 +1601,15 @@ export class GraphicsRenderer {
       y += localDiff;
     }
 
-    // Calculate the target font scale factor
     const targetFontScale = (fontSize / 10) * localZoom;
+    const condensedWidthScale = 0.75;
 
-    // 2. Split text and handle the 24-character row limit wrapping
     const maxLength = 24;
     let tmpLength = 0;
     let tmpText = '';
     const arrText = text.split(' ');
     const lines: string[] = [];
 
-    // Break text into clean line arrays first to avoid mixed coordinate mutations
     for (let i = 0; i < arrText.length; i++) {
       tmpLength += arrText[i].length + 1;
       tmpText += (tmpText ? ' ' : '') + arrText[i];
@@ -1626,10 +1624,8 @@ export class GraphicsRenderer {
       lines.push(tmpText);
     }
 
-    // 4. Render each line sequentially with absolute line offsets
     for (let lineIndex = 0; lineIndex < lines.length; lineIndex++) {
       const lineText = lines[lineIndex];
-      // drawLabel — was: const glyphs = await this.fb.layoutText(lineText);
       const glyphs = this._getSpacedGlyphs(lineText)
       if (!glyphs) continue;
 
@@ -1639,9 +1635,10 @@ export class GraphicsRenderer {
 
       const strokeStyle = this.getColorWithOpacityFromCache(color, opacity)
       const path = this.getBatchPath(strokeStyle, (radius / 2) * this.zoom, 'round')
+
       for (const glyph of glyphs) {
         for (const cmd of glyph.commands) {
-          const px = (cmd.x * targetFontScale) + (this.cOutX + x - 5) * this.zoom
+          const px = (cmd.x * targetFontScale * condensedWidthScale) + (this.cOutX + x - 5) * this.zoom
           const py = (-cmd.y * targetFontScale) + (this.cOutY + currentLineY) * this.zoom
           if (cmd.command === 'PD') path.moveTo(px, py)
           else if (cmd.command === 'MP') path.lineTo(px, py)
@@ -2228,6 +2225,19 @@ export class GraphicsRenderer {
       this.saveState();
     } else {                              //     and got silently swallowed, freezing the canvas
       this.cleanLog('not deleting, nothing was selected');
+    }
+  }
+
+  rotateSelected() {
+    if (this.logicDisplay && this.selectedComponent != null) {
+      const component = this.logicDisplay.components[this.selectedComponent];
+      const targetedRotation = component.rotation + 90;
+      if (targetedRotation > 360) {
+        const cleanedRotation = targetedRotation - 360;
+        component.rotation = cleanedRotation;
+      } else {
+        component.rotation = targetedRotation;
+      }
     }
   }
 

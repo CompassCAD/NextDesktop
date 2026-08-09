@@ -84,7 +84,8 @@ export interface CompassLabelJSON {
   active: true
   type: number
   name: string
-  opacity: number
+  opacity: number,
+  radius?: number | 2,
   x: number
   y: number
   text: string
@@ -194,7 +195,7 @@ function resolveOptions(opts: DxfToCompassCadOptions): ResolvedOptions {
   return {
     scale: opts.scale ?? 1,
     flipY: opts.flipY ?? false,
-    groupByLayer: opts.groupByLayer ?? true,
+    groupByLayer: opts.groupByLayer ?? false, // changed default true -> false
     includeLayers: opts.includeLayers ? new Set(opts.includeLayers.map((l) => l.toUpperCase())) : null,
     excludeLayers: new Set((opts.excludeLayers ?? []).map((l) => l.toUpperCase())),
     strokeRadius: opts.strokeRadius ?? 2,
@@ -530,8 +531,12 @@ class Converter {
     const height = getFieldNum(entity, 40, 2.5)
     const text = getField(entity, 1) ?? ''
     const p = this.point(x, y)
+    const fontSize = Math.max(1, Math.round(height * this.opts.scale * this.opts.textScale))
+    // Make label radius proportionate to font size: smaller fonts get thinner radius, larger fonts get thicker
+    const radius = Math.max(0.2, fontSize * 0.15)
     return {
       active: true,
+      radius,
       type: componentTypes.label,
       name: this.name('Label'),
       opacity: 100,
@@ -542,7 +547,7 @@ class Converter {
       // 50) is intentionally dropped rather than silently misrendered.
       // Text height is a length like any other DXF coordinate, so it gets
       // the same `scale` treatment as geometry — no extra multiplier.
-      fontSize: Math.max(1, Math.round(height * this.opts.scale * this.opts.textScale))
+      fontSize
     }
   }
 

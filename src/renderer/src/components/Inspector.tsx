@@ -3,6 +3,17 @@ import { useEffect, useState, useMemo } from 'react'
 import { useRenderer } from './RendererContextProvider'
 import CollapseToRight from '../assets/icons/collapse-right.svg'
 
+import PointSymbol from "../assets/icons/point.svg";
+import LineSymbol from "../assets/icons/line.svg";
+import CircleSymbol from "../assets/icons/circle.svg";
+import ArcSymbol from "../assets/icons/arc.svg";
+import RectSymbol from "../assets/icons/rectangle.svg";
+import PicSymbol from "../assets/icons/image.svg";
+import PolySymbol from "../assets/icons/polygon.svg";
+import BoundboxSymbol from "../assets/icons/boundbox.svg";
+import LabelSymbol from "../assets/icons/text.svg";
+import RulerSymbol from "../assets/icons/measure.svg";
+
 import PropertiesIcon from '../assets/icons/properties.svg';
 import HierarchyIcon from '../assets/icons/hierarchy.svg';
 import {
@@ -38,6 +49,22 @@ type AnyComponent =
   | Polygon;
 
 export default function Inspector() {
+
+  const componentImages: string[] = [
+    "",
+    PointSymbol,
+    LineSymbol,
+    CircleSymbol,
+    RectSymbol,
+    ArcSymbol,
+    RulerSymbol,
+    LabelSymbol,
+    PicSymbol,
+    PicSymbol,
+    PolySymbol,
+    BoundboxSymbol,
+  ];
+
   const { renderer } = useRenderer();
   const [inspectorState, setInspectorState] = useState<InspectorState>(InspectorState.Properties);
   const [component, setComponent] = useState<AnyComponent | null>(null);
@@ -133,7 +160,7 @@ export default function Inspector() {
             <div className={styles['hierarchy-componentlist']}>
               {filteredComponents.map(({ comp, originalIndex }) => (
                 <div key={originalIndex}>
-                  {comp.name} (index {originalIndex})
+                  <img src={componentImages[comp.type]} /> {comp.name}
                 </div>
               ))}
             </div>
