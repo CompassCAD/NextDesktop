@@ -20,42 +20,9 @@ import { MenuProvider, MenuContext } from './MenuProvider'
 import { openModal } from './ModalProvider'
 import AboutModal from './submodals/AboutModal'
 import { useRenderer } from './RendererContextProvider'
-import { Component } from '../engine/Component'
-import { generateRandomDesign } from '../utils/RandomGenerator'
+import { InternalUtilities, RNGSpamGen } from '../utils/InternalStuffs'
+import { openFileAndParse } from '../utils/FileImporter'
 
-function RNGSpamGen(): React.ReactElement {
-  interface RNGGen {
-    seed: number;
-    count: number;
-  }
-
-  const { renderer } = useRenderer();
-  const [rngGeneratorConfig, setRngGeneratorConfig] = useState<RNGGen>({ seed: 0, count: 1 });
-
-  const generateDesign = () => {
-    renderer!.logicDisplay!.components = [];
-    const design: Component[] = generateRandomDesign(Math.random(), rngGeneratorConfig.count, {
-      bounds: {
-        minX: -5000,
-        minY: -5000,
-        maxX: 5000,
-        maxY: 5000
-      }
-    });
-    renderer!.logicDisplay?.importJSON(design, renderer!.logicDisplay!.components);
-    renderer?.flagQuadtreeDirty(true);
-    renderer?.markDirty('RNG import hehe');
-  }
-
-  return (
-    <>
-      <input type="number" min="0" max="2147483647" defaultValue="15" placeholder="Count" onChange={(e) => setRngGeneratorConfig({ ...rngGeneratorConfig, count: parseInt(e.target.value) })} />
-      <br />
-      <button onClick={generateDesign}>Generate</button>
-      <button onClick={() => renderer?.logicDisplay?.uhh_yeah()}>Test stuffs (?)</button>
-    </>
-  )
-}
 export default function WindowBar(): React.ReactElement {
   const [isMaximized, setMaximized] = useState<boolean>(false)
   const [zoom, setZoom] = useState<number>(1)
@@ -127,30 +94,6 @@ export default function WindowBar(): React.ReactElement {
       }
     }
   }
-  const openFileAndParse = async (): Promise<void> => {
-    const file = await window.api.showOpenFileDialog({
-      title: 'Open a CompassCAD file',
-      filters: [
-        { name: 'CompassCAD NEXT Files', extensions: ['cnext'] },
-        { name: 'CompassCAD Files', extensions: ['ccad'] },
-        { name: 'QroCAD Files', extensions: ["qrocad", "qrocad2"] }
-      ]
-    });
-    console.log(file);
-    if (file != undefined) {
-      console.log(file);
-      const filePath = file[0];
-      const fileContent = window.api.readFile(filePath);
-      try {
-        const parsedData = JSON.parse(fileContent);
-        renderer!.logicDisplay!.components = [];
-        renderer?.cleanUpBeforeImport();
-        renderer!.logicDisplay?.importJSON(parsedData, renderer!.logicDisplay.components);
-      } catch (e) {
-        console.error('[windowbar] failed to open file: ', e);
-      }
-    }
-  }
   const toggleMenuState = (): void => {
     setMenuOpened(!menuOpened)
   }
@@ -162,6 +105,9 @@ export default function WindowBar(): React.ReactElement {
   }
   const _internal_spawnRngModal = (): void => {
     openModal('RNG Gen', <RNGSpamGen />)
+  }
+  const _internal_spawnInternalUtilsModal = (): void => {
+    openModal('Internal utils (developer only)', <InternalUtilities />)
   }
   const spawnAboutModal = (): void => {
     openModal('About CompassCAD', <AboutModal />)
@@ -176,13 +122,16 @@ export default function WindowBar(): React.ReactElement {
 
   const menuItemDefs: MenuItemDef[] = [
     { icon: NewFileIcon, title: 'New File', keyCombinations: ['Ctrl', 'N'] },
-    { icon: OpenFileIcon, title: 'Open File', keyCombinations: ['Ctrl', 'O'], onAction: openFileAndParse },
+    { icon: OpenFileIcon, title: 'Open File', keyCombinations: ['Ctrl', 'O'], onAction: () => openFileAndParse(renderer!) },
     { icon: BackupIcon, title: 'Open Backups' },
     { icon: SaveDesignIcon, title: 'Save Design', keyCombinations: ['Ctrl', 'S'] },
     { icon: SaveDesignAsIcon, title: 'Save as', keyCombinations: ['Ctrl', 'Alt', 'S'] },
     { icon: ExportIcon, title: 'Export to SVG', keyCombinations: ['Ctrl', 'E'] },
     ...(import.meta.env.DEV
-      ? [{ title: 'RNG Design Generator (choke test only)', onAction: _internal_spawnRngModal }]
+      ? [
+        { title: 'RNG Design Generator (choke test only)', onAction: _internal_spawnRngModal },
+        { title: 'Internal utilities only', onAction: _internal_spawnInternalUtilsModal },
+      ]
       : []),
     { title: 'About CompassCAD NEXT', onAction: spawnAboutModal }
   ]
