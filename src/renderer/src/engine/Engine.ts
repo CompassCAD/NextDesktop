@@ -2225,6 +2225,7 @@ export class GraphicsRenderer {
       this.lastSelectedComponent = null;  // <-- shifted/invalid index after splice,
       this._isQuadtreeDirty = true;
       this.displayRef?.focus();           //     which threw inside refreshSelectionTools()
+      this.saveState();
     } else {                              //     and got silently swallowed, freezing the canvas
       this.cleanLog('not deleting, nothing was selected');
     }
@@ -2235,6 +2236,11 @@ export class GraphicsRenderer {
       x: v.x - this.displayWidth / 2,
       y: v.y - this.displayHeight / 2
     };
+  }
+
+  postDoAfterComponentImport() {
+    if (this.onComponentArrayChanged) this.onComponentArrayChanged();
+    this.markDirty('refresh after component import');
   }
 
   async performAction(e: MouseEvent, action: number) {
