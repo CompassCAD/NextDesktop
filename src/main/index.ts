@@ -93,8 +93,8 @@ ipcMain.on('close', () => mainWindow?.close())
 ipcMain.handle('dialog:showOpenFileDialog', (_event, options) => {
   return dialog.showOpenDialogSync(options)
 })
-ipcMain.on('renderer-log', (_event, args) => {
-  console.log('[renderer]', ...args);
+ipcMain.on('renderer-log', (_event, source, args) => {
+  console.log(`[${source}]`, ...args);
 });
 
 // In this file you can include the rest of your app's specific main process

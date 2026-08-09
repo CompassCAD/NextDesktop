@@ -9,7 +9,7 @@ const api = {
   writeFile: (filePath: string, data: string | Uint8Array | Buffer) => fs.writeFileSync(filePath, data, 'utf-8'),
   showOpenFileDialog: (options: OpenDialogSyncOptions) =>
     ipcRenderer.invoke('dialog:showOpenFileDialog', options),
-  forwardLog: (args: any) => ipcRenderer.send('renderer-log', args)
+  forwardLog: (source: any, args: any) => ipcRenderer.send('renderer-log', source, args)
 }
 
 // Use `contextBridge` APIs to expose Electron APIs to
