@@ -45,12 +45,21 @@ console.log = (...args: any[]) => {
   originalLog(...args);
   try {
     const safeArgs = args.map((a) => safeSerialize(a));
-    window.api.forwardLog(safeArgs);
+
+    // Get the call stack
+    const stack = new Error().stack || '';
+    const callerLine = stack.split('\n')[2] || 'unknown';
+
+    // Extract and trim the file path
+    // Matches patterns like: (http://localhost:5173/src/App.tsx:46:15)
+    const match = callerLine.match(/\/src\/(.+?):(\d+):(\d+)/);
+    const source = match ? `${match[1]}:${match[2]}:${match[3]}` : callerLine.trim();
+
+    window.api.forwardLog(source, safeArgs);
   } catch (err) {
     originalLog('[forwardLog failed]', err);
   }
 };
-
 createRoot(document.getElementById('root')!).render(
   <App />
 )
