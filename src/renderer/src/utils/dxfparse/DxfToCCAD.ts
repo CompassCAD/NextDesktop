@@ -151,10 +151,26 @@ export interface DxfToCompassCadOptions {
   strokeRadius?: number
   /** Outline color used for generated Polygon components. Default: '#000000'. */
   polygonStrokeColor?: string
+  /**
+   * Render closed polylines as filled `Polygon`s instead of an unfilled
+   * chain of `Line`s. Off by default — see the note above `convertPolyline`
+   * for why closed != filled in most mechanical/EDA DXF exports (board
+   * outlines, courtyards, silkscreen boxes are all closed but not filled).
+   */
+  fillClosedPolylines?: boolean
   /** How many straight segments approximate each bulged (arc) polyline edge. Default: 12. */
   bulgeSegments?: number
   /** Tolerance (in DXF units, pre-scale) for detecting axis-aligned rectangles. Default: 1e-4. */
   rectangleEpsilon?: number
+  /**
+   * Extra multiplier applied on top of `scale` just for TEXT height ->
+   * Label.fontSize. DXF text height and CompassCAD's fontSize aren't
+   * necessarily the same "unit" visually (fontSize is a canvas font-size in
+   * px, independent of zoom/scale the way geometry coordinates are), so
+   * this is separated out for easy tuning without touching geometry scale.
+   * Default: 1 (fontSize = round(height * scale)).
+   */
+  textScale?: number
   /** Called for every entity/feature this converter can't represent, instead of throwing. */
   onWarning?: (message: string, entity?: DxfEntity) => void
 }
@@ -167,8 +183,10 @@ interface ResolvedOptions {
   excludeLayers: Set<string>
   strokeRadius: number
   polygonStrokeColor: string
+  fillClosedPolylines: boolean
   bulgeSegments: number
   rectangleEpsilon: number
+  textScale: number
   onWarning: (message: string, entity?: DxfEntity) => void
 }
 
@@ -181,8 +199,10 @@ function resolveOptions(opts: DxfToCompassCadOptions): ResolvedOptions {
     excludeLayers: new Set((opts.excludeLayers ?? []).map((l) => l.toUpperCase())),
     strokeRadius: opts.strokeRadius ?? 2,
     polygonStrokeColor: opts.polygonStrokeColor ?? '#000000',
+    fillClosedPolylines: opts.fillClosedPolylines ?? false,
     bulgeSegments: opts.bulgeSegments ?? 12,
     rectangleEpsilon: opts.rectangleEpsilon ?? 1e-4,
+    textScale: opts.textScale ?? 1,
     onWarning: opts.onWarning ?? (() => { })
   }
 }
@@ -465,12 +485,23 @@ class Converter {
       }
     }
 
-    // Everything else: tessellate (bulges become straight segments) then
-    // either fill as a Polygon (closed) or draw as a chain of Lines (open).
+    // Everything else: tessellate (bulges become straight segments) into a
+    // flat point list, then either draw it as a closed/open chain of Lines
+    // or, if explicitly requested, fill it as a Polygon.
+    //
+    // Filling is opt-in rather than automatic-on-closed on purpose. In DXF
+    // exports from mechanical/EDA tools, a *closed* polyline almost always
+    // means "this is a boundary" (a board outline, a courtyard, a silkscreen
+    // outline) — not "fill this region solid". Actual filled regions are
+    // drawn with SOLID/HATCH entities, which are separate from LWPOLYLINE.
+    // Defaulting closed polylines to Polygon paints a solid color across
+    // the whole shape (e.g. the entire board outline), which is virtually
+    // never what's wanted. Pass `fillClosedPolylines: true` if your DXF
+    // genuinely uses closed polylines as filled regions.
     const flatPoints = tessellatePolyline(vertices, closed, this.opts.bulgeSegments)
     const transformed = flatPoints.map((p) => this.point(p.x, p.y))
 
-    if (closed) {
+    if (closed && this.opts.fillClosedPolylines) {
       return {
         active: true,
         type: componentTypes.polygon,
@@ -484,8 +515,11 @@ class Converter {
     }
 
     const lines: CompassComponentJSON[] = []
-    for (let i = 0; i < transformed.length - 1; i++) {
-      lines.push(this.lineBetween(transformed[i], transformed[i + 1], color))
+    const segmentCount = closed ? transformed.length : transformed.length - 1
+    for (let i = 0; i < segmentCount; i++) {
+      const a = transformed[i]
+      const b = transformed[(i + 1) % transformed.length]
+      lines.push(this.lineBetween(a, b, color))
     }
     return lines
   }
@@ -506,7 +540,9 @@ class Converter {
       text,
       // CompassCAD's Label has no rotation field, so DXF TEXT rotation (group
       // 50) is intentionally dropped rather than silently misrendered.
-      fontSize: Math.max(1, Math.round(height * this.opts.scale * 10))
+      // Text height is a length like any other DXF coordinate, so it gets
+      // the same `scale` treatment as geometry — no extra multiplier.
+      fontSize: Math.max(1, Math.round(height * this.opts.scale * this.opts.textScale))
     }
   }
 
