@@ -81,7 +81,8 @@ export class LogicDisplay {
                         line.radius,
                         line.color,
                         line.opacity,
-                        line.name
+                        line.name,
+                        line.rotation
                     ));
                     break;
                 case componentTypes.rectangle:
@@ -94,7 +95,8 @@ export class LogicDisplay {
                         rect.radius,
                         rect.color,
                         rect.opacity,
-                        rect.name
+                        rect.name,
+                        rect.rotation
                     ));
                     break;
                 case componentTypes.circle:
@@ -107,7 +109,8 @@ export class LogicDisplay {
                         circle.radius,
                         circle.color,
                         circle.opacity,
-                        circle.name
+                        circle.name,
+                        circle.rotation
                     ));
                     break;
                 case componentTypes.arc:
@@ -122,7 +125,8 @@ export class LogicDisplay {
                         arc.radius,
                         arc.color,
                         arc.opacity,
-                        arc.name
+                        arc.name,
+                        arc.rotation
                     ));
                     break;
                 case componentTypes.measure:
@@ -134,7 +138,8 @@ export class LogicDisplay {
                         measure.y2,
                         measure.radius,
                         measure.opacity,
-                        measure.name
+                        measure.name,
+                        measure.rotation
                     ));
                     break;
                 case componentTypes.label:
@@ -145,7 +150,8 @@ export class LogicDisplay {
                         label.text,
                         label.fontSize,
                         label.opacity,
-                        label.name
+                        label.name,
+                        label.rotation
                     ));
                     break;
                 case componentTypes.shape:
@@ -161,7 +167,8 @@ export class LogicDisplay {
                         picture.y,
                         picture.pictureSource,
                         picture.opacity,
-                        picture.name
+                        picture.name,
+                        picture.rotation
                     ));
                     break;
                 case componentTypes.polygon:
@@ -172,7 +179,8 @@ export class LogicDisplay {
                         polygon.strokeColor,
                         polygon.opacity,
                         polygon.enableStroke,
-                        polygon.name
+                        polygon.name,
+                        polygon.rotation
                     ))
             }
         }

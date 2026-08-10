@@ -21,12 +21,23 @@
  *               circumference; the geometric radius is derived from the
  *               distance between them. `radius` on the component itself is
  *               the *stroke width*, not the circle's radius.
- *   - Rectangle stores two opposite, axis-aligned corners. It cannot
- *               represent a rotated rectangle, so any 4-vertex closed
- *               polyline that isn't axis-aligned becomes a Polygon instead.
+ *   - Rectangle stores two opposite, axis-aligned corners. Its `rotation`
+ *               field isn't used here — the renderer doesn't apply
+ *               Rectangle.rotation anywhere yet, so there's no verified
+ *               pivot/sign convention to target, and guessing one risks
+ *               placing shapes wrong once that rendering support lands.
+ *               Non-axis-aligned 4-vertex closed polylines still become a
+ *               Polygon instead (whose vertices already encode any angle).
  *   - Arc       stores (x1,y1) = center, (x2,y2) = a point defining the
  *               radius and start angle, (x3,y3) = a point defining the end
  *               angle (only its angle from the center matters).
+ *   - Label     DXF TEXT rotation (group 50) maps to Label.rotation,
+ *               pivoting around the text's anchor point — this one *is*
+ *               wired up, matching the renderer's own
+ *               `translate(x,y); rotate(rotation)` pattern for text.
+ *   - Every other component gets `rotation: 0` explicitly, both because
+ *               that's the schema's default and because their orientation
+ *               is already fully encoded in their point coordinates.
  */
 
 import { componentTypes } from '../../engine/Component'
@@ -48,6 +59,7 @@ export interface CompassPointJSON {
   type: number
   name: string
   opacity: number
+  rotation: number
   x: number
   y: number
 }
@@ -57,6 +69,7 @@ export interface CompassLineLikeJSON {
   type: number
   name: string
   opacity: number
+  rotation: number
   color: string
   radius: number
   x1: number
@@ -70,6 +83,7 @@ export interface CompassArcJSON {
   type: number
   name: string
   opacity: number
+  rotation: number
   color: string
   radius: number
   x1: number
@@ -84,8 +98,8 @@ export interface CompassLabelJSON {
   active: true
   type: number
   name: string
-  opacity: number,
-  radius?: number | 2,
+  opacity: number
+  rotation: number
   x: number
   y: number
   text: string
@@ -97,6 +111,7 @@ export interface CompassShapeJSON {
   type: number
   name: string
   opacity: number
+  rotation: number
   x: number
   y: number
   components: CompassComponentJSON[]
@@ -107,6 +122,7 @@ export interface CompassPolygonJSON {
   type: number
   name: string
   opacity: number
+  rotation: number
   vectors: Vec2[]
   color: string
   strokeColor: string
@@ -141,7 +157,10 @@ export interface DxfToCompassCadOptions {
   flipY?: boolean
   /**
    * Wrap each DXF layer's entities into a named top-level Shape, mirroring
-   * the DXF's layer structure. Default: true.
+   * the DXF's layer structure. Off by default: a Shape's children can only
+   * be selected/edited as a group (or by drilling in), so flattening keeps
+   * every imported entity individually selectable and editable right away.
+   * Set true if you'd rather have layer grouping than per-entity editing.
    */
   groupByLayer?: boolean
   /** Only import entities on these layers (case-insensitive). Default: all layers. */
@@ -195,7 +214,7 @@ function resolveOptions(opts: DxfToCompassCadOptions): ResolvedOptions {
   return {
     scale: opts.scale ?? 1,
     flipY: opts.flipY ?? false,
-    groupByLayer: opts.groupByLayer ?? false, // changed default true -> false
+    groupByLayer: opts.groupByLayer ?? false,
     includeLayers: opts.includeLayers ? new Set(opts.includeLayers.map((l) => l.toUpperCase())) : null,
     excludeLayers: new Set((opts.excludeLayers ?? []).map((l) => l.toUpperCase())),
     strokeRadius: opts.strokeRadius ?? 2,
@@ -381,6 +400,7 @@ class Converter {
       type: componentTypes.circle,
       name: this.name('Circle'),
       opacity: 100,
+      rotation: 0,
       color,
       radius: this.opts.strokeRadius,
       x1: center.x,
@@ -398,6 +418,7 @@ class Converter {
       type: componentTypes.line,
       name: this.name('Line'),
       opacity: 100,
+      rotation: 0,
       color,
       radius: this.opts.strokeRadius,
       x1: p1.x,
@@ -425,6 +446,7 @@ class Converter {
       type: componentTypes.arc,
       name: this.name('Arc'),
       opacity: 100,
+      rotation: 0,
       color,
       radius: this.opts.strokeRadius,
       x1: center.x,
@@ -442,6 +464,7 @@ class Converter {
       type: componentTypes.line,
       name: this.name('Line'),
       opacity: 100,
+      rotation: 0,
       color,
       radius: this.opts.strokeRadius,
       x1: a.x,
@@ -476,6 +499,7 @@ class Converter {
           type: componentTypes.rectangle,
           name: this.name('Rectangle'),
           opacity: 100,
+          rotation: 0,
           color,
           radius: this.opts.strokeRadius,
           x1: p1.x,
@@ -508,6 +532,7 @@ class Converter {
         type: componentTypes.polygon,
         name: this.name('Polygon'),
         opacity: 100,
+        rotation: 0,
         vectors: transformed,
         color,
         strokeColor: this.opts.polygonStrokeColor,
@@ -531,23 +556,38 @@ class Converter {
     const height = getFieldNum(entity, 40, 2.5)
     const text = getField(entity, 1) ?? ''
     const p = this.point(x, y)
-    const fontSize = Math.max(1, Math.round(height * this.opts.scale * this.opts.textScale))
-    // Make label radius proportionate to font size: smaller fonts get thinner radius, larger fonts get thicker
-    const radius = Math.max(0.2, fontSize * 0.15)
+
+    // DXF TEXT rotation (group 50) is already in degrees, measured
+    // counterclockwise from the +X axis. CompassCAD's renderer expects
+    // Component.rotation in degrees too — every draw call converts it via
+    // `rotation * Math.PI / 180` internally (see `rotatePoint()` and
+    // `drawLabel()` in Engine.ts) — so this is a straight pass-through, not
+    // a radian conversion. (An earlier version of this converter emitted
+    // radians here, which the renderer then read as degrees — e.g. a real
+    // 90° rotation became "1.571°", i.e. functionally no rotation at all.
+    // That's why rotated labels were overlapping instead of turning.)
+    //
+    // Our `point()` transform reflects Y when `flipY` is set (y -> -y),
+    // which is a mirror, not a rotation. Under a Y-axis mirror, an angle
+    // measured from the +X axis flips sign (θ -> -θ) — so the rotation we
+    // hand to the transformed geometry needs the same sign flip to stay
+    // consistent with the mirrored coordinates, or the text would end up
+    // rotated the wrong way relative to everything else in the drawing.
+    const rotationDeg = getFieldNum(entity, 50, 0)
+    const rotation = this.opts.flipY ? -rotationDeg : rotationDeg
+
     return {
       active: true,
-      radius,
       type: componentTypes.label,
       name: this.name('Label'),
       opacity: 100,
+      rotation,
       x: p.x,
       y: p.y,
       text,
-      // CompassCAD's Label has no rotation field, so DXF TEXT rotation (group
-      // 50) is intentionally dropped rather than silently misrendered.
       // Text height is a length like any other DXF coordinate, so it gets
       // the same `scale` treatment as geometry — no extra multiplier.
-      fontSize
+      fontSize: Math.max(1, Math.round(height * this.opts.scale * this.opts.textScale))
     }
   }
 
@@ -601,6 +641,7 @@ class Converter {
         type: componentTypes.shape,
         name: layerName,
         opacity: 100,
+        rotation: 0,
         x: 0,
         y: 0,
         components
