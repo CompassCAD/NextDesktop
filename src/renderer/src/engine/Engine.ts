@@ -3388,7 +3388,7 @@ export class GraphicsRenderer {
     this.cleanLog(newZoom)
 
     // Zoom interval control
-    if (newZoom <= 0.05 || newZoom >= 15) return
+    if (newZoom <= 0.25 || newZoom >= 15) return
 
     this.targetZoom = newZoom
     const viewportCenterX = this.displayWidth / 2
