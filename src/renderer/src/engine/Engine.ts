@@ -22,6 +22,7 @@ import NavigateDragCursor from '../assets/cursors/navigate-drag.svg'
 import NavigateIdleCursor from '../assets/cursors/navigate-idle.svg'
 import Nwse1 from '../assets/cursors/nwse-1.svg'
 import Nwse2 from '../assets/cursors/nwse-2.svg'
+import RotateCursor from '../assets/cursors/rotate.svg'
 import { callTextPrompt } from '@renderer/components/TextPrompt'
 import { DerakumaParser } from './fontobene/Derakuma'
 import AnsiFont from './fontobene/ansifont.bene'
@@ -555,7 +556,7 @@ export class GraphicsRenderer {
           this.context?.restore();
           break;
       }
-      this.drawComponentSize(this.logicDisplay?.components[this.selectedComponent])
+      if (this.zoom >= 0.5) this.drawComponentSize(this.logicDisplay?.components[this.selectedComponent]);
       const selectedComponent: Component = this.logicDisplay?.components[this.selectedComponent]
       const handles = this.getComponentHandles(selectedComponent)
       for (const handle of handles) {
@@ -740,18 +741,15 @@ export class GraphicsRenderer {
         })
       }
 
-      // Keep rotation separate from resize handles.  Its distance is expressed
-      // in pixels so it remains just as easy to acquire at every zoom level.
-      // The crosshair makes it clear that the grip accepts an arbitrary angle,
-      // rather than the old 90-degree-only shortcut.
+      // The rotation crosshair is the axis itself, so it belongs at the exact
+      // horizontal and vertical centre of the component.
       if (!this.isSelfPivotingComponent(component.type) && this.handles.length) {
         const origin = this.getRotationOrigin(component)
-        const radius = 32 / this.zoom
         this.handles.push({
           x: origin.x,
-          y: origin.y - radius,
+          y: origin.y,
           id: 'rotate',
-          cursor: CrosshairCursor
+          cursor: RotateCursor
         })
       }
     }
@@ -3228,14 +3226,23 @@ export class GraphicsRenderer {
               const handles = component ? this.getComponentHandles(component) : []
               let isOverHandle = false
 
-              for (const handle of handles) {
-                // Calculate distance in world coordinates
-                const dx = this.getCursorXLocal() - handle.x
-                const dy = this.getCursorYLocal() - handle.y
+              // The rotation axis can overlap a component's centre handle, so
+              // test it first. It must use unsnapped coordinates: snapping the
+              // pointer makes its hit area drift as zoom changes.
+              const orderedHandles = [...handles].sort((a, b) =>
+                Number(b.id === 'rotate') - Number(a.id === 'rotate')
+              )
+              for (const handle of orderedHandles) {
+                const isRotationHandle = handle.id === 'rotate'
+                const cursorX = isRotationHandle ? this.getCursorXRaw() : this.getCursorXLocal()
+                const cursorY = isRotationHandle ? this.getCursorYRaw() : this.getCursorYLocal()
+                const hitSize = isRotationHandle ? 8 / this.zoom : handleSize
+                const dx = cursorX - handle.x
+                const dy = cursorY - handle.y
                 const distSquared = dx * dx + dy * dy
 
                 // Check if cursor is over handle using world coordinates
-                if (distSquared < handleSize * handleSize) {
+                if (distSquared < hitSize * hitSize) {
                   this.displayRef!.style.cursor = `url("${handle.cursor}") 16 16, default`
                   isOverHandle = true
                   break
@@ -3260,13 +3267,20 @@ export class GraphicsRenderer {
               const handles = component ? this.getComponentHandles(component) : []
               const handleSize = 5 / this.zoom
 
-              for (const handle of handles) {
+              const orderedHandles = [...handles].sort((a, b) =>
+                Number(b.id === 'rotate') - Number(a.id === 'rotate')
+              )
+              for (const handle of orderedHandles) {
                 // Check collision in world coordinates
-                const dx = this.getCursorXLocal() - handle.x
-                const dy = this.getCursorYLocal() - handle.y
+                const isRotationHandle = handle.id === 'rotate'
+                const cursorX = isRotationHandle ? this.getCursorXRaw() : this.getCursorXLocal()
+                const cursorY = isRotationHandle ? this.getCursorYRaw() : this.getCursorYLocal()
+                const hitSize = isRotationHandle ? 8 / this.zoom : handleSize
+                const dx = cursorX - handle.x
+                const dy = cursorY - handle.y
                 const distSquared = dx * dx + dy * dy
 
-                if (distSquared < handleSize * handleSize) {
+                if (distSquared < hitSize * hitSize) {
                   this.dragHandle = handle.id
                   this.dragHandlePositions = new Map(
                     handles.map(currentHandle => [currentHandle.id, { x: currentHandle.x, y: currentHandle.y }])
