@@ -120,6 +120,8 @@ export class GraphicsRenderer {
   handles: HandleProperties[]
   fb: DerakumaParser
   dragHandle: string | null
+  private dragRotationOrigin: Vector2 | null
+  private dragHandlePositions: Map<string, Vector2> | null
   lastSelectedComponent: number | null;
   _debugMode: boolean;
   private _debugHitboxes: Map<string, { start: Vector2, end: Vector2, func?: () => void }> = new Map();
@@ -216,6 +218,8 @@ export class GraphicsRenderer {
     this.logicDisplay = null
     this.handles = []
     this.dragHandle = ''
+    this.dragRotationOrigin = null
+    this.dragHandlePositions = null
     this.lastSelectedComponent = null
     this._dirty = false;
     this._colorCache = new Map();
@@ -555,10 +559,27 @@ export class GraphicsRenderer {
       const selectedComponent: Component = this.logicDisplay?.components[this.selectedComponent]
       const handles = this.getComponentHandles(selectedComponent)
       for (const handle of handles) {
-        this.drawPoint(handle.x, handle.y, '#fff', 2, 100)
+        if (handle.id === 'rotate') this.drawRotationCrosshair(handle.x, handle.y)
+        else this.drawPoint(handle.x, handle.y, '#fff', 2, 100)
       }
 
     }
+  }
+  private drawRotationCrosshair(x: number, y: number): void {
+    if (!this.context) return
+    const cx = (x + this.cOutX) * this.zoom
+    const cy = (y + this.cOutY) * this.zoom
+    this.context.save()
+    this.context.strokeStyle = this.selectedColor
+    this.context.lineWidth = 1.5
+    this.context.beginPath()
+    this.context.moveTo(cx - 7, cy)
+    this.context.lineTo(cx + 7, cy)
+    this.context.moveTo(cx, cy - 7)
+    this.context.lineTo(cx, cy + 7)
+    this.context.arc(cx, cy, 4, 0, Math.PI * 2)
+    this.context.stroke()
+    this.context.restore()
   }
   drawComponentSize(component: Component) {
     if (!component || !component.type) return
@@ -716,6 +737,21 @@ export class GraphicsRenderer {
         this.handles = this.handles.map((handle) => {
           const rotated = this.rotatePoint(handle.x, handle.y, origin.x, origin.y, rotation)
           return { ...handle, x: rotated.x, y: rotated.y }
+        })
+      }
+
+      // Keep rotation separate from resize handles.  Its distance is expressed
+      // in pixels so it remains just as easy to acquire at every zoom level.
+      // The crosshair makes it clear that the grip accepts an arbitrary angle,
+      // rather than the old 90-degree-only shortcut.
+      if (!this.isSelfPivotingComponent(component.type) && this.handles.length) {
+        const origin = this.getRotationOrigin(component)
+        const radius = 32 / this.zoom
+        this.handles.push({
+          x: origin.x,
+          y: origin.y - radius,
+          id: 'rotate',
+          cursor: CrosshairCursor
         })
       }
     }
@@ -915,6 +951,26 @@ export class GraphicsRenderer {
     return lines.length > 0 ? lines : ['']
   }
   private getComponentBoundaryBox(component: Component): { minX: number, minY: number, maxX: number, maxY: number } {
+    const bounds = this.getUnrotatedComponentBoundaryBox(component)
+    const rotation = component.rotation ?? 0
+    if (!rotation) return bounds
+
+    const origin = this.getRotationOrigin(component)
+    const corners = [
+      this.rotatePoint(bounds.minX, bounds.minY, origin.x, origin.y, rotation),
+      this.rotatePoint(bounds.maxX, bounds.minY, origin.x, origin.y, rotation),
+      this.rotatePoint(bounds.maxX, bounds.maxY, origin.x, origin.y, rotation),
+      this.rotatePoint(bounds.minX, bounds.maxY, origin.x, origin.y, rotation)
+    ]
+    return {
+      minX: Math.min(...corners.map(p => p.x)),
+      minY: Math.min(...corners.map(p => p.y)),
+      maxX: Math.max(...corners.map(p => p.x)),
+      maxY: Math.max(...corners.map(p => p.y))
+    }
+  }
+
+  private getUnrotatedComponentBoundaryBox(component: Component): { minX: number, minY: number, maxX: number, maxY: number } {
     switch (component.type) {
       case componentTypes.point:
         const p = component as Point
@@ -990,7 +1046,7 @@ export class GraphicsRenderer {
         }
         let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity
         for (const child of shp.components) {
-          const cb = this.getComponentBoundaryBox(child)
+          const cb = this.getUnrotatedComponentBoundaryBox(child)
           minX = Math.min(minX, cb.minX); minY = Math.min(minY, cb.minY)
           maxX = Math.max(maxX, cb.maxX); maxY = Math.max(maxY, cb.maxY)
         }
@@ -1056,6 +1112,109 @@ export class GraphicsRenderer {
       x: ox + dx * cos - dy * sin,
       y: oy + dx * sin + dy * cos
     }
+  }
+
+  /**
+   * Preserve the rendered positions of the handles that were not dragged.
+   * Components such as a line and rectangle rotate around their derived
+   * centre, so simply writing one unrotated endpoint changes that centre and
+   * makes every other visible endpoint "spring" away from the cursor.
+   */
+  private dragRotatedHandleWithoutSpring(component: Component, handleId: string, target: Vector2): boolean {
+    const positions = this.dragHandlePositions
+    const rotation = component.rotation ?? 0
+    if (!positions || !rotation) return false
+
+    const locked = (id: string) => positions.get(id)
+    const unrotate = (point: Vector2, center: Vector2) =>
+      this.rotatePoint(point.x, point.y, center.x, center.y, -rotation)
+
+    if (component.type === componentTypes.line || component.type === componentTypes.measure) {
+      const line = component as Line
+      const fixed = locked(handleId === 'start' ? 'end' : handleId === 'end' ? 'start' : '')
+      if (!fixed) return false
+      const center = { x: (target.x + fixed.x) / 2, y: (target.y + fixed.y) / 2 }
+      const start = unrotate(handleId === 'start' ? target : fixed, center)
+      const end = unrotate(handleId === 'end' ? target : fixed, center)
+      line.x1 = start.x; line.y1 = start.y
+      line.x2 = end.x; line.y2 = end.y
+      return true
+    }
+
+    if (component.type === componentTypes.rectangle || component.type === componentTypes.boundBox) {
+      const rectangle = component as Rectangle
+      const opposite: Record<string, string> = {
+        start: 'bottom-right',
+        'top-right': 'bottom-left',
+        'bottom-left': 'top-right',
+        'bottom-right': 'start'
+      }
+      const fixed = locked(opposite[handleId])
+      if (!fixed) return false
+      const center = { x: (target.x + fixed.x) / 2, y: (target.y + fixed.y) / 2 }
+      const draggedModel = unrotate(target, center)
+      const fixedModel = unrotate(fixed, center)
+      if (handleId === 'start' || handleId === 'bottom-right') {
+        rectangle.x1 = handleId === 'start' ? draggedModel.x : fixedModel.x
+        rectangle.y1 = handleId === 'start' ? draggedModel.y : fixedModel.y
+        rectangle.x2 = handleId === 'bottom-right' ? draggedModel.x : fixedModel.x
+        rectangle.y2 = handleId === 'bottom-right' ? draggedModel.y : fixedModel.y
+      } else {
+        rectangle.x1 = handleId === 'bottom-left' ? draggedModel.x : fixedModel.x
+        rectangle.y1 = handleId === 'top-right' ? draggedModel.y : fixedModel.y
+        rectangle.x2 = handleId === 'top-right' ? draggedModel.x : fixedModel.x
+        rectangle.y2 = handleId === 'bottom-left' ? draggedModel.y : fixedModel.y
+      }
+      return true
+    }
+
+    if (component.type === componentTypes.circle && handleId === 'start') {
+      const circle = component as Circle
+      const fixed = locked('end')
+      if (!fixed) return false
+      circle.x1 = target.x
+      circle.y1 = target.y
+      const end = unrotate(fixed, target)
+      circle.x2 = end.x
+      circle.y2 = end.y
+      return true
+    }
+
+    if (component.type === componentTypes.arc && handleId === 'start') {
+      const arc = component as Arc
+      const mid = locked('mid')
+      const end = locked('end')
+      if (!mid || !end) return false
+      arc.x1 = target.x
+      arc.y1 = target.y
+      const modelMid = unrotate(mid, target)
+      const modelEnd = unrotate(end, target)
+      arc.x2 = modelMid.x
+      arc.y2 = modelMid.y
+      arc.x3 = modelEnd.x
+      arc.y3 = modelEnd.y
+      return true
+    }
+
+    if (component.type === componentTypes.polygon) {
+      const polygon = component as Polygon
+      const rendered = polygon.vectors.map((_, index) => positions.get(`handle-${index}`))
+      const draggedIndex = Number(handleId.replace('handle-', ''))
+      if (!Number.isInteger(draggedIndex) || !rendered.every((p): p is Vector2 => !!p)) return false
+      rendered[draggedIndex] = target
+      const center = {
+        x: rendered.reduce((sum, point) => sum + point.x, 0) / rendered.length,
+        y: rendered.reduce((sum, point) => sum + point.y, 0) / rendered.length
+      }
+      polygon.vectors.forEach((_, index) => {
+        const point = unrotate(rendered[index], center)
+        polygon.vectors[index].x = point.x
+        polygon.vectors[index].y = point.y
+      })
+      return true
+    }
+
+    return false
   }
 
   // Pivot each component rotates around, matching the origins used by the
@@ -1804,11 +1963,18 @@ export class GraphicsRenderer {
       const ox = shape.x, oy = shape.y
       const rotatedChildren = shape.components.map((c) => {
         const copy: any = { ...c }
-        // only shift anchor-like fields minimally; drawComponent handles per-type rotation
-        if ('x' in copy && 'y' in copy) {
-          const rp = this.rotatePoint(copy.x, copy.y, 0, 0, rotation)
-          copy.x = rp.x
-          copy.y = rp.y
+        const rotateCoordinates = (xKey: string, yKey: string) => {
+          if (typeof copy[xKey] !== 'number' || typeof copy[yKey] !== 'number') return
+          const point = this.rotatePoint(copy[xKey], copy[yKey], 0, 0, rotation)
+          copy[xKey] = point.x
+          copy[yKey] = point.y
+        }
+        rotateCoordinates('x', 'y')
+        rotateCoordinates('x1', 'y1')
+        rotateCoordinates('x2', 'y2')
+        rotateCoordinates('x3', 'y3')
+        if (Array.isArray(copy.vectors)) {
+          copy.vectors = copy.vectors.map((v: Vector2) => this.rotatePoint(v.x, v.y, 0, 0, rotation))
         }
         return copy as Component
       })
@@ -2191,6 +2357,16 @@ export class GraphicsRenderer {
     const component = this.logicDisplay!.components[index]
     const tolerance = this.snapTolerance / this.zoom
 
+    // Rendering applies rotation to model coordinates. Perform the inverse
+    // operation here so picking uses the geometry the user can actually see.
+    const rotation = component.rotation ?? 0
+    if (rotation) {
+      const origin = this.getRotationOrigin(component)
+      const local = this.rotatePoint(x, y, origin.x, origin.y, -rotation)
+      x = local.x
+      y = local.y
+    }
+
     switch (component.type) {
       case componentTypes.point:
       case componentTypes.label:
@@ -2395,15 +2571,16 @@ export class GraphicsRenderer {
   rotateSelected() {
     if (this.logicDisplay && this.selectedComponent != null) {
       const component = this.logicDisplay.components[this.selectedComponent];
-      const targetedRotation = component.rotation + 90;
-      if (targetedRotation > 360) {
-        const cleanedRotation = targetedRotation - 360;
-        component.rotation = cleanedRotation;
-      } else {
-        component.rotation = targetedRotation;
-      }
+      component.rotation = this.normalizeRotation((component.rotation ?? 0) + 90)
+      this.updateQuadtreeEntry(component)
+      this.notifyComponentChange()
       this.saveState();
     }
+  }
+
+  private normalizeRotation(rotation: number): number {
+    const normalized = rotation % 360
+    return normalized < 0 ? normalized + 360 : normalized
   }
 
   private toDebugCanvasSpace(v: Vector2): Vector2 {
@@ -2844,6 +3021,22 @@ export class GraphicsRenderer {
 
             // If actively dragging a handle
             if (this.dragHandle) {
+              if (this.dragHandle === 'rotate' && component && this.dragRotationOrigin) {
+                // Rotation is deliberately unsnapped: the crosshair is a
+                // precision control, so every cursor direction is available.
+                const cursorX = this.getCursorXRaw()
+                const cursorY = this.getCursorYRaw()
+                const origin = this.dragRotationOrigin
+                const angle = Math.atan2(cursorY - origin.y, cursorX - origin.x) * 180 / Math.PI + 90
+                const rotation = this.normalizeRotation(angle)
+                if (component.rotation !== rotation) {
+                  component.rotation = rotation
+                  this._dragDidModify = true
+                  this.updateQuadtreeEntry(component)
+                  this.notifyComponentChange()
+                }
+                break
+              }
               // Get cursor position in world coordinates
               let localX, localY
               if (this.snap) {
@@ -2863,6 +3056,13 @@ export class GraphicsRenderer {
               // Update component based on type
               if (component) {
                 let componentModified = false // Flag to check if component was modified
+
+                if (this.dragRotatedHandleWithoutSpring(component, this.dragHandle, { x: localX, y: localY })) {
+                  this._dragDidModify = true
+                  this.updateQuadtreeEntry(component)
+                  this.notifyComponentChange()
+                  break
+                }
 
                 // The cursor position above is in world/screen space, which is
                 // where the handle is actually drawn (getComponentHandles rotates
@@ -3036,6 +3236,12 @@ export class GraphicsRenderer {
 
                 if (distSquared < handleSize * handleSize) {
                   this.dragHandle = handle.id
+                  this.dragHandlePositions = new Map(
+                    handles.map(currentHandle => [currentHandle.id, { x: currentHandle.x, y: currentHandle.y }])
+                  )
+                  this.dragRotationOrigin = handle.id === 'rotate'
+                    ? this.getRotationOrigin(component)
+                    : null
                   // No need to notify here, as mouse.Move will handle updates
                   return
                 }
@@ -3069,6 +3275,8 @@ export class GraphicsRenderer {
             this._dragDidModify = false
           }
           this.dragHandle = null
+          this.dragRotationOrigin = null
+          this.dragHandlePositions = null
           this.displayRef!.style.cursor = 'url("../") 0 0, default'
           // After releasing the drag, ensure the state is up-to-date
           this.notifyComponentChange()
