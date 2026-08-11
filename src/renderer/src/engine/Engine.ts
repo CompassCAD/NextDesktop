@@ -1240,7 +1240,10 @@ export class GraphicsRenderer {
         return { x: cx, y: cy }
       }
       case componentTypes.label:
-        return this.getLabelTextRotationOrigin(component as Label)
+        // Labels rotate around their placement point, rather than their
+        // glyph-bounds centre. This also positions the label rotation
+        // crosshair at its x/y anchor.
+        return { x: (component as Label).x, y: (component as Label).y }
       default: {
         const p = component as Point
         return { x: p.x, y: p.y }
@@ -1256,36 +1259,6 @@ export class GraphicsRenderer {
       type === componentTypes.picture ||
       type === componentTypes.shape
     )
-  }
-
-  // Labels are glyph paths, so their visual center is more
-  // accurate than an estimate based on character count. This is shared by
-  // drawing, handles, and hit-testing to keep every rotation path aligned.
-  private getLabelTextRotationOrigin(label: Pick<Label, 'x' | 'y' | 'text' | 'fontSize'>): Vector2 {
-    let y = label.y
-    const localDiff = 30
-    const fontSize = label.fontSize
-    // Glyph coordinates live in world space. drawLabel applies this.zoom once
-    // when converting those coordinates to canvas pixels.
-    const targetFontScale = fontSize / 10
-    const lines = (label.text ?? '').split('\n').flatMap(line => this.wrapLabelLines(line))
-    let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity
-
-    lines.forEach((line, lineIndex) => {
-      const glyphs = this._getSpacedGlyphs(line)
-      if (!glyphs) return
-      const anchorY = y + lineIndex * (localDiff + fontSize / 2)
-      glyphs.forEach(glyph => glyph.commands.forEach(cmd => {
-        const x = label.x + cmd.x * targetFontScale * 0.75 - 5
-        const pointY = anchorY - cmd.y * targetFontScale
-        minX = Math.min(minX, x); maxX = Math.max(maxX, x)
-        minY = Math.min(minY, pointY); maxY = Math.max(maxY, pointY)
-      }))
-    })
-
-    return Number.isFinite(minX)
-      ? { x: (minX + maxX) / 2, y: (minY + maxY) / 2 }
-      : { x: label.x, y }
   }
 
   drawComponent(component: Component, moveByX: number, moveByY: number) {
@@ -1898,7 +1871,8 @@ export class GraphicsRenderer {
   ) {
     if (!this.context) return;
 
-    const rotationOrigin = this.getLabelTextRotationOrigin({ x, y, text, fontSize })
+    // A label's x/y coordinates are its rotation anchor.
+    const rotationOrigin = { x, y }
 
     const localDiff = 30;
     // Keep label glyphs in world space. The screen conversion below applies
@@ -2623,6 +2597,8 @@ export class GraphicsRenderer {
 
   postDoAfterComponentImport() {
     if (this.onComponentArrayChanged) this.onComponentArrayChanged();
+    this._quadtree = null;
+    this.flagQuadtreeDirty(true);
     this.markDirty('refresh after component import');
   }
 

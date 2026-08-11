@@ -256,7 +256,16 @@ function tessellateBulgeSegment(p1: Vec2, p2: Vec2, bulge: number, segments: num
   const included = bulgeToIncludedAngle(bulge)
   const halfChord = chord / 2
   const sagitta = halfChord * bulge // signed distance from chord midpoint to arc apex
-  const t = (sagitta * sagitta - halfChord * halfChord) / (2 * sagitta)
+  // The center sits on the OPPOSITE side of the chord from the apex — i.e.
+  // offset by (radius - sagitta) in the direction away from the apex, which
+  // works out to the negative of the naive (sagitta²-halfChord²)/(2·sagitta)
+  // expression. Missing that sign flip still produces a valid circle
+  // through p1 and p2 (so most of the math looks right), but sweeping from
+  // p1 by the bulge's own `included` angle lands nowhere near p2 — the
+  // interior points shoot off in the wrong direction before the final
+  // (always-correct) endpoint snaps back, which is exactly the "spike" /
+  // self-crossing node artifact this was producing on real corners.
+  const t = -((sagitta * sagitta - halfChord * halfChord) / (2 * sagitta))
   const radius = Math.hypot(halfChord, t)
 
   const mx = (p1.x + p2.x) / 2

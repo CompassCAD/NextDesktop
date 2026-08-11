@@ -6,6 +6,7 @@ import Toolbar from './components/Toolbar'
 import TextPrompt from './components/TextPrompt'
 import { RendererProvider, useRenderer } from './components/RendererContextProvider'
 import Inspector from './components/Inspector'
+import { SetLanguage } from './locales/Locale'
 
 function AppContent(): React.JSX.Element {
   const canvas = useRef<HTMLCanvasElement>(null)
@@ -25,6 +26,8 @@ function AppContent(): React.JSX.Element {
       renderer.scaleForHighDPI(dpi)
     }
   }
+
+  SetLanguage('sv');
 
   // Create the renderer once the canvas exists.
   useEffect(() => {
