@@ -27,8 +27,6 @@ function AppContent(): React.JSX.Element {
     }
   }
 
-  SetLanguage('sv');
-
   // Create the renderer once the canvas exists.
   useEffect(() => {
     if (canvas.current) {
