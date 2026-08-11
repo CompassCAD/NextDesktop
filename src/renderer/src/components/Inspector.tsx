@@ -30,6 +30,7 @@ import {
   Polygon
 } from '../engine/Component';
 import Slider from './CustomSlider';
+import { getLocaleKey } from '../locales/Locale';
 
 enum InspectorState {
   Properties,
@@ -137,7 +138,7 @@ export default function Inspector() {
             <img src={CollapseToRight} width={20} style={{ transform: 'rotate(180deg)' }} />
           </button>
         )}
-        <h2>Inspector</h2>
+        <h2>{getLocaleKey('editor.inspector.header')}</h2>
         <button onClick={() => setIsHidden(true)}>
           <img src={CollapseToRight} width={20} />
         </button>
@@ -159,7 +160,7 @@ export default function Inspector() {
           filteredComponents.length > 0 ? (
             <div className={styles['hierarchy-componentlist']}>
               {filteredComponents.map(({ comp, originalIndex }) => (
-                <div key={originalIndex}>
+                <div key={originalIndex} className={`${styles['componentlist-selector']}`}>
                   <img src={componentImages[comp.type]} /> {comp.name}
                 </div>
               ))}
@@ -177,14 +178,14 @@ export default function Inspector() {
           onClick={() => setInspectorState(InspectorState.Properties)}
         >
           <img width={18} src={PropertiesIcon} />
-          <span>Properties</span>
+          <span>{getLocaleKey('editor.inspector.menu.properties')}</span>
         </button>
         <button
           className={inspectorState == InspectorState.Hierarchy ? styles['active'] : ''}
           onClick={() => setInspectorState(InspectorState.Hierarchy)}
          >
           <img width={18} src={HierarchyIcon} />
-          <span>Hierarchy</span>
+          <span>{getLocaleKey('editor.inspector.menu.hierarchy')}</span>
         </button>
       </div>
     </div>

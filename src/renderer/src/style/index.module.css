@@ -327,6 +327,16 @@
 .hierarchy-componentlist {
   display: flex;
   flex-direction: column;
+  width: 100%;
+}
+.componentlist-selector {
+  display: flex;
+  flex-direction: row;
+  background-color: var(--secondary);
+  gap: 10px;
+  align-items: center;
+  padding: 10px;
+  border-radius: 10px;
 }
 .workflow-toolbar::-webkit-scrollbar {
   display: none;

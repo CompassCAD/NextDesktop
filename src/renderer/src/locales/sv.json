@@ -1,0 +1,15 @@
+{
+  "name": "Svenska",
+  "editor": {
+    "inspector": {
+      "header": "Inspektör",
+      "properties": {
+        "nothingOnSelected": "Inga är väljad"
+      },
+      "menu": {
+        "properties": "Egenskaper",
+        "hierarchy": "Hierarki"
+      }
+    }
+  }
+}

@@ -1,0 +1,15 @@
+{
+  "name": "English",
+  "editor": {
+    "inspector": {
+      "header": "Inspector",
+      "properties": {
+        "nothingOnSelected": "Nothing is selected"
+      },
+      "menu": {
+        "properties": "Properties",
+        "hierarchy": "Hierarchy"
+      }
+    }
+  }
+}
