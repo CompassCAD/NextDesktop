@@ -2,11 +2,11 @@ name: Build Linux
 
 on:
   push:
-    branches: [main]
     tags: ["v*"]
-  pull_request:
-    branches: [main]
   workflow_dispatch:
+
+permissions:
+  contents: write
 
 jobs:
   build-linux:
@@ -29,14 +29,6 @@ jobs:
         run: sudo apt-get update && sudo apt-get install -y rpm
 
       - name: Build Linux deb/rpm/AppImage
-        run: yarn build:linux --publish=never
-
-      - name: Upload artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: compasscad-linux
-          path: |
-            dist/*.deb
-            dist/*.rpm
-            dist/*.AppImage
-          if-no-files-found: error
+        run: yarn build:linux --publish=always
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
