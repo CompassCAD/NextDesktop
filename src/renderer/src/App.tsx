@@ -1,12 +1,13 @@
 import { useEffect, useRef } from 'react'
 import WindowBar from './components/WindowBar'
 import style from './style/index.module.css'
-import { ModalProvider } from './components/ModalProvider'
+import { ModalProvider, openModal } from './components/ModalProvider'
 import Toolbar from './components/Toolbar'
 import TextPrompt from './components/TextPrompt'
 import { RendererProvider, useRenderer } from './components/RendererContextProvider'
 import Inspector from './components/Inspector'
 import { SetLanguage } from './locales/Locale'
+import PublicBetaModal from './components/submodals/PublicBeta'
 
 function AppContent(): React.JSX.Element {
   const canvas = useRef<HTMLCanvasElement>(null)
@@ -45,6 +46,8 @@ function AppContent(): React.JSX.Element {
     window.addEventListener('resize', handleResize)
     return () => window.removeEventListener('resize', handleResize)
   }, [renderer])
+
+  openModal('Welcome to CompassCAD NEXT Public Beta!', <PublicBetaModal />);
 
   return (
     <>

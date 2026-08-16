@@ -8,7 +8,8 @@ declare global {
       readFile: (filePath: string) => string,
       writeFile: (filePath: string, data: string | Uint8Array | Buffer) => void,
       showOpenFileDialog: (options?: OpenDialogSyncOptions) => Promise<string[] | undefined>,
-      forwardLog: (source: any, args: any) => void
+      forwardLog: (source: any, args: any) => void,
+      getAppVersion: () => string
     },
     process: NodeJS.Process,
   }

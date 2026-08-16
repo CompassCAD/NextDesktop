@@ -96,6 +96,7 @@ ipcMain.handle('dialog:showOpenFileDialog', (_event, options) => {
 ipcMain.on('renderer-log', (_event, source, args) => {
   console.log(`[${source}]`, ...args);
 });
+ipcMain.handle('req-version', () => app.getVersion());
 
 // In this file you can include the rest of your app's specific main process
 // code. You can also put them in separate files and require them here.
