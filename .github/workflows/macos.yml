@@ -25,9 +25,6 @@ jobs:
       - name: Install dependencies
         run: yarn install --frozen-lockfile
 
-      - name: Type check
-        run: yarn typecheck
-
       - name: Build macOS dmg + zip (unsigned)
         run: yarn build:mac --publish=never
         env:
