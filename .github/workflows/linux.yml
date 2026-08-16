@@ -20,19 +20,19 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 26
-          cache: npm
+          cache: yarn
 
       - name: Install dependencies
-        run: npm ci
+        run: yarn install --frozen-lockfile
 
       - name: Type check
-        run: npm run typecheck
+        run: yarn typecheck
 
       - name: Install rpm build tools
         run: sudo apt-get update && sudo apt-get install -y rpm
 
       - name: Build Linux deb/rpm/AppImage
-        run: npm run build:linux -- --publish=never
+        run: yarn build:linux --publish=never
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4

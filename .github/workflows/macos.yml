@@ -20,18 +20,17 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 26
-          cache: npm
+          cache: yarn
 
       - name: Install dependencies
-        run: npm ci
+        run: yarn install --frozen-lockfile
 
       - name: Type check
-        run: npm run typecheck
+        run: yarn typecheck
 
       - name: Build macOS dmg + zip (unsigned)
-        run: npm run build:mac -- --publish=never
+        run: yarn build:mac --publish=never
         env:
-          # Skip code signing and notarization entirely.
           CSC_IDENTITY_AUTO_DISCOVERY: false
 
       - name: Upload artifact
