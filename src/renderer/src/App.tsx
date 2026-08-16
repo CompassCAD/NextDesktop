@@ -6,7 +6,7 @@ import Toolbar from './components/Toolbar'
 import TextPrompt from './components/TextPrompt'
 import { RendererProvider, useRenderer } from './components/RendererContextProvider'
 import Inspector from './components/Inspector'
-import { SetLanguage } from './locales/Locale'
+import { getLocaleKey, SetLanguage } from './locales/Locale'
 import PublicBetaModal from './components/submodals/PublicBeta'
 
 function AppContent(): React.JSX.Element {
@@ -47,7 +47,7 @@ function AppContent(): React.JSX.Element {
     return () => window.removeEventListener('resize', handleResize)
   }, [renderer])
 
-  openModal('Welcome to CompassCAD NEXT Public Beta!', <PublicBetaModal />);
+  openModal(getLocaleKey('editor.publicBeta.welcome'), <PublicBetaModal />);
 
   return (
     <>

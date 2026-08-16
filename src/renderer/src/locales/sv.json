@@ -1,6 +1,24 @@
 {
   "name": "Svenska",
   "editor": {
+    "publicBeta": {
+      "welcome": "Välkommen till CompassCAD NEXT Publik Beta!",
+      "segments": {
+        "body_segment1": "Välkommen till CompassCAD NEXT Desktop Publik Beta! Vi är stolta över att du är här!",
+        "body_segment2": "Innan du sätter igång vill vi varna dig för följande saker.",
+        "warns": {
+          "doNotDailyDrive": "Använd inte denna version av CompassCAD som din primära version ännu.",
+          "lotsOfBugs": "Tänk på att det kommer att finnas MÅNGA BUGGAR, samt ofullständiga/icke-fungerande knappar.",
+          "missingFeatures": "Det kommer att fattas MÅNGA funktioner/knappar jämfört med skrivbords-/webbversionen.",
+          "noSettingChange": "Det finns inget sätt att ändra inställningar (just nu). Om du vill göra det måste du ta till knep/hacks.",
+          "alternative": "Om du vill ha något att fortfarande använda dagligen, använd CompassCAD Desktop (< 2.1.0) eller webben."
+        },
+        "askForConsent": "Med det sagt, låt oss börja med att bocka i \"Jag samtycker\" och sedan stänga denna popup.",
+        "checkListConsent": "Jag samtycker till att det kommer att finnas buggar och att jag själv ansvarar för förlorad design.",
+        "dontShow": "Visa inte igen, tack.",
+        "riskAccepted": "Risken accepterad. Vi kommer inte att visa denna dialogruta igen, men var försiktig. Du går nu in på farligt betaterritorium."
+      }
+    },
     "sysdialogs": {
       "openFile": "Öppna en CompassCAD-fil/importera en fil som inte är från CompassCAD"
     },

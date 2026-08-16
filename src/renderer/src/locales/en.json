@@ -1,6 +1,24 @@
 {
   "name": "English",
   "editor": {
+    "publicBeta": {
+      "welcome": "Welcome to CompassCAD NEXT Public Beta!",
+      "segments": {
+        "body_segment1": "Welcome to the CompassCAD NEXT Desktop Public Beta! We're proud that you are here!",
+        "body_segment2": "Before you can get started, we'd like to warn you of the following things.",
+        "warns": {
+          "doNotDailyDrive": "Please do not daily drive this version of CompassCAD yet.",
+          "lotsOfBugs": "Keep in mind that there will be LOTS OF BUGS, incomplete/unfunctional buttons.",
+          "missingFeatures": "There will be a LOT of missing features/buttons than desktop/web.",
+          "noSettingChange": "There are no ways for you to change settings (as of now). If you want to, you'll need to get hacky.",
+          "alternative": "If you want somewhere to still daily drive, use CompassCAD Desktop (< 2.1.0) or the web."
+        },
+        "askForConsent": "With that out of the way, let's start by checking \"I Consent\" and then closing this popup.",
+        "checkListConsent": "I consent that there will be bugs and I will be responsible for design losses.",
+        "dontShow": "Don't show again, please.",
+        "riskAccepted": "Risk accepted. We won't show you this dialog, but please beware. You're entering dangerous beta territory."
+      }
+    },
     "sysdialogs": {
       "openFile": "Open a CompassCAD file/import a non-CompassCAD file"
     },

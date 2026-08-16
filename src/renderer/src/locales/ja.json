@@ -1,6 +1,24 @@
 {
   "name": "日本語",
   "editor": {
+    "publicBeta": {
+      "welcome": "CompassCAD NEXT パブリックベータへようこそ！",
+      "segments": {
+        "body_segment1": "CompassCAD NEXT デスクトップ パブリックベータへようこそ！ご参加いただき嬉しく思います！",
+        "body_segment2": "始める前に、以下の点についてご注意ください。",
+        "warns": {
+          "doNotDailyDrive": "このバージョンの CompassCAD をまだメイン（日常使い）として使用しないでください。",
+          "lotsOfBugs": "大量のバグや、未完成・動作しないボタンが存在することをご理解ください。",
+          "missingFeatures": "デスクトップ版やWeb版に比べて、多くの機能やボタンが欠落しています。",
+          "noSettingChange": "（現時点では）設定を変更する方法はありません。変更したい場合は裏技的な操作（ハック）が必要になります。",
+          "alternative": "引き続き日常的に使用したい場合は、CompassCAD Desktop (< 2.1.0) または Web版をご利用ください。"
+        },
+        "askForConsent": "以上を踏まえた上で、「同意します」にチェックを入れてこのポップアップを閉じてスタートしてください。",
+        "checkListConsent": "バグが存在すること、およびデザインデータの損失が生じた場合は自己責任となることに同意します。",
+        "dontShow": "次回から表示しない",
+        "riskAccepted": "リスクを承認しました。このダイアログは再表示されませんが、ご注意ください。ここから先は危険なベータ領域です。"
+      }
+    },
     "sysdialogs": {
       "openFile": "CompassCADファイルを開く／CompassCAD以外のファイルをインポートする"
     },
