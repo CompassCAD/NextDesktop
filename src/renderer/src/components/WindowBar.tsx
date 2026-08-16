@@ -22,6 +22,7 @@ import AboutModal from './submodals/AboutModal'
 import { useRenderer } from './RendererContextProvider'
 import { InternalUtilities, RNGSpamGen } from '../utils/InternalStuffs'
 import { openFileAndParse } from '../utils/FileImporter'
+import { getLocaleKey } from '../locales/Locale'
 
 export default function WindowBar(): React.ReactElement {
   const [isMaximized, setMaximized] = useState<boolean>(false)
@@ -110,7 +111,7 @@ export default function WindowBar(): React.ReactElement {
     openModal('Internal utils (developer only)', <InternalUtilities />)
   }
   const spawnAboutModal = (): void => {
-    openModal('About CompassCAD', <AboutModal />)
+    openModal(getLocaleKey('editor.menu.about'), <AboutModal />)
   }
 
   interface MenuItemDef {
@@ -121,19 +122,19 @@ export default function WindowBar(): React.ReactElement {
   }
 
   const menuItemDefs: MenuItemDef[] = [
-    { icon: NewFileIcon, title: 'New File', keyCombinations: ['Ctrl', 'N'] },
-    { icon: OpenFileIcon, title: 'Open File', keyCombinations: ['Ctrl', 'O'], onAction: () => openFileAndParse(renderer!) },
-    { icon: BackupIcon, title: 'Open Backups' },
-    { icon: SaveDesignIcon, title: 'Save Design', keyCombinations: ['Ctrl', 'S'] },
-    { icon: SaveDesignAsIcon, title: 'Save as', keyCombinations: ['Ctrl', 'Alt', 'S'] },
-    { icon: ExportIcon, title: 'Export to SVG', keyCombinations: ['Ctrl', 'E'] },
+    { icon: NewFileIcon, title: getLocaleKey('editor.menu.newDesign'), keyCombinations: ['Ctrl', 'N'] },
+    { icon: OpenFileIcon, title: getLocaleKey('editor.menu.openDesign'), keyCombinations: ['Ctrl', 'O'], onAction: () => openFileAndParse(renderer!) },
+    { icon: BackupIcon, title: getLocaleKey('editor.menu.openBackups') },
+    { icon: SaveDesignIcon, title: getLocaleKey('editor.menu.saveDesign'), keyCombinations: ['Ctrl', 'S'] },
+    { icon: SaveDesignAsIcon, title: getLocaleKey('editor.menu.saveAs'), keyCombinations: ['Ctrl', 'Alt', 'S'] },
+    { icon: ExportIcon, title: getLocaleKey('editor.menu.exportToSvg'), keyCombinations: ['Ctrl', 'E'] },
     ...(import.meta.env.DEV
       ? [
         { title: 'RNG Design Generator (choke test only)', onAction: _internal_spawnRngModal },
         { title: 'Internal utilities only', onAction: _internal_spawnInternalUtilsModal },
       ]
       : []),
-    { title: 'About CompassCAD NEXT', onAction: spawnAboutModal }
+    { title: getLocaleKey('editor.menu.about'), onAction: spawnAboutModal }
   ]
 
 

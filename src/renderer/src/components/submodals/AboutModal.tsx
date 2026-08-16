@@ -2,6 +2,7 @@ import CompassCADLogo from '../../assets/branding/logo-wordmark.svg'
 import { openModal } from '../ModalProvider'
 import OpenSourceLicensesLogo from '../../assets/icons/oss.svg'
 import OSLModal from './OSLModal'
+import { getLocaleKey } from '../../locales/Locale'
 
 export default function AboutModal(): React.ReactElement {
   return (
@@ -14,9 +15,9 @@ export default function AboutModal(): React.ReactElement {
       </div>
       <br />
       <div>
-        <button onClick={() => openModal('Open Source Licences      ', <OSLModal />)}>
-          <img src={OpenSourceLicensesLogo} height={24 } />
-          Open Source Licenses
+        <button onClick={() => openModal(`${getLocaleKey('editor.about.openSourceLicenses')}      `, <OSLModal />)}>
+          <img src={OpenSourceLicensesLogo} height={24} />
+          {getLocaleKey('editor.about.openSourceLicenses')}
         </button>
       </div>
     </div>

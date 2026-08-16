@@ -10,6 +10,7 @@ import AddLineIcon from '../assets/icons/line.svg'
 import AddTextIcon from '../assets/icons/text.svg'
 import MeasureIcon from '../assets/icons/measure.svg'
 import { useRenderer } from './RendererContextProvider'
+import { getLocaleKey } from '../locales/Locale'
 
 interface ToolbarButtonProps {
   icon: string
@@ -99,7 +100,7 @@ export default function Toolbar(): React.ReactElement {
       <div className={styles['workflow-toolbar']} onMouseDown={(e) => e.stopPropagation()}>
         <ToolbarButton
           icon={SelectIcon}
-          title="Select"
+          title={getLocaleKey('editor.toolbox.select')}
           keyName="q"
           keyCode={Types.default.KeyCodes.Q}
           isActive={modeState == Types.default.NavigationTypes.Select}
@@ -107,7 +108,7 @@ export default function Toolbar(): React.ReactElement {
         />
         <ToolbarButton
           icon={NavigateIcon}
-          title="Navigate"
+          title={getLocaleKey('editor.toolbox.navigate')}
           keyName="w"
           keyCode={Types.default.KeyCodes.W}
           isActive={modeState == Types.default.NavigationTypes.Navigate}
@@ -115,7 +116,7 @@ export default function Toolbar(): React.ReactElement {
         />
         <ToolbarButton
           icon={MoveIcon}
-          title="Move"
+          title={getLocaleKey('editor.toolbox.move')}
           keyName="e"
           keyCode={Types.default.KeyCodes.E}
           isActive={modeState == Types.default.NavigationTypes.Move}
@@ -123,7 +124,7 @@ export default function Toolbar(): React.ReactElement {
         />
         <ToolbarButton
           icon={AddLineIcon}
-          title="Add Line"
+          title={getLocaleKey('editor.toolbox.addLine')}
           keyName="s"
           keyCode={Types.default.KeyCodes.S}
           isActive={modeState == Types.default.NavigationTypes.AddLine}
@@ -131,7 +132,7 @@ export default function Toolbar(): React.ReactElement {
         />
         <ToolbarButton
           icon={AddTextIcon}
-          title="Add Label"
+          title={getLocaleKey('editor.toolbox.addLabel')}
           keyName="h"
           keyCode={Types.default.KeyCodes.H}
           isActive={modeState == Types.default.NavigationTypes.AddLabel}
@@ -139,7 +140,7 @@ export default function Toolbar(): React.ReactElement {
         />
         <ToolbarButton
           icon={MeasureIcon}
-          title="Add Measure"
+          title={getLocaleKey('editor.toolbox.addMeasure')}
           keyName="m"
           keyCode={Types.default.KeyCodes.M}
           isActive={modeState == Types.default.NavigationTypes.AddMeasure}

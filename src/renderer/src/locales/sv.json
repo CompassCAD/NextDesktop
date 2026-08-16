@@ -1,6 +1,34 @@
 {
   "name": "Svenska",
   "editor": {
+    "menu": {
+      "newDesign": "Ny Design",
+      "openDesign": "Öppna Design",
+      "openBackups": "Öppna Backuper",
+      "saveDesign": "Spara Design",
+      "saveAs": "Spara som",
+      "exportToSvg": "Exportera till SVG",
+      "about": "Om CompassCAD NEXT"
+    },
+    "about": {
+      "openSourceLicenses": "Licens för öppen-källkod"
+    },
+    "toolbox": {
+      "select": "Välj",
+      "navigate": "Navigera",
+      "move": "Flytta",
+      "delete": "Radera",
+      "addPoint": "Lägg till punkt",
+      "addLine": "Lägg till linje",
+      "addRectangle": "Lägg till rektangel",
+      "addCircle": "Lägg till cirkel",
+      "addArc": "Lägg till båge",
+      "addMeasure": "Lägg till mått",
+      "addLabel": "Lägg till etikett",
+      "addImage": "Lägg till bild",
+      "addPolygon": "Lägg till polygon",
+      "addBoundbox": "Lägg till begränsningsruta"
+    },
     "inspector": {
       "header": "Inspektör",
       "properties": {

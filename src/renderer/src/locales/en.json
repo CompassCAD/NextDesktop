@@ -1,6 +1,34 @@
 {
   "name": "English",
   "editor": {
+    "menu": {
+      "newDesign": "New Design",
+      "openDesign": "Open Design",
+      "openBackups": "Open Backups",
+      "saveDesign": "Save Design",
+      "saveAs": "Save as",
+      "exportToSvg": "Export to SVG",
+      "about": "About CompassCAD NEXT"
+    },
+    "about": {
+      "openSourceLicenses":  "Open Source License"
+    },
+    "toolbox": {
+      "select": "Select",
+      "navigate": "Navigate",
+      "move": "Move",
+      "delete": "Delete",
+      "addPoint": "Add Point",
+      "addLine": "Add Line",
+      "addRectangle": "Add Rectangle",
+      "addCircle": "Add Circle",
+      "addArc": "Add Arc",
+      "addMeasure": "Add Measure",
+      "addLabel": "Add Label",
+      "addImage": "Add Image",
+      "addPolygon": "Add Polygon",
+      "addBoundbox": "Add Boundbox"
+    },
     "inspector": {
       "header": "Inspector",
       "properties": {
