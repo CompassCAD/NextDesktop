@@ -2573,8 +2573,55 @@ export class GraphicsRenderer {
     }
   }
 
-  pasteWhateverTheFuckIsInTheClipboard() {
+  private _arraybuf2b64(buffer: ArrayBuffer) {
+    let binary = '';
+    const bytes = new Uint8Array(buffer);
+    const len = bytes.byteLength;
+    for (let i = 0; i < len; i++) binary += String.fromCharCode(bytes[i]);
+    return btoa(binary);
+  }
 
+  pasteWhateverTheFuckIsInTheClipboard() {
+    navigator.clipboard.read().then((items) => {
+      items.forEach(async item => {
+        const types = item.types;
+        for (const type of types) {
+          try {
+            if (type === 'text/plain') {
+              const blob = await item.getType('text/plain');
+              const text = await blob.text();
+              if (text.includes('active') && text.includes('type')) { // <- It's a CompassCAD component!
+                // WIP: handle component pasting
+              } else {
+                this.logicDisplay?.addComponent(
+                  new Label(
+                    this.getCursorXLocal(),
+                    this.getCursorYLocal(),
+                    text
+                  )
+                )
+                this.saveState();
+              }
+            } else if (type.startsWith('image/')) {
+              const blob = await item.getType(type);
+              const arrayBuffer = await blob.arrayBuffer();
+              const b64String = this._arraybuf2b64(arrayBuffer);
+              const imageUrl = `data:${type};base64,${b64String}`;
+              this.logicDisplay?.addComponent(
+                new Picture(
+                  this.getCursorXLocal(),
+                  this.getCursorYLocal(),
+                  imageUrl
+                )
+              )
+              this.saveState();
+            }
+          } catch (e) {
+            console.log(`err: error reading clipboard: ${e}`)
+          }
+        }
+      })
+    })
   }
 
   rotateSelected() {
@@ -3748,10 +3795,13 @@ export const InitializeInstance = (renderer: GraphicsRenderer) => {
   renderer.keyboard?.addKeyEvent(true, Types.default.KeyCodes.DEL, () => {
     renderer.cleanLog('del pressed, deleting');
     renderer.forcefullyRemoveSelectedComponentOnActiveIndex();
-  }, { ctrl: false })
+  }, { ctrl: false });
   renderer.keyboard?.addKeyEvent(true, Types.default.KeyCodes.R, () => {
     renderer.rotateSelected();
-  }, { ctrl: false })
+  }, { ctrl: false });
+  renderer.keyboard?.addKeyEvent(true, Types.default.KeyCodes.V, () => {
+    renderer.pasteWhateverTheFuckIsInTheClipboard();
+  }, { ctrl: true })
 
   let animationFrameId: number | null
   let isWindowFocused = true
