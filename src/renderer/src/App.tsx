@@ -47,7 +47,9 @@ function AppContent(): React.JSX.Element {
     return () => window.removeEventListener('resize', handleResize)
   }, [renderer])
 
-  openModal(getLocaleKey('editor.publicBeta.welcome'), <PublicBetaModal />);
+  if (!localStorage.getItem('PUBLICBETA_DoNotShowThatShitEverAgain') || localStorage.getItem('PUBLICBETA_DoNotShowThatShitEverAgain') == 'false') {
+    openModal(getLocaleKey('editor.publicBeta.welcome'), <PublicBetaModal />);
+  }
 
   return (
     <>
