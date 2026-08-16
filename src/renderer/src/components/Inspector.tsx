@@ -2,6 +2,7 @@ import styles from '../style/index.module.css'
 import { useEffect, useState, useMemo } from 'react'
 import { useRenderer } from './RendererContextProvider'
 import CollapseToRight from '../assets/icons/collapse-right.svg'
+import NoPropertiesIcon from '../assets/icons/unselected-state.svg'
 
 import PointSymbol from "../assets/icons/point.svg";
 import LineSymbol from "../assets/icons/line.svg";
@@ -146,9 +147,10 @@ export default function Inspector() {
       <div className={styles['inspector-content']}>
         {inspectorState == InspectorState.Properties && (
           component == null ? (
-            <>
-              <p>a</p>
-            </>
+            <div className={styles['properties-nothing']} >
+              <img src={NoPropertiesIcon} width={56} />
+              <p>{getLocaleKey('editor.inspector.properties.nothingOnSelected')}</p>
+            </div>
           ) : (
             <>
                 <p>{component?.name}</p>

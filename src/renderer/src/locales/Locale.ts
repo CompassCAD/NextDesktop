@@ -1,10 +1,11 @@
 import en from './en.json';
-import sv from './sv.json'
+import sv from './sv.json';
+import ja from './ja.json';
 
 
 // English is the single source of truth: every other locale is typed
 // against its shape, and any missing key falls back to English at runtime.
-export const locales = { en, sv } as const;
+export const locales = { en, ja, sv } as const;
 
 export type LocaleCode = keyof typeof locales;
 export const supportedLanguages = (Object.keys(locales) as LocaleCode[]).sort();

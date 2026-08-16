@@ -1,6 +1,9 @@
 {
   "name": "English",
   "editor": {
+    "sysdialogs": {
+      "openFile": "Open a CompassCAD file/import a non-CompassCAD file"
+    },
     "menu": {
       "newDesign": "New Design",
       "openDesign": "Open Design",
@@ -11,7 +14,7 @@
       "about": "About CompassCAD NEXT"
     },
     "about": {
-      "openSourceLicenses":  "Open Source License"
+      "openSourceLicenses": "Open Source License"
     },
     "toolbox": {
       "select": "Select",
@@ -32,7 +35,7 @@
     "inspector": {
       "header": "Inspector",
       "properties": {
-        "nothingOnSelected": "Nothing is selected"
+        "nothingOnSelected": "Select a component, then your component details should appear here."
       },
       "menu": {
         "properties": "Properties",

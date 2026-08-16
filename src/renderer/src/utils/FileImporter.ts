@@ -1,9 +1,10 @@
 import { GraphicsRenderer } from "../engine/Engine";
+import { getLocaleKey } from "../locales/Locale";
 import { convertDxfToCompassCad } from "./dxfparse";
 
 export const openFileAndParse = async (renderer: GraphicsRenderer): Promise<void> => {
   const file = await window.api.showOpenFileDialog({
-    title: 'Open a CompassCAD file/import a non-CompassCAD file',
+    title: getLocaleKey('editor.sysdialogs.openFile'),
     filters: [
       // { name: 'CompassCAD NEXT Files', extensions: ['cnext'] }, <- Still haven't planned on .cnext (could be an SQLite file ig)
       { name: 'CompassCAD Files', extensions: ['ccad'] },

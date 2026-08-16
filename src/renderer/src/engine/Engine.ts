@@ -2573,6 +2573,10 @@ export class GraphicsRenderer {
     }
   }
 
+  pasteWhateverTheFuckIsInTheClipboard() {
+
+  }
+
   rotateSelected() {
     if (this.logicDisplay && this.selectedComponent != null) {
       const component = this.logicDisplay.components[this.selectedComponent];

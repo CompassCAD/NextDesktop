@@ -1,6 +1,9 @@
 {
   "name": "Svenska",
   "editor": {
+    "sysdialogs": {
+      "openFile": "Öppna en CompassCAD-fil/importera en fil som inte är från CompassCAD"
+    },
     "menu": {
       "newDesign": "Ny Design",
       "openDesign": "Öppna Design",
@@ -32,7 +35,7 @@
     "inspector": {
       "header": "Inspektör",
       "properties": {
-        "nothingOnSelected": "Inga är väljad"
+        "nothingOnSelected": "Välj en komponent för att visa dina komponentdetaljer här."
       },
       "menu": {
         "properties": "Egenskaper",

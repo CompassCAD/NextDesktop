@@ -1,0 +1,46 @@
+{
+  "name": "日本語",
+  "editor": {
+    "sysdialogs": {
+      "openFile": "CompassCADファイルを開く／CompassCAD以外のファイルをインポートする"
+    },
+    "menu": {
+      "newDesign": "新規デザイン",
+      "openDesign": "デザインを開く",
+      "openBackups": "バックアップを開く",
+      "saveDesign": "デザインを保存",
+      "saveAs": "名前を付けて保存",
+      "exportToSvg": "SVG形式でエクスポート",
+      "about": "CompassCAD NEXT について"
+    },
+    "about": {
+      "openSourceLicenses": "オープンソースライセンス"
+    },
+    "toolbox": {
+      "select": "選択",
+      "navigate": "ナビゲート",
+      "move": "移動",
+      "delete": "削除",
+      "addPoint": "点を追加",
+      "addLine": "線を追加",
+      "addRectangle": "長方形を追加",
+      "addCircle": "円を追加",
+      "addArc": "円弧を追加",
+      "addMeasure": "寸法を追加",
+      "addLabel": "ラベルを追加",
+      "addImage": "画像を追加",
+      "addPolygon": "多角形を追加",
+      "addBoundbox": "バウンディングボックスを追加"
+    },
+    "inspector": {
+      "header": "インスペクター",
+      "properties": {
+        "nothingOnSelected": "コンポーネントを選択すると、ここに詳細が表示されます。"
+      },
+      "menu": {
+        "properties": "プロパティ",
+        "hierarchy": "ヒエラルキー"
+      }
+    }
+  }
+}
