@@ -23,7 +23,7 @@ function versionFrom(info: unknown): string | null {
 }
 
 export default function UpdaterModal(): React.ReactElement {
-  const { status, progress, info, checkForUpdates, downloadUpdate, installNow } = useUpdater()
+  const { status, progress, info, checkForUpdates, downloadUpdate, previewDownload, installNow } = useUpdater()
 
   useEffect(() => {
     void checkForUpdates()
@@ -46,6 +46,11 @@ export default function UpdaterModal(): React.ReactElement {
           <button type="button" style={actionStyle} onClick={checkForUpdates}>
             Check again
           </button>
+          {import.meta.env.DEV && (
+            <button type="button" style={actionStyle} onClick={previewDownload}>
+              Preview slow download
+            </button>
+          )}
         </>
       )
       break
@@ -93,6 +98,11 @@ export default function UpdaterModal(): React.ReactElement {
           <button type="button" style={actionStyle} onClick={checkForUpdates}>
             Try again
           </button>
+          {import.meta.env.DEV && (
+            <button type="button" style={actionStyle} onClick={previewDownload}>
+              Preview slow download
+            </button>
+          )}
         </>
       )
       break

@@ -25,6 +25,36 @@ const send = (channel: string, ...args: any[]) => {
   mainWindow?.webContents.send(channel, ...args);
 }
 
+const updatePreviewDurationMs = Math.max(
+  1_000,
+  Number.parseInt(process.env.UPDATE_MODAL_PREVIEW_DURATION_MS ?? '200000', 10) || 20_000
+)
+let updatePreviewTimer: NodeJS.Timeout | undefined
+
+function previewSlowUpdateDownload(): void {
+  if (!is.dev) {
+    throw new Error('The update download preview is only available in development.')
+  }
+
+  if (updatePreviewTimer) return
+
+  const startedAt = Date.now()
+  const tick = (): void => {
+    const percent = Math.min(100, ((Date.now() - startedAt) / updatePreviewDurationMs) * 100)
+    send('update:progress', { percent })
+
+    if (percent === 100) {
+      updatePreviewTimer = undefined
+      send('update:downloaded', { version: app.getVersion() })
+      return
+    }
+
+    updatePreviewTimer = setTimeout(tick, 250)
+  }
+
+  tick()
+}
+
 autoUpdater.on('checking-for-update', () => send('update:checking'));
 autoUpdater.on('update-available', (info) => send('update:available', info));
 autoUpdater.on('update-not-available', (info) => send('update:not-available', info));
@@ -129,6 +159,7 @@ ipcMain.on('renderer-log', (_event, source, args) => {
 ipcMain.handle('req-version', () => app.getVersion());
 ipcMain.handle('update:check', () => autoUpdater.checkForUpdates());
 ipcMain.handle('update:download', () => autoUpdater.downloadUpdate());
+ipcMain.handle('update:preview-download', () => previewSlowUpdateDownload());
 ipcMain.handle('update:install', () => autoUpdater.quitAndInstall());
 
 // In this file you can include the rest of your app's specific main process

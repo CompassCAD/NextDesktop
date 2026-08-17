@@ -15,6 +15,7 @@ declare global {
     updater: {
       check: () => Promise<any>;
       download: () => Promise<void>;
+      previewDownload: () => Promise<void>;
       install: () => Promise<void>;
       onChecking: (cb: () => void) => void;
       onAvailable: (cb: (e: any, info: any) => void) => void;

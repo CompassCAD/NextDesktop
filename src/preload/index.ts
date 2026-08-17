@@ -16,6 +16,7 @@ const api = {
 const updater = {
   check: () => ipcRenderer.invoke('update:check'),
   download: () => ipcRenderer.invoke('update:download'),
+  previewDownload: () => ipcRenderer.invoke('update:preview-download'),
   install: () => ipcRenderer.invoke('update:install'),
 
   onChecking: (cb: () => void) => ipcRenderer.on('update:checking', cb),

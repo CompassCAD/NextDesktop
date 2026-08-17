@@ -21,6 +21,7 @@ export default function useUpdater() {
     checkForUpdates: () => window.updater.check(),
     // Only call this after the user explicitly consents
     downloadUpdate: () => window.updater.download(),
+    previewDownload: () => window.updater.previewDownload(),
     installNow: () => window.updater.install(),
   };
 }
