@@ -13,6 +13,19 @@ const api = {
   getAppVersion: () => ipcRenderer.invoke('req-version')
 }
 
+const updater = {
+  check: () => ipcRenderer.invoke('update:check'),
+  download: () => ipcRenderer.invoke('update:download'),
+  install: () => ipcRenderer.invoke('update:install'),
+
+  onChecking: (cb: () => void) => ipcRenderer.on('update:checking', cb),
+  onAvailable: (cb: (e: any, info: any) => void) => ipcRenderer.on('update:available', cb),
+  onNotAvailable: (cb: (e: any, info: any) => void) => ipcRenderer.on('update:not-available', cb),
+  onError: (cb: (e: any, msg: string) => void) => ipcRenderer.on('update:error', cb),
+  onProgress: (cb: (e: any, progress: any) => void) => ipcRenderer.on('update:progress', cb),
+  onDownloaded: (cb: (e: any, info: any) => void) => ipcRenderer.on('update:downloaded', cb),
+}
+
 // Use `contextBridge` APIs to expose Electron APIs to
 // renderer only if context isolation is enabled, otherwise
 // just add to the DOM global.
@@ -20,6 +33,7 @@ if (process.contextIsolated) {
   try {
     contextBridge.exposeInMainWorld('electron', electronAPI)
     contextBridge.exposeInMainWorld('api', api)
+    contextBridge.exposeInMainWorld('updater', updater)
     contextBridge.exposeInMainWorld('process', process)
   } catch (error) {
     console.error(error)
@@ -31,4 +45,6 @@ if (process.contextIsolated) {
   window.api = api
   // @ts-ignore
   window.process = process
+  // @ts-ignore
+  window.updater = updater
 }

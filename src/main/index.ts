@@ -2,9 +2,32 @@ import { app, shell, BrowserWindow, ipcMain, dialog } from 'electron'
 import { join } from 'path'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import icon from '../../resources/icon.png?asset';
+import { autoUpdater } from 'electron-updater';
+import log from 'electron-log';
+import path from 'path';
 import * as fs from 'fs'; // <- Prone to breaking ig
+
+autoUpdater.logger = log;
+(autoUpdater.logger as typeof log).transports.file.level = 'info';
+autoUpdater.forceDevUpdateConfig = app.isPackaged ? true : false;
+
+// WIP: adding user consent to download updates
+autoUpdater.autoDownload = false;
+autoUpdater.autoInstallOnAppQuit = false;
+
 // Declare mainWindow as a global variable
-let mainWindow: BrowserWindow | null = null
+let mainWindow: BrowserWindow | null = null;
+
+const send = (channel: string, ...args: any[]) => {
+  mainWindow?.webContents.send(channel, ...args);
+}
+
+autoUpdater.on('checking-for-update', () => send('update:checking'));
+autoUpdater.on('update-available', (info) => send('update:available', info));
+autoUpdater.on('update-not-available', (info) => send('update:not-available', info));
+autoUpdater.on('error', (err) => send('update:error', err.message));
+autoUpdater.on('download-progress', (progress) => send('update:progress', progress));
+autoUpdater.on('update-downloaded', (info) => send('update:downloaded', info));
 
 function createWindow(): void {
   // Create the browser window.
@@ -69,6 +92,10 @@ app.whenReady().then(() => {
     // On macOS it's common to re-create a window in the app when the
     // dock icon is clicked and there are no other windows open.
     if (BrowserWindow.getAllWindows().length === 0) createWindow()
+  });
+
+  autoUpdater.checkForUpdatesAndNotify().catch(() => {
+    console.log('[updater] offline or no updates available, skipping');
   })
 })
 
@@ -97,6 +124,9 @@ ipcMain.on('renderer-log', (_event, source, args) => {
   console.log(`[${source}]`, ...args);
 });
 ipcMain.handle('req-version', () => app.getVersion());
+ipcMain.handle('update:check', () => autoUpdater.checkForUpdates());
+ipcMain.handle('update:download', () => autoUpdater.downloadUpdate());
+ipcMain.handle('update:install', () => autoUpdater.quitAndInstall());
 
 // In this file you can include the rest of your app's specific main process
 // code. You can also put them in separate files and require them here.

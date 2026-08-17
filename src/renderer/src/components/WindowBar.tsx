@@ -24,6 +24,7 @@ import { useRenderer } from './RendererContextProvider'
 import { InternalUtilities, RNGSpamGen } from '../utils/InternalStuffs'
 import { openFileAndParse } from '../utils/FileImporter'
 import { getLocaleKey } from '../locales/Locale'
+import UpdaterModal from './submodals/UpdaterModal'
 
 export default function WindowBar(): React.ReactElement {
   const [isMaximized, setMaximized] = useState<boolean>(false)
@@ -114,6 +115,9 @@ export default function WindowBar(): React.ReactElement {
   const spawnAboutModal = (): void => {
     openModal(getLocaleKey('editor.menu.about'), <AboutModal />)
   }
+  const spawnUpdaterModal = (): void => {
+    openModal('Check for updates', <UpdaterModal />)
+  }
 
   interface MenuItemDef {
     icon?: string
@@ -135,7 +139,7 @@ export default function WindowBar(): React.ReactElement {
         { title: 'Internal utilities only', onAction: _internal_spawnInternalUtilsModal },
       ]
       : []),
-    { icon: UpdateIcon, title: 'Check for updates', onAction: spawnAboutModal },
+    { icon: UpdateIcon, title: 'Check for updates', onAction: spawnUpdaterModal },
     { title: getLocaleKey('editor.menu.about'), onAction: spawnAboutModal }
   ]
 
