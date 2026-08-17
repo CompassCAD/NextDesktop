@@ -56,5 +56,4 @@ publish:
   owner: CompassCAD
   repo: NextDesktop
   releaseType: release
-  tagNamePrefix: ""
   vPrefixedTagName: false
