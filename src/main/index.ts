@@ -9,7 +9,7 @@ import * as fs from 'fs'; // <- Prone to breaking ig
 
 autoUpdater.logger = log;
 (autoUpdater.logger as typeof log).transports.file.level = 'info';
-autoUpdater.forceDevUpdateConfig = app.isPackaged ? true : false;
+autoUpdater.forceDevUpdateConfig = !app.isPackaged;
 
 // WIP: adding user consent to download updates
 autoUpdater.autoDownload = false;
