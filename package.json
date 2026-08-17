@@ -57,7 +57,9 @@
     },
     "publish": {
       "provider": "github",
-      "releaseType": "draft"
+      "owner": "CompassCAD",
+      "repo": "NextDesktop",
+      "releaseType": "release"
     },
     "files": [
       "out/**/*"
