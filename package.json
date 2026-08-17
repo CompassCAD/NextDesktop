@@ -51,7 +51,7 @@
     "vite": "^7.0.5"
   },
   "build": {
-    "appId": "dev.zeankun.compasscad.next",
+    "appId": "dev.zeankun.compasscad-next",
     "productName": "CompassCAD NEXT",
     "directories": {
       "output": "dist",
