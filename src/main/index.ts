@@ -9,6 +9,10 @@ import * as fs from 'fs'; // <- Prone to breaking ig
 
 autoUpdater.logger = log;
 (autoUpdater.logger as typeof log).transports.file.level = 'info';
+if (!app.isPackaged) {
+  autoUpdater.forceDevUpdateConfig = true;
+  autoUpdater.updateConfigPath = path.join(app.getAppPath(), 'dev-app-update.yml');
+}
 
 // WIP: adding user consent to download updates
 autoUpdater.autoDownload = false;
