@@ -12,6 +12,7 @@
     "typecheck:node": "tsc --noEmit -p tsconfig.node.json --composite false",
     "typecheck:web": "tsc --noEmit -p tsconfig.web.json --composite false",
     "typecheck": "npm run typecheck:node && npm run typecheck:web",
+    "reinstall": "node node_modules/electron/install.js",
     "start": "electron-vite preview",
     "dev": "electron-vite dev -- --ozone-platform=wayland --no-sandbox --inspect=9229 --sourcemap",
     "build": "npm run typecheck && electron-vite build",
@@ -25,7 +26,8 @@
     "@electron-toolkit/preload": "^3.0.2",
     "@electron-toolkit/utils": "^4.0.0",
     "derakuma": "0.6.7",
-    "electron-updater": "^6.3.9"
+    "electron-log": "^5.4.4",
+    "electron-updater": "^6.8.9"
   },
   "devDependencies": {
     "@electron-toolkit/eslint-config-prettier": "^3.0.0",
@@ -68,7 +70,9 @@
       "target": [
         {
           "target": "portable",
-          "arch": [ "x64" ]
+          "arch": [
+            "x64"
+          ]
         }
       ],
       "artifactName": "${productName}-${version}-portable.${ext}"
@@ -77,7 +81,10 @@
       "target": [
         {
           "target": "dmg",
-          "arch": [ "x64", "arm64" ]
+          "arch": [
+            "x64",
+            "arm64"
+          ]
         }
       ],
       "identity": null,
@@ -87,15 +94,21 @@
       "target": [
         {
           "target": "deb",
-          "arch": [ "x64" ]
+          "arch": [
+            "x64"
+          ]
         },
         {
           "target": "rpm",
-          "arch": [ "x64" ]
+          "arch": [
+            "x64"
+          ]
         },
         {
           "target": "AppImage",
-          "arch": [ "x64" ]
+          "arch": [
+            "x64"
+          ]
         }
       ],
       "category": "Graphics",
