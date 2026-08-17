@@ -8,6 +8,7 @@ import BackupIcon from '../assets/icons/openbackup.svg'
 import SaveDesignIcon from '../assets/icons/saveLogic.svg'
 import SaveDesignAsIcon from '../assets/icons/saveas.svg'
 import ExportIcon from '../assets/icons/export.svg'
+import UpdateIcon from '../assets/icons/update.svg'
 // Window buttons
 import Minimize from '../assets/icons/minimize.svg'
 import Maximize from '../assets/icons/maximize.svg'
@@ -134,6 +135,7 @@ export default function WindowBar(): React.ReactElement {
         { title: 'Internal utilities only', onAction: _internal_spawnInternalUtilsModal },
       ]
       : []),
+    { icon: UpdateIcon, title: 'Check for updates', onAction: spawnAboutModal },
     { title: getLocaleKey('editor.menu.about'), onAction: spawnAboutModal }
   ]
 

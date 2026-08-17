@@ -2,7 +2,7 @@ import { app, shell, BrowserWindow, ipcMain, dialog } from 'electron'
 import { join } from 'path'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import icon from '../../resources/icon.png?asset';
-import * as fs from 'fs';
+import * as fs from 'fs'; // <- Prone to breaking ig
 // Declare mainWindow as a global variable
 let mainWindow: BrowserWindow | null = null
 
