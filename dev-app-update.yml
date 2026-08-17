@@ -1,3 +1,4 @@
 provider: github
+vPrefixedTagName: true
 owner: CompassCAD
 repo: NextDesktop

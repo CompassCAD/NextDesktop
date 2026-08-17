@@ -1,41 +1,59 @@
-appId: dev.zeankun.compasscad
-productName: compasscad
+appId: dev.zeankun.compasscad-next
+productName: CompassCAD NEXT
 directories:
+  output: dist
   buildResources: build
 files:
-  - '!**/.vscode/*'
-  - '!src/*'
-  - '!electron.vite.config.{js,ts,mjs,cjs}'
-  - '!{.eslintcache,eslint.config.mjs,.prettierignore,.prettierrc.yaml,dev-app-update.yml,CHANGELOG.md,README.md}'
-  - '!{.env,.env.*,.npmrc,pnpm-lock.yaml}'
-  - '!{tsconfig.json,tsconfig.node.json,tsconfig.web.json}'
+  - out/**/*
 asarUnpack:
   - resources/**
 win:
+  target:
+    - target: nsis
+      arch:
+        - x64
   executableName: CompassCAD
+  artifactName: ${productName}-${version}-setup.${ext}
 nsis:
-  artifactName: ${name}-${version}-setup.${ext}
+  artifactName: ${productName}-${version}-setup.${ext}
   shortcutName: ${productName}
   uninstallDisplayName: ${productName}
   createDesktopShortcut: always
 mac:
+  target:
+    - target: dmg
+      arch:
+        - x64
+        - arm64
+  identity: null
+  artifactName: ${productName}-${version}-${arch}.${ext}
   entitlementsInherit: build/entitlements.mac.plist
   extendInfo:
     - NSDocumentsFolderUsageDescription: we need request to your docs folder, you'll thank me later :)
     - NSDownloadsFolderUsageDescription: we need request to your downloads folder, you'll thank me later :)
   notarize: false
 dmg:
-  artifactName: ${name}-${version}.${ext}
+  artifactName: ${productName}-${version}-${arch}.${ext}
 linux:
   target:
-    - AppImage
-    - snap
-    - deb
+    - target: deb
+      arch:
+        - x64
+    - target: rpm
+      arch:
+        - x64
+    - target: AppImage
+      arch:
+        - x64
   maintainer: zeankun
   category: Graphics
+  artifactName: ${productName}-${version}-${arch}.${ext}
 appImage:
-  artifactName: ${name}-${version}.${ext}
+  artifactName: ${productName}-${version}-${arch}.${ext}
 npmRebuild: false
 publish:
-  provider: generic
-  url: https://example.com/auto-updates
+  provider: github
+  owner: CompassCAD
+  repo: NextDesktop
+  releaseType: release
+  vPrefixedTagName: true
