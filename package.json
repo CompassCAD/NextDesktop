@@ -1,6 +1,6 @@
 {
   "name": "compasscad",
-  "version": "v2.2.0-beta.2",
+  "version": "v2.2.0-beta.2.1",
   "description": "the next generation CAD software",
   "main": "./out/main/index.js",
   "license": "GPL-2.0-only",
