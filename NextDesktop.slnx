@@ -1,0 +1,6 @@
+<Solution>
+  <Project Path="NextDesktop.esproj">
+    <Build />
+    <Deploy />
+  </Project>
+</Solution>
