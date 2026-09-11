@@ -38,6 +38,7 @@ function ToolbarButton(props: ToolbarButtonProps): React.ReactElement {
   const [tooltipPos, setPos] = useState<Vector2>({ x: 0, y: 0 });
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent): void => {
+      if (e.ctrlKey || e.metaKey || e.altKey) return
       if ((e.keyCode === props.keyCode || e.keyCode === props.alternateKeyCode) && props.onAction) {
         if (
           document.activeElement &&

@@ -3801,7 +3801,7 @@ export const InitializeInstance = (renderer: GraphicsRenderer) => {
   }, { ctrl: false });
   renderer.keyboard?.addKeyEvent(true, Types.default.KeyCodes.V, () => {
     renderer.pasteWhateverTheFuckIsInTheClipboard();
-  }, { ctrl: true })
+  }, { ctrl: true });
 
   let animationFrameId: number | null
   let isWindowFocused = true
