@@ -3,21 +3,23 @@
   "configurations": [
     {
       "type": "node",
+      "runtimeExecutable": "/home/zean/.bun/bin/bun",
       "request": "launch",
       "name": "Debug Main Process",
       "cwd": "${workspaceFolder}",
       "program": "${workspaceFolder}/node_modules/electron-vite/bin/electron-vite.js",
-      "args": [ "dev", "--", "--inspect=9229", "--remote-debugging-port=9222" ],
+      "args": [ "dev", "--", "--inspect=9229", "--remote-debugging-port=9222", "--no-sandbox" ],
       "console": "internalConsole",
       "outputCapture": "std"
     },
     {
       "type": "node",
+      "runtimeExecutable": "/home/zean/.bun/bin/bun",
       "request": "launch",
       "name": "Simulate Production Build",
       "cwd": "${workspaceFolder}",
       "program": "${workspaceFolder}/node_modules/electron-vite/bin/electron-vite.js",
-      "args": [ "preview", "--", "--inspect=9229", "--remote-debugging-port=9222" ],
+      "args": [ "preview", "--", "--inspect=9229", "--remote-debugging-port=9222", "--no-sandbox" ],
       "console": "internalConsole",
       "outputCapture": "std"
     },

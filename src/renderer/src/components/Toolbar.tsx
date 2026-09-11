@@ -1,22 +1,32 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useState } from 'react'
 import styles from '../style/index.module.css'
 import * as Types from '../engine/Types'
-import { GraphicsRenderer, Vector2 } from '@renderer/engine/Engine'
-import { getRendererIfAvailable } from '@renderer/exports'
+import { Vector2 } from '@renderer/engine/Engine'
+import { useRenderer } from './RendererContextProvider'
+import { getLocaleKey, LocaleKey } from '../locales/Locale'
+
 import SelectIcon from '../assets/icons/navigate.svg'
 import NavigateIcon from '../assets/icons/pan.svg'
 import MoveIcon from '../assets/icons/move.svg'
+import DeleteIcon from '../assets/icons/delete.svg'
+
+import AddPointIcon from '../assets/icons/point.svg'
 import AddLineIcon from '../assets/icons/line.svg'
+import AddCircleIcon from '../assets/icons/circle.svg'
+import AddArcIcon from '../assets/icons/arc.svg'
+import AddRectangleIcon from '../assets/icons/rectangle.svg'
+import AddPictureIcon from '../assets/icons/image.svg'
+import AddPolygonIcon from '../assets/icons/polygon.svg'
+import AddBoundBoxIcon from '../assets/icons/boundbox.svg'
 import AddTextIcon from '../assets/icons/text.svg'
 import MeasureIcon from '../assets/icons/measure.svg'
-import { useRenderer } from './RendererContextProvider'
-import { getLocaleKey } from '../locales/Locale'
 
 interface ToolbarButtonProps {
   icon: string
   title: string
   keyName: string
   keyCode: number
+  key?: number
   alternateKeyCode?: number
   // To check if the tool is selected
   isActive: boolean
@@ -61,20 +71,134 @@ function ToolbarButton(props: ToolbarButtonProps): React.ReactElement {
         onMouseLeave={() => setVisibility(false)}
         onMouseMove={changePos}
       >
-      <img width={18} src={props.icon} />
+        <img width={18} src={props.icon} />
       </div>
       {isTooltipVisible && (
-      <div className={styles['toolbar-tooltip']} style={{ left: tooltipPos.x, top: tooltipPos.y }}>
-        {props.title} <span className={styles['menu-context-key-combination-key']}>{props.keyName}</span>
+        <div
+          className={styles['toolbar-tooltip']}
+          style={{ left: tooltipPos.x, top: tooltipPos.y }}
+        >
+          {props.title}{' '}
+          <span className={styles['menu-context-key-combination-key']}>{props.keyName}</span>
       </div>
       )}
     </>
   )
 }
 
+interface ToolbarButtonSingleton {
+  icon: string
+  localeString: LocaleKey
+  keyName: string
+  keyCode: number
+  state: number
+}
+
 export default function Toolbar(): React.ReactElement {
   const [modeState, setModeState] = useState<number>(Types.default.NavigationTypes.Navigate)
   const { renderer } = useRenderer();
+
+  const tools: ToolbarButtonSingleton[] = [
+    {
+      icon: SelectIcon,
+      localeString: 'editor.toolbox.select',
+      keyName: 'q',
+      keyCode: Types.default.KeyCodes.Q,
+      state: Types.default.NavigationTypes.Select
+    },
+    {
+      icon: NavigateIcon,
+      localeString: 'editor.toolbox.navigate',
+      keyName: 'w',
+      keyCode: Types.default.KeyCodes.W,
+      state: Types.default.NavigationTypes.Navigate
+    },
+    {
+      icon: MoveIcon,
+      localeString: 'editor.toolbox.move',
+      keyName: 'e',
+      keyCode: Types.default.KeyCodes.E,
+      state: Types.default.NavigationTypes.Move
+    },
+    {
+      icon: DeleteIcon,
+      localeString: 'editor.toolbox.delete',
+      keyName: 't',
+      keyCode: Types.default.KeyCodes.T,
+      state: Types.default.NavigationTypes.Delete
+    },
+    {
+      icon: AddPointIcon,
+      localeString: 'editor.toolbox.addPoint',
+      keyName: 'p',
+      keyCode: Types.default.KeyCodes.P,
+      state: Types.default.NavigationTypes.AddPoint
+    },
+    {
+      icon: AddLineIcon,
+      localeString: 'editor.toolbox.addLine',
+      keyName: 's',
+      keyCode: Types.default.KeyCodes.S,
+      state: Types.default.NavigationTypes.AddLine
+    },
+    {
+      icon: AddCircleIcon,
+      localeString: 'editor.toolbox.addCircle',
+      keyName: 'c',
+      keyCode: Types.default.KeyCodes.C,
+      state: Types.default.NavigationTypes.AddCircle
+    },
+    {
+      icon: AddArcIcon,
+      localeString: 'editor.toolbox.addArc',
+      keyName: 'a',
+      keyCode: Types.default.KeyCodes.A,
+      state: Types.default.NavigationTypes.AddArc
+    },
+    {
+      icon: AddRectangleIcon,
+      localeString: 'editor.toolbox.addRectangle',
+      keyName: 'r',
+      keyCode: Types.default.KeyCodes.R,
+      state: Types.default.NavigationTypes.AddRectangle
+    },
+    {
+      icon: AddPictureIcon,
+      localeString: 'editor.toolbox.addImage',
+      keyName: 'i',
+      keyCode: Types.default.KeyCodes.I,
+      state: Types.default.NavigationTypes.AddPicture
+    },
+    {
+      icon: AddPolygonIcon,
+      localeString: 'editor.toolbox.addPolygon',
+      keyName: 'o',
+      keyCode: Types.default.KeyCodes.O,
+      state: Types.default.NavigationTypes.AddPolygon
+    },
+    {
+      icon: AddBoundBoxIcon,
+      localeString: 'editor.toolbox.addBoundbox',
+      keyName: 'b',
+      keyCode: Types.default.KeyCodes.B,
+      state: Types.default.NavigationTypes.AddBoundbox
+    },
+    {
+      icon: AddTextIcon,
+      localeString: 'editor.toolbox.addLabel',
+      keyName: 'h',
+      keyCode: Types.default.KeyCodes.H,
+      state: Types.default.NavigationTypes.AddLabel
+    },
+    {
+      icon: MeasureIcon,
+      localeString: 'editor.toolbox.addMeasure',
+      keyName: 'm',
+      keyCode: Types.default.KeyCodes.M,
+      state: Types.default.NavigationTypes.AddMeasure
+    }
+  ]
+
   useEffect(() => {
     if (!renderer) return;
     if (renderer) {
@@ -98,54 +222,17 @@ export default function Toolbar(): React.ReactElement {
   return (
     <>
       <div className={styles['workflow-toolbar']} onMouseDown={(e) => e.stopPropagation()}>
-        <ToolbarButton
-          icon={SelectIcon}
-          title={getLocaleKey('editor.toolbox.select')}
-          keyName="q"
-          keyCode={Types.default.KeyCodes.Q}
-          isActive={modeState == Types.default.NavigationTypes.Select}
-          onAction={() => renderer?.setMode(Types.default.NavigationTypes.Select)}
-        />
-        <ToolbarButton
-          icon={NavigateIcon}
-          title={getLocaleKey('editor.toolbox.navigate')}
-          keyName="w"
-          keyCode={Types.default.KeyCodes.W}
-          isActive={modeState == Types.default.NavigationTypes.Navigate}
-          onAction={() => renderer?.setMode(Types.default.NavigationTypes.Navigate)}
-        />
-        <ToolbarButton
-          icon={MoveIcon}
-          title={getLocaleKey('editor.toolbox.move')}
-          keyName="e"
-          keyCode={Types.default.KeyCodes.E}
-          isActive={modeState == Types.default.NavigationTypes.Move}
-          onAction={() => renderer?.setMode(Types.default.NavigationTypes.Move)}
-        />
-        <ToolbarButton
-          icon={AddLineIcon}
-          title={getLocaleKey('editor.toolbox.addLine')}
-          keyName="s"
-          keyCode={Types.default.KeyCodes.S}
-          isActive={modeState == Types.default.NavigationTypes.AddLine}
-          onAction={() => renderer?.setMode(Types.default.NavigationTypes.AddLine)}
-        />
-        <ToolbarButton
-          icon={AddTextIcon}
-          title={getLocaleKey('editor.toolbox.addLabel')}
-          keyName="h"
-          keyCode={Types.default.KeyCodes.H}
-          isActive={modeState == Types.default.NavigationTypes.AddLabel}
-          onAction={() => renderer?.setMode(Types.default.NavigationTypes.AddLabel)}
-        />
-        <ToolbarButton
-          icon={MeasureIcon}
-          title={getLocaleKey('editor.toolbox.addMeasure')}
-          keyName="m"
-          keyCode={Types.default.KeyCodes.M}
-          isActive={modeState == Types.default.NavigationTypes.AddMeasure}
-          onAction={() => renderer?.setMode(Types.default.NavigationTypes.AddMeasure)}
-        />
+        {tools.map((tool, index) => (
+          <ToolbarButton
+            icon={tool.icon}
+            key={index}
+            title={getLocaleKey(tool.localeString)}
+            keyName={tool.keyName}
+            keyCode={tool.keyCode}
+            isActive={modeState == tool.state}
+            onAction={() => renderer?.setMode(tool.state)}
+          />
+        ))}
       </div>
     </>
   )
