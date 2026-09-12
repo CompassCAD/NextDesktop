@@ -14,9 +14,7 @@ import Minimize from '../assets/icons/minimize.svg'
 import Maximize from '../assets/icons/maximize.svg'
 import Close from '../assets/icons/close.svg'
 import RestoreDown from '../assets/icons/restoredown.svg'
-import React, { useEffect, useRef, useState } from 'react'
-import { GraphicsRenderer } from '@renderer/engine/Engine'
-import { getRendererIfAvailable } from '@renderer/exports'
+import React, { useEffect, useState } from 'react'
 import { MenuProvider, MenuContext } from './MenuProvider'
 import { openModal } from './ModalProvider'
 import AboutModal from './submodals/AboutModal'
@@ -32,25 +30,25 @@ export default function WindowBar(): React.ReactElement {
   const [menuOpened, setMenuOpened] = useState<boolean>(false)
   const [focusedMenuIndex, setFocusedMenuIndex] = useState<number>(-1)
   const [keyboardNav, setKeyboardNav] = useState<boolean>(false)
-  const { renderer } = useRenderer();
+  const { renderer } = useRenderer()
 
   window.electron.ipcRenderer.on('isMaximized', (_event, isMaximized: boolean) => {
     console.log(`[windowbar] isMaximized: ${isMaximized}`)
-    setMaximized(isMaximized);
-    renderer?.markDirty('maximize state refresh (requires canvas resize)');
+    setMaximized(isMaximized)
+    renderer?.markDirty('maximize state refresh (requires canvas resize)')
   })
   useEffect(() => {
-    if (!renderer) return;
+    if (!renderer) return
   }, []) // Empty dependency array ensures this runs only once on mount
   window.addEventListener('click', (event) => {
     const target = event.target as HTMLElement
     if (!target.closest('#menu-opener') && menuOpened) {
       setMenuOpened(false)
     }
-  });
+  })
   if (renderer) {
     renderer.onZoomUpdate = () => {
-      setZoom(renderer!.zoom);
+      setZoom(renderer!.zoom)
     }
   }
   window.onkeydown = (e: KeyboardEvent) => {
@@ -101,10 +99,10 @@ export default function WindowBar(): React.ReactElement {
     setMenuOpened(!menuOpened)
   }
   const resetZoom = (): void => {
-    console.log('resetting zoom!');
-    const zoomFactor: number = 1 / renderer!.zoom;
-    renderer!.setZoom(zoomFactor);
-    renderer!.markDirty('zoom reset');
+    console.log('resetting zoom!')
+    const zoomFactor: number = 1 / renderer!.zoom
+    renderer!.setZoom(zoomFactor)
+    renderer!.markDirty('zoom reset')
   }
   const _internal_spawnRngModal = (): void => {
     openModal('RNG Gen', <RNGSpamGen />)
@@ -127,22 +125,42 @@ export default function WindowBar(): React.ReactElement {
   }
 
   const menuItemDefs: MenuItemDef[] = [
-    { icon: NewFileIcon, title: getLocaleKey('editor.menu.newDesign'), keyCombinations: ['Ctrl', 'N'] },
-    { icon: OpenFileIcon, title: getLocaleKey('editor.menu.openDesign'), keyCombinations: ['Ctrl', 'O'], onAction: () => openFileAndParse(renderer!) },
+    {
+      icon: NewFileIcon,
+      title: getLocaleKey('editor.menu.newDesign'),
+      keyCombinations: ['Ctrl', 'N']
+    },
+    {
+      icon: OpenFileIcon,
+      title: getLocaleKey('editor.menu.openDesign'),
+      keyCombinations: ['Ctrl', 'O'],
+      onAction: () => openFileAndParse(renderer!)
+    },
     { icon: BackupIcon, title: getLocaleKey('editor.menu.openBackups') },
-    { icon: SaveDesignIcon, title: getLocaleKey('editor.menu.saveDesign'), keyCombinations: ['Ctrl', 'S'] },
-    { icon: SaveDesignAsIcon, title: getLocaleKey('editor.menu.saveAs'), keyCombinations: ['Ctrl', 'Alt', 'S'] },
-    { icon: ExportIcon, title: getLocaleKey('editor.menu.exportToSvg'), keyCombinations: ['Ctrl', 'E'] },
+    {
+      icon: SaveDesignIcon,
+      title: getLocaleKey('editor.menu.saveDesign'),
+      keyCombinations: ['Ctrl', 'S']
+    },
+    {
+      icon: SaveDesignAsIcon,
+      title: getLocaleKey('editor.menu.saveAs'),
+      keyCombinations: ['Ctrl', 'Alt', 'S']
+    },
+    {
+      icon: ExportIcon,
+      title: getLocaleKey('editor.menu.exportToSvg'),
+      keyCombinations: ['Ctrl', 'E']
+    },
     ...(import.meta.env.DEV
       ? [
-        { title: 'RNG Design Generator (choke test only)', onAction: _internal_spawnRngModal },
-        { title: 'Internal utilities only', onAction: _internal_spawnInternalUtilsModal },
-      ]
+          { title: 'RNG Design Generator (choke test only)', onAction: _internal_spawnRngModal },
+          { title: 'Internal utilities only', onAction: _internal_spawnInternalUtilsModal }
+        ]
       : []),
     { icon: UpdateIcon, title: 'Check for updates', onAction: spawnUpdaterModal },
     { title: getLocaleKey('editor.menu.about'), onAction: spawnAboutModal }
   ]
-
 
   return (
     <>

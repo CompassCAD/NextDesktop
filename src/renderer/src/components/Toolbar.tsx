@@ -124,15 +124,15 @@ export default function Toolbar(): React.ReactElement {
     {
       icon: DeleteIcon,
       localeString: 'editor.toolbox.delete',
-      keyName: 't',
-      keyCode: Types.default.KeyCodes.T,
+      keyName: 'r',
+      keyCode: Types.default.KeyCodes.R,
       state: Types.default.NavigationTypes.Delete
     },
     {
       icon: AddPointIcon,
       localeString: 'editor.toolbox.addPoint',
-      keyName: 'p',
-      keyCode: Types.default.KeyCodes.P,
+      keyName: 'a',
+      keyCode: Types.default.KeyCodes.A,
       state: Types.default.NavigationTypes.AddPoint
     },
     {
@@ -145,57 +145,57 @@ export default function Toolbar(): React.ReactElement {
     {
       icon: AddCircleIcon,
       localeString: 'editor.toolbox.addCircle',
-      keyName: 'c',
-      keyCode: Types.default.KeyCodes.C,
+      keyName: 'd',
+      keyCode: Types.default.KeyCodes.D,
       state: Types.default.NavigationTypes.AddCircle
     },
     {
       icon: AddArcIcon,
       localeString: 'editor.toolbox.addArc',
-      keyName: 'a',
-      keyCode: Types.default.KeyCodes.A,
+      keyName: 'f',
+      keyCode: Types.default.KeyCodes.F,
       state: Types.default.NavigationTypes.AddArc
     },
     {
       icon: AddRectangleIcon,
       localeString: 'editor.toolbox.addRectangle',
-      keyName: 'r',
-      keyCode: Types.default.KeyCodes.R,
+      keyName: 'g',
+      keyCode: Types.default.KeyCodes.G,
       state: Types.default.NavigationTypes.AddRectangle
     },
     {
       icon: AddPictureIcon,
       localeString: 'editor.toolbox.addImage',
-      keyName: 'i',
-      keyCode: Types.default.KeyCodes.I,
+      keyName: 'z',
+      keyCode: Types.default.KeyCodes.Z,
       state: Types.default.NavigationTypes.AddPicture
     },
     {
       icon: AddPolygonIcon,
       localeString: 'editor.toolbox.addPolygon',
-      keyName: 'o',
-      keyCode: Types.default.KeyCodes.O,
+      keyName: 'x',
+      keyCode: Types.default.KeyCodes.X,
       state: Types.default.NavigationTypes.AddPolygon
     },
     {
       icon: AddBoundBoxIcon,
       localeString: 'editor.toolbox.addBoundbox',
-      keyName: 'b',
-      keyCode: Types.default.KeyCodes.B,
+      keyName: 'c',
+      keyCode: Types.default.KeyCodes.C,
       state: Types.default.NavigationTypes.AddBoundbox
     },
     {
       icon: AddTextIcon,
       localeString: 'editor.toolbox.addLabel',
-      keyName: 'h',
-      keyCode: Types.default.KeyCodes.H,
+      keyName: 'v',
+      keyCode: Types.default.KeyCodes.V,
       state: Types.default.NavigationTypes.AddLabel
     },
     {
       icon: MeasureIcon,
       localeString: 'editor.toolbox.addMeasure',
-      keyName: 'm',
-      keyCode: Types.default.KeyCodes.M,
+      keyName: 'b',
+      keyCode: Types.default.KeyCodes.B,
       state: Types.default.NavigationTypes.AddMeasure
     }
   ]

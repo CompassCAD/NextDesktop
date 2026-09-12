@@ -1,22 +1,23 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import styles from '../style/index.module.css'
 import { useEffect, useState, useMemo } from 'react'
 import { useRenderer } from './RendererContextProvider'
 import CollapseToRight from '../assets/icons/collapse-right.svg'
 import NoPropertiesIcon from '../assets/icons/unselected-state.svg'
 
-import PointSymbol from "../assets/icons/point.svg";
-import LineSymbol from "../assets/icons/line.svg";
-import CircleSymbol from "../assets/icons/circle.svg";
-import ArcSymbol from "../assets/icons/arc.svg";
-import RectSymbol from "../assets/icons/rectangle.svg";
-import PicSymbol from "../assets/icons/image.svg";
-import PolySymbol from "../assets/icons/polygon.svg";
-import BoundboxSymbol from "../assets/icons/boundbox.svg";
-import LabelSymbol from "../assets/icons/text.svg";
-import RulerSymbol from "../assets/icons/measure.svg";
+import PointSymbol from '../assets/icons/point.svg'
+import LineSymbol from '../assets/icons/line.svg'
+import CircleSymbol from '../assets/icons/circle.svg'
+import ArcSymbol from '../assets/icons/arc.svg'
+import RectSymbol from '../assets/icons/rectangle.svg'
+import PicSymbol from '../assets/icons/image.svg'
+import PolySymbol from '../assets/icons/polygon.svg'
+import BoundboxSymbol from '../assets/icons/boundbox.svg'
+import LabelSymbol from '../assets/icons/text.svg'
+import RulerSymbol from '../assets/icons/measure.svg'
 
-import PropertiesIcon from '../assets/icons/properties.svg';
-import HierarchyIcon from '../assets/icons/hierarchy.svg';
+import PropertiesIcon from '../assets/icons/properties.svg'
+import HierarchyIcon from '../assets/icons/hierarchy.svg'
 import {
   Component,
   Point,
@@ -29,9 +30,9 @@ import {
   Shape,
   Picture,
   Polygon
-} from '../engine/Component';
-import Slider from './CustomSlider';
-import { getLocaleKey } from '../locales/Locale';
+} from '../engine/Component'
+import Slider from './CustomSlider'
+import { getLocaleKey } from '../locales/Locale'
 
 enum InspectorState {
   Properties,
@@ -48,12 +49,11 @@ type AnyComponent =
   | Arc
   | Shape
   | Picture
-  | Polygon;
+  | Polygon
 
-export default function Inspector() {
-
+export default function Inspector(): React.ReactElement {
   const componentImages: string[] = [
-    "",
+    '',
     PointSymbol,
     LineSymbol,
     CircleSymbol,
@@ -64,70 +64,66 @@ export default function Inspector() {
     PicSymbol,
     PicSymbol,
     PolySymbol,
-    BoundboxSymbol,
-  ];
+    BoundboxSymbol
+  ]
 
-  const { renderer } = useRenderer();
-  const [inspectorState, setInspectorState] = useState<InspectorState>(InspectorState.Properties);
-  const [component, setComponent] = useState<AnyComponent | null>(null);
-  const [isHidden, setIsHidden] = useState<boolean>(false);
-  const [hierarchySearch, setHierarchySearch] = useState<string>("");
-  const [componentArray, setComponentArray] = useState<Component[]>([]);
+  const { renderer } = useRenderer()
+  const [inspectorState, setInspectorState] = useState<InspectorState>(InspectorState.Properties)
+  const [component, setComponent] = useState<AnyComponent | null>(null)
+  const [isHidden, setIsHidden] = useState<boolean>(false)
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const [hierarchySearch, setHierarchySearch] = useState<string>('')
+  const [componentArray, setComponentArray] = useState<Component[]>([])
 
   const filteredComponents = useMemo(() => {
     return componentArray
       .map((comp, i) => {
-        return { comp: comp, originalIndex: i };
+        return { comp: comp, originalIndex: i }
       })
       .filter((item) => {
-        return item.comp.name
-          .toLowerCase()
-          .includes(hierarchySearch.toLowerCase());
-      });
-  }, [componentArray, hierarchySearch]);
+        return item.comp.name.toLowerCase().includes(hierarchySearch.toLowerCase())
+      })
+  }, [componentArray, hierarchySearch])
 
   useEffect(() => {
-    if (!renderer) return;
-  }, []);
+    if (!renderer) return
+  }, [])
 
   useEffect(() => {
-    if (!renderer) return;
+    if (!renderer) return
 
     renderer.onComponentChangeCallback = () => {
-      setComponent(null);
+      setComponent(null)
       if (renderer.selectedComponent != null) {
-        const selected = renderer.logicDisplay?.components[renderer.selectedComponent];
-        setComponent(selected as AnyComponent);
+        const selected = renderer.logicDisplay?.components[renderer.selectedComponent]
+        setComponent(selected as AnyComponent)
       }
-    };
+    }
 
     renderer.onComponentArrayChanged = () => {
-      setComponentArray([...(renderer.logicDisplay?.components ?? [])]);
-    };
+      setComponentArray([...(renderer.logicDisplay?.components ?? [])])
+    }
 
     // optional cleanup
     return () => {
-      renderer.onComponentChangeCallback = undefined as any;
-      renderer.onComponentArrayChanged = undefined as any;
-    };
-  }, [renderer]);
+      renderer.onComponentChangeCallback = undefined as any
+      renderer.onComponentArrayChanged = undefined as any
+    }
+  }, [renderer])
 
   const handleComponentChange = (key: string, value: string | boolean | number): void => {
     setComponent((prev) => {
-      if (!prev) return null;
-      const updated = Object.create(
-        Object.getPrototypeOf(prev)
-      );
-      Object.assign(updated, prev);
-      (updated as Record<string, any>)[key] = value;
-      const finalComponent = updated as AnyComponent;
+      if (!prev) return null
+      const updated = Object.create(Object.getPrototypeOf(prev))
+      Object.assign(updated, prev)(updated as Record<string, any>)[key] = value
+      const finalComponent = updated as AnyComponent
       if (renderer && renderer.logicDisplay && renderer.selectedComponent !== null) {
-        renderer.logicDisplay.components[renderer.selectedComponent] = finalComponent;
-        renderer.markDirty('instantaneous component change');
-        renderer.saveState();
-        setComponentArray(renderer.logicDisplay.components);
+        renderer.logicDisplay.components[renderer.selectedComponent] = finalComponent
+        renderer.markDirty('instantaneous component change')
+        renderer.saveState()
+        setComponentArray(renderer.logicDisplay.components)
       }
-      return finalComponent;
+      return finalComponent
     })
   }
 
@@ -145,21 +141,25 @@ export default function Inspector() {
         </button>
       </div>
       <div className={styles['inspector-content']}>
-        {inspectorState == InspectorState.Properties && (
-          component == null ? (
-            <div className={styles['properties-nothing']} >
+        {inspectorState == InspectorState.Properties &&
+          (component == null ? (
+            <div className={styles['properties-nothing']}>
               <img src={NoPropertiesIcon} width={56} />
               <p>{getLocaleKey('editor.inspector.properties.nothingOnSelected')}</p>
             </div>
           ) : (
             <>
-                <p>{component?.name}</p>
-                <Slider min={0} max={100} defaultValue={component.opacity} onChange={(v) => handleComponentChange('opacity', v)} />
+              <p>{component?.name}</p>
+              <Slider
+                min={0}
+                max={100}
+                defaultValue={component.opacity}
+                onChange={(v) => handleComponentChange('opacity', v)}
+              />
             </>
-          )
-        )}
-        {inspectorState == InspectorState.Hierarchy && (
-          filteredComponents.length > 0 ? (
+          ))}
+        {inspectorState == InspectorState.Hierarchy &&
+          (filteredComponents.length > 0 ? (
             <div className={styles['hierarchy-componentlist']}>
               {filteredComponents.map(({ comp, originalIndex }) => (
                 <div key={originalIndex} className={`${styles['componentlist-selector']}`}>
@@ -171,8 +171,7 @@ export default function Inspector() {
             <>
               <p>nope</p>
             </>
-          )
-        )}
+          ))}
       </div>
       <div className={styles['inspector-bottom']}>
         <button
@@ -185,7 +184,7 @@ export default function Inspector() {
         <button
           className={inspectorState == InspectorState.Hierarchy ? styles['active'] : ''}
           onClick={() => setInspectorState(InspectorState.Hierarchy)}
-         >
+        >
           <img width={18} src={HierarchyIcon} />
           <span>{getLocaleKey('editor.inspector.menu.hierarchy')}</span>
         </button>

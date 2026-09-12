@@ -2547,7 +2547,13 @@ export class GraphicsRenderer {
   public onComponentArrayChanged: (() => void) | null = null
   public onZoomUpdate: (() => void) | null = null
 
-  private notifyComponentChange() {
+  publiclyNotifyComponentArrayChange(): void {
+    if (this.onComponentArrayChanged) {
+      this.onComponentArrayChanged()
+    }
+  }
+
+  private notifyComponentChange(): void {
     if (this.onComponentChangeCallback) {
       this.onComponentChangeCallback()
     }
@@ -2555,7 +2561,7 @@ export class GraphicsRenderer {
     this.markDirty('Component changed');
   }
 
-  forcefullyRemoveSelectedComponentOnActiveIndex() {
+  forcefullyRemoveSelectedComponentOnActiveIndex(): void {
     this.cleanLog('attempting to delete component');
     this.cleanLog('selected component: ' + this.temporarySelectedComponent);
     if (this.temporarySelectedComponent != null) {
