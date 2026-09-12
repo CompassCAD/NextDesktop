@@ -115,7 +115,8 @@ export default function Inspector(): React.ReactElement {
     setComponent((prev) => {
       if (!prev) return null
       const updated = Object.create(Object.getPrototypeOf(prev))
-      Object.assign(updated, prev)(updated as Record<string, any>)[key] = value
+      Object.assign(updated, prev)
+      ;(updated as Record<string, any>)[key] = value
       const finalComponent = updated as AnyComponent
       if (renderer && renderer.logicDisplay && renderer.selectedComponent !== null) {
         renderer.logicDisplay.components[renderer.selectedComponent] = finalComponent
