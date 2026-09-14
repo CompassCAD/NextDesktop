@@ -2490,7 +2490,7 @@ export class GraphicsRenderer {
     // Return the index of the highest priority intersection
     return intersections[0].index
   }
-  undo() {
+  undo = (): void => {
     if (this.undoStack.length > 0) {
       // Remove the last state from the undoStack and push it to the redoStack
       const state = this.undoStack.pop()
@@ -2512,9 +2512,10 @@ export class GraphicsRenderer {
       } else return
 
       this.update() // Re-render the canvas
+      console.log('Undo')
     }
   }
-  redo() {
+  redo = (): void => {
     if (this.redoStack.length > 0) {
       // Move the current state to the undoStack
       this.undoStack.push(JSON.stringify(this.logicDisplay!.components))

@@ -1,4 +1,15 @@
 import styles from '../style/index.module.css'
+import React, { useEffect, useState } from 'react'
+import { MenuProvider, MenuContext } from './MenuProvider'
+import { openModal } from './ModalProvider'
+import AboutModal from './submodals/AboutModal'
+import { useRenderer } from './RendererContextProvider'
+import { InternalUtilities, RNGSpamGen } from '../utils/InternalStuffs'
+import { openFileAndParse } from '../utils/FileImporter'
+import { getLocaleKey } from '../locales/Locale'
+import UpdaterModal from './submodals/UpdaterModal'
+import Dropdown from './Dropdown'
+
 import CompassCADLogoMonochrome from '../assets/icons/newlogo.svg'
 import MenuIcon from '../assets/icons/menu.svg'
 // Context icons
@@ -10,21 +21,13 @@ import SaveDesignAsIcon from '../assets/icons/saveas.svg'
 import MeasureIcon from '../assets/icons/measure.svg'
 import ExportIcon from '../assets/icons/export.svg'
 import UpdateIcon from '../assets/icons/update.svg'
+import UndoIcon from '../assets/icons/undo.svg'
+import RedoIcon from '../assets/icons/redo.svg'
 // Window buttons
 import Minimize from '../assets/icons/minimize.svg'
 import Maximize from '../assets/icons/maximize.svg'
 import Close from '../assets/icons/close.svg'
 import RestoreDown from '../assets/icons/restoredown.svg'
-import React, { useEffect, useState } from 'react'
-import { MenuProvider, MenuContext } from './MenuProvider'
-import { openModal } from './ModalProvider'
-import AboutModal from './submodals/AboutModal'
-import { useRenderer } from './RendererContextProvider'
-import { InternalUtilities, RNGSpamGen } from '../utils/InternalStuffs'
-import { openFileAndParse } from '../utils/FileImporter'
-import { getLocaleKey } from '../locales/Locale'
-import UpdaterModal from './submodals/UpdaterModal'
-import Dropdown from './Dropdown'
 
 export default function WindowBar(): React.ReactElement {
   const [isMaximized, setMaximized] = useState<boolean>(false)
@@ -202,6 +205,22 @@ export default function WindowBar(): React.ReactElement {
             onClick={toggleMenuState}
           >
             <img src={MenuIcon} />
+          </button>
+          <button
+            className={styles['window-bar-button']}
+            id="menu-opener"
+            style={{ outline: 'none' }}
+            onClick={renderer?.undo}
+          >
+            <img src={UndoIcon} />
+          </button>
+          <button
+            className={styles['window-bar-button']}
+            id="menu-opener"
+            style={{ outline: 'none' }}
+            onClick={renderer?.redo}
+          >
+            <img src={RedoIcon} />
           </button>
           <span onClick={resetZoom}>{zoom.toFixed(2)}x</span>
           <img src={MeasureIcon} width={20} style={{ marginLeft: '16px' }} />
