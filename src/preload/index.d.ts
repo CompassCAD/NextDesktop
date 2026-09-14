@@ -1,5 +1,5 @@
 import { ElectronAPI } from '@electron-toolkit/preload'
-import { OpenDialogSyncOptions } from 'electron'
+import { OpenDialogSyncOptions, SaveDialogSyncOptions } from 'electron'
 
 declare global {
   interface Window {
@@ -8,6 +8,7 @@ declare global {
       readFile: (filePath: string) => string,
       writeFile: (filePath: string, data: string | Uint8Array | Buffer) => void,
       showOpenFileDialog: (options?: OpenDialogSyncOptions) => Promise<string[] | undefined>,
+      showSaveFileDialog: (options?: SaveDialogSyncOptions) => Promise<string[] | undefined>,
       forwardLog: (source: any, args: any) => void,
       getAppVersion: () => string
     },

@@ -20,7 +20,17 @@
       }
     },
     "sysdialogs": {
-      "openFile": "Öppna en CompassCAD-fil/importera en fil som inte är från CompassCAD"
+      "openFile": "Öppna en CompassCAD-fil/importera en fil som inte är från CompassCAD",
+      "saveFile": "Spara en CompassCAD-fil"
+    },
+    "window": {
+      "menu": "Meny",
+      "undo": "Ångra",
+      "redo": "Gör om",
+      "zoomIn": "Zooma in",
+      "zoomOut": "Zooma ut",
+      "disableSnap": "Inaktivera Snap",
+      "enableSnap": "Aktivera Snap till Grid"
     },
     "menu": {
       "newDesign": "Ny Design",
@@ -29,7 +39,22 @@
       "saveDesign": "Spara Design",
       "saveAs": "Spara som",
       "exportToSvg": "Exportera till SVG",
+      "checkForUpdates": "Sök efter Uppdateringar",
       "about": "Om CompassCAD NEXT"
+    },
+    "updaterModal": {
+      "checkingForUpdates": "Söker efter uppdateringar...",
+      "noUpdatesAvailable": "Inga uppdateringar är tillgängliga. Du är uppdaterad.",
+      "checkAgain": "Sök igen",
+      "updateAvailable": "Uppdatering tillgänglig!",
+      "updateMessage": "Ladda ner uppdateringen nu och installera den när den är klar.",
+      "downloadUpdate": "Ladda ner Uppdatering",
+      "downloadingUpdate": "Laddar ner uppdatering...",
+      "updateDownloaded": "Uppdatering nedladdad! Starta om CompassCAD NEXT för att installera uppdateringen.",
+      "updateFinished": "Starta om CompassCAD NEXT för att avsluta installationen.",
+      "restartNow": "Starta om nu",
+      "couldntCheckForUpdates": "Kunde inte söka efter uppdateringar. Kontrollera din internetanslutning och försök igen.",
+      "tryAgain": "Försök igen"
     },
     "about": {
       "openSourceLicenses": "Licens för öppen-källkod"

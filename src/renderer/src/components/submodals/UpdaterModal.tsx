@@ -1,5 +1,7 @@
 import React, { useEffect } from 'react'
+import styles from '../../style/index.module.css'
 import useUpdater from '../../utils/UseUpdater'
+import { getLocaleKey } from '@renderer/locales/Locale'
 
 const containerStyle: React.CSSProperties = {
   display: 'flex',
@@ -37,14 +39,14 @@ export default function UpdaterModal(): React.ReactElement {
   switch (status) {
     case 'idle':
     case 'checking':
-      content = <p role="status">Checking for updates…</p>
+      content = <p role="status" style={{display: 'flex', gap: '10px'}}><span className={styles['loader']}></span> {getLocaleKey('editor.updaterModal.checkingForUpdates')}</p>
       break
     case 'not-available':
       content = (
         <>
-          <p role="status">No updates are available. You’re up to date.</p>
+          <p role="status">{getLocaleKey('editor.updaterModal.noUpdatesAvailable')}</p>
           <button type="button" style={actionStyle} onClick={checkForUpdates}>
-            Check again
+            {getLocaleKey('editor.updaterModal.checkAgain')}
           </button>
           {import.meta.env.DEV && (
             <button type="button" style={actionStyle} onClick={previewDownload}>
@@ -58,11 +60,12 @@ export default function UpdaterModal(): React.ReactElement {
       content = (
         <>
           <p role="status">
-            Update available{availableVersion ? `: version ${availableVersion}.` : '.'}
+            {getLocaleKey('editor.updaterModal.updateAvailable')}
+            {availableVersion ? `: version ${availableVersion}.` : '.'}
           </p>
-          <p>Download the update now and install it when it’s ready.</p>
+          <p>{getLocaleKey('editor.updaterModal.updateMessage')}</p>
           <button type="button" style={actionStyle} onClick={downloadUpdate}>
-            Download update
+            {getLocaleKey('editor.updaterModal.downloadUpdate')}
           </button>
         </>
       )
@@ -70,7 +73,7 @@ export default function UpdaterModal(): React.ReactElement {
     case 'downloading':
       content = (
         <>
-          <p role="status">Downloading update… {roundedProgress}%</p>
+          <p role="status">{getLocaleKey('editor.updaterModal.downloadingUpdate')} {roundedProgress}%</p>
           <progress value={roundedProgress} max={100} style={{ width: '100%' }}>
             {roundedProgress}%
           </progress>
@@ -81,11 +84,11 @@ export default function UpdaterModal(): React.ReactElement {
       content = (
         <>
           <p role="status">
-            Update downloaded{availableVersion ? `: version ${availableVersion}.` : '.'}
+            {getLocaleKey('editor.updaterModal.updateDownloaded')}
           </p>
-          <p>Restart CompassCAD NEXT to finish installing it.</p>
+          <p>{getLocaleKey('editor.updaterModal.updateFinished')}</p>
           <button type="button" style={actionStyle} onClick={installNow}>
-            Restart and install
+            {getLocaleKey('editor.updaterModal.restartNow')}
           </button>
         </>
       )
@@ -93,10 +96,10 @@ export default function UpdaterModal(): React.ReactElement {
     case 'error':
       content = (
         <>
-          <p role="alert">We couldn’t check for updates.</p>
+          <p role="alert">{getLocaleKey('editor.updaterModal.couldntCheckForUpdates')}</p>
           {typeof info === 'string' && <p style={{ opacity: 0.75 }}>{info}</p>}
           <button type="button" style={actionStyle} onClick={checkForUpdates}>
-            Try again
+            {getLocaleKey('editor.updaterModal.tryAgain')}
           </button>
           {import.meta.env.DEV && (
             <button type="button" style={actionStyle} onClick={previewDownload}>
@@ -110,10 +113,6 @@ export default function UpdaterModal(): React.ReactElement {
 
   return (
     <section style={containerStyle} aria-live="polite">
-      <div>
-        <h3 style={{ margin: 0 }}>CompassCAD NEXT updates</h3>
-        <p style={{ marginBottom: 0 }}>Keep CompassCAD NEXT current with the latest fixes and improvements.</p>
-      </div>
       {content}
     </section>
   )

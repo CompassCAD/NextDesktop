@@ -20,7 +20,17 @@
       }
     },
     "sysdialogs": {
-      "openFile": "CompassCADファイルを開く／CompassCAD以外のファイルをインポートする"
+      "openFile": "CompassCADファイルを開く／CompassCAD以外のファイルをインポートする",
+      "saveFile": "CompassCADファイルを保存する"
+    },
+    "window": {
+      "menu": "メニュー",
+      "undo": "元に戻す",
+      "redo": "やり直す",
+      "zoomIn": "ズームイン",
+      "zoomOut": "ズームアウト",
+      "disableSnap": "スナップを無効化",
+      "enableSnap": "Gridにスナップ"
     },
     "menu": {
       "newDesign": "新規デザイン",
@@ -29,7 +39,22 @@
       "saveDesign": "デザインを保存",
       "saveAs": "名前を付けて保存",
       "exportToSvg": "SVG形式でエクスポート",
+      "checkForUpdates": "アップデートを確認",
       "about": "CompassCAD NEXT について"
+    },
+    "updaterModal": {
+      "checkingForUpdates": "アップデートを確認中…",
+      "noUpdatesAvailable": "利用可能なアップデートはありません。最新の状態です。",
+      "checkAgain": "再確認",
+      "updateAvailable": "利用可能なアップデートがあります！",
+      "updateMessage": "今すぐアップデートをダウンロードし、準備ができたらインストールしてください。",
+      "downloadUpdate": "アップデートをダウンロード",
+      "downloadingUpdate": "アップデートをダウンロード中…",
+      "updateDownloaded": "アップデートがダウンロードされました！アップデートをインストールするにはCompassCAD NEXTを再起動してください。",
+      "updateFinished": "アップデートのインストールを完了するにはCompassCAD NEXTを再起動してください。",
+      "restartNow": "今すぐ再起動",
+      "couldntCheckForUpdates": "アップデートを確認できませんでした。インターネット接続を確認してからもう一度お試しください。",
+      "tryAgain": "もう一度試す"
     },
     "about": {
       "openSourceLicenses": "オープンソースライセンス"

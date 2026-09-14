@@ -20,7 +20,17 @@
       }
     },
     "sysdialogs": {
-      "openFile": "Open a CompassCAD file/import a non-CompassCAD file"
+      "openFile": "Open a CompassCAD file/import a non-CompassCAD file",
+      "saveFile": "Save a CompassCAD file"
+    },
+    "window": {
+      "menu": "Menu",
+      "undo": "Undo",
+      "redo": "Redo",
+      "zoomIn": "Zoom In",
+      "zoomOut": "Zoom Out",
+      "disableSnap": "Disable Snap",
+      "enableSnap": "Snap to Grid"
     },
     "menu": {
       "newDesign": "New Design",
@@ -29,7 +39,22 @@
       "saveDesign": "Save Design",
       "saveAs": "Save as",
       "exportToSvg": "Export to SVG",
+      "checkForUpdates": "Check for Updates",
       "about": "About CompassCAD NEXT"
+    },
+    "updaterModal": {
+      "checkingForUpdates": "Checking for updates...",
+      "noUpdatesAvailable": "No updates are available. You’re up to date.",
+      "checkAgain": "Check again",
+      "updateAvailable": "Update available!",
+      "updateMessage": "Download the update now and install it when it’s ready.",
+      "downloadUpdate": "Download Update",
+      "downloadingUpdate": "Downloading update...",
+      "updateDownloaded": "Update downloaded! Restart CompassCAD NEXT to install the update.",
+      "updateFinished": "Restart CompassCAD NEXT to finish installing it.",
+      "restartNow": "Restart Now",
+      "couldntCheckForUpdates": "Couldn't check for updates. Please check your internet connection and try again.",
+      "tryAgain": "Try again"
     },
     "about": {
       "openSourceLicenses": "Open Source License"

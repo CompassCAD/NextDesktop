@@ -5,7 +5,7 @@ import { openModal } from './ModalProvider'
 import AboutModal from './submodals/AboutModal'
 import { useRenderer } from './RendererContextProvider'
 import { InternalUtilities, RNGSpamGen } from '../utils/InternalStuffs'
-import { openFileAndParse } from '../utils/FileImporter'
+import { openFileAndParse, saveFile } from '../utils/FileImporter'
 import { getLocaleKey } from '../locales/Locale'
 import UpdaterModal from './submodals/UpdaterModal'
 import Dropdown from './Dropdown'
@@ -23,11 +23,63 @@ import ExportIcon from '../assets/icons/export.svg'
 import UpdateIcon from '../assets/icons/update.svg'
 import UndoIcon from '../assets/icons/undo.svg'
 import RedoIcon from '../assets/icons/redo.svg'
+import ZoomInIcon from '../assets/icons/zoomin.svg'
+import ZoomOutIcon from '../assets/icons/zoomout.svg'
+import SnapOn from '../assets/icons/snapped.svg'
+import SnapOff from '../assets/icons/snap.svg'
 // Window buttons
 import Minimize from '../assets/icons/minimize.svg'
 import Maximize from '../assets/icons/maximize.svg'
 import Close from '../assets/icons/close.svg'
 import RestoreDown from '../assets/icons/restoredown.svg'
+import { Vector2 } from '@renderer/engine/Engine'
+
+function MenuButton(props: {
+  icon?: string
+  title?: string
+  keyCombinations?: string[]
+  onClick?: () => void
+  id?: string
+  titleAttr?: string
+}): React.ReactElement {
+  const { icon, onClick, id } = props
+  const [isTooltipVisible, setVisibility] = useState<boolean>(false)
+  const [tooltipPos, setPos] = useState<Vector2>({ x: 0, y: 0 })
+
+  const changePos = (e: React.MouseEvent<HTMLButtonElement, MouseEvent>): void => {
+    const x = e.clientX + 15
+    const y = e.clientY + 15
+    setPos({ x, y })
+  }
+  return (
+    <>
+      <button
+        className={styles['window-bar-button']}
+        id={id}
+        style={{ outline: 'none' }}
+        onMouseEnter={() => setVisibility(true)}
+        onMouseLeave={() => setVisibility(false)}
+        onMouseMove={changePos}
+        onClick={onClick}
+      >
+        {icon && <img src={icon} />}
+      </button>
+      {isTooltipVisible && props.title && (
+        <div
+          className={styles['toolbar-tooltip']}
+          style={{ left: tooltipPos.x, top: tooltipPos.y }}
+        >
+          {props.title}{' '}
+          {props.keyCombinations?.map((key, index) => (
+            <span key={index} className={styles['menu-context-key-combination-key']}>
+              {key}
+            </span>
+          ))}
+        </div>
+      )}
+    </>
+  )
+}
 
 export default function WindowBar(): React.ReactElement {
   const [isMaximized, setMaximized] = useState<boolean>(false)
@@ -35,6 +87,7 @@ export default function WindowBar(): React.ReactElement {
   const [menuOpened, setMenuOpened] = useState<boolean>(false)
   const [focusedMenuIndex, setFocusedMenuIndex] = useState<number>(-1)
   const [keyboardNav, setKeyboardNav] = useState<boolean>(false)
+  const [isSnapped, setSnapped] = useState<boolean>(true)
   const { renderer } = useRenderer()
 
   window.electron.ipcRenderer.on('isMaximized', (_event, isMaximized: boolean) => {
@@ -44,7 +97,7 @@ export default function WindowBar(): React.ReactElement {
   })
   useEffect(() => {
     if (!renderer) return
-  }, []) // Empty dependency array ensures this runs only once on mount
+  }, [renderer]) // Empty dependency array ensures this runs only once on mount
   window.addEventListener('click', (event) => {
     const target = event.target as HTMLElement
     if (!target.closest('#menu-opener') && menuOpened) {
@@ -57,6 +110,26 @@ export default function WindowBar(): React.ReactElement {
     }
   }
   window.onkeydown = (e: KeyboardEvent) => {
+    const ctrlOrMeta = e.ctrlKey || e.metaKey
+    const keyLower = e.key.toLowerCase()
+
+    if (ctrlOrMeta && e.altKey && keyLower === 's') {
+      e.preventDefault()
+      if (renderer) void saveFile(renderer, { forceSaveDialog: true })
+      return
+    }
+
+    if (ctrlOrMeta && keyLower === 's') {
+      e.preventDefault()
+      if (renderer) void saveFile(renderer)
+      return
+    }
+    if (ctrlOrMeta && keyLower === 'o') {
+      e.preventDefault()
+      if (renderer) openFileAndParse(renderer)
+      return
+    }
+
     if (e.key === 'Alt') {
       const opening = !menuOpened
       setMenuOpened(opening)
@@ -119,7 +192,7 @@ export default function WindowBar(): React.ReactElement {
     openModal(getLocaleKey('editor.menu.about'), <AboutModal />)
   }
   const spawnUpdaterModal = (): void => {
-    openModal('Check for updates', <UpdaterModal />)
+    openModal(getLocaleKey('editor.menu.checkForUpdates'), <UpdaterModal />)
   }
 
   interface MenuItemDef {
@@ -145,12 +218,14 @@ export default function WindowBar(): React.ReactElement {
     {
       icon: SaveDesignIcon,
       title: getLocaleKey('editor.menu.saveDesign'),
-      keyCombinations: ['Ctrl', 'S']
+      keyCombinations: ['Ctrl', 'S'],
+      onAction: () => void saveFile(renderer!)
     },
     {
       icon: SaveDesignAsIcon,
       title: getLocaleKey('editor.menu.saveAs'),
-      keyCombinations: ['Ctrl', 'Alt', 'S']
+      keyCombinations: ['Ctrl', 'Alt', 'S'],
+      onAction: () => void saveFile(renderer!, { forceSaveDialog: true })
     },
     {
       icon: ExportIcon,
@@ -163,7 +238,11 @@ export default function WindowBar(): React.ReactElement {
           { title: 'Internal utilities only', onAction: _internal_spawnInternalUtilsModal }
         ]
       : []),
-    { icon: UpdateIcon, title: 'Check for updates', onAction: spawnUpdaterModal },
+    {
+      icon: UpdateIcon,
+      title: getLocaleKey('editor.menu.checkForUpdates'),
+      onAction: spawnUpdaterModal
+    },
     { title: getLocaleKey('editor.menu.about'), onAction: spawnAboutModal }
   ]
 
@@ -198,34 +277,61 @@ export default function WindowBar(): React.ReactElement {
           <button className={styles['window-bar-button']}>
             <img src={CompassCADLogoMonochrome} />
           </button>
-          <button
-            className={styles['window-bar-button']}
+          <MenuButton
             id="menu-opener"
-            style={{ outline: 'none' }}
+            icon={MenuIcon}
+            title={getLocaleKey('editor.window.menu')}
             onClick={toggleMenuState}
-          >
-            <img src={MenuIcon} />
-          </button>
-          <button
-            className={styles['window-bar-button']}
+          />
+          <MenuButton
             id="menu-opener"
-            style={{ outline: 'none' }}
+            icon={UndoIcon}
+            title={getLocaleKey('editor.window.undo')}
+            keyCombinations={['Ctrl', 'Z']}
             onClick={renderer?.undo}
-          >
-            <img src={UndoIcon} />
-          </button>
-          <button
-            className={styles['window-bar-button']}
+          />
+          <MenuButton
             id="menu-opener"
-            style={{ outline: 'none' }}
+            icon={RedoIcon}
+            title={getLocaleKey('editor.window.redo')}
+            keyCombinations={['Ctrl', 'Y']}
             onClick={renderer?.redo}
-          >
-            <img src={RedoIcon} />
-          </button>
+          />
+          <MenuButton
+            id="menu-opener"
+            icon={ZoomInIcon}
+            title={getLocaleKey('editor.window.zoomIn')}
+            keyCombinations={['Ctrl', '+']}
+            onClick={() => renderer?.setZoom(renderer.zoomIn)}
+          />
+          <MenuButton
+            id="menu-opener"
+            icon={ZoomOutIcon}
+            title={getLocaleKey('editor.window.zoomOut')}
+            keyCombinations={['Ctrl', '-']}
+            onClick={() => renderer?.setZoom(renderer.zoomOut)}
+          />
+          <MenuButton
+            id="menu-opener"
+            icon={isSnapped ? SnapOn : SnapOff}
+            keyCombinations={['Ctrl', 'Q']}
+            title={
+              isSnapped
+                ? getLocaleKey('editor.window.disableSnap')
+                : getLocaleKey('editor.window.enableSnap')
+            }
+            onClick={() => {
+              setSnapped(!isSnapped)
+              renderer!.snap = !isSnapped
+            }}
+          />
           <span onClick={resetZoom}>{zoom.toFixed(2)}x</span>
-          <img src={MeasureIcon} width={20} style={{ marginLeft: '16px' }} />
+          <MenuButton id="menu-opener" icon={MeasureIcon} />
           <Dropdown
-            options={defaultMeasure.map((measure) => ({value: measure, label: `${measure / 100}m (${measure}cm)`}))}
+            options={defaultMeasure.map((measure) => ({
+              value: measure,
+              label: `${measure / 100}m (${measure}cm)`
+            }))}
             defaultIndex={6}
             onChange={(value) => {
               if (renderer) {

@@ -3514,6 +3514,7 @@ export class GraphicsRenderer {
       const topLines = [
         `${fps} FPS (avg since last render time ${((1 / fps) * 1000).toFixed(2)} ms)`,
         `framestat: ${this._dirty ? 'dirty' : 'clean'}`,
+        `snap status: ${this.snap ? 'on' : 'off'}`,
         `OMC map: ${this.onModeChange != null ? 'OMC mapped' : 'OMC unmapped'}`,
         `raw cur: x=${this.getCursorXRaw()},y=${this.getCursorYRaw()}`,
         `off: x=${this.offsetX},y=${this.offsetY}`,

@@ -81,7 +81,7 @@ function ToolbarButton(props: ToolbarButtonProps): React.ReactElement {
         >
           {props.title}{' '}
           <span className={styles['menu-context-key-combination-key']}>{props.keyName}</span>
-      </div>
+        </div>
       )}
     </>
   )

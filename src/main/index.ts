@@ -153,6 +153,9 @@ ipcMain.on('close', () => mainWindow?.close())
 ipcMain.handle('dialog:showOpenFileDialog', (_event, options) => {
   return dialog.showOpenDialogSync(options)
 })
+ipcMain.handle('dialog:showSaveFileDialog', (_event, options) => {
+  return dialog.showSaveDialogSync(options)
+})
 ipcMain.on('renderer-log', (_event, source, args) => {
   console.log(`[${source}]`, ...args);
 });
