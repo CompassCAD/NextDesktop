@@ -7,6 +7,7 @@ import OpenFileIcon from '../assets/icons/openLogic.svg'
 import BackupIcon from '../assets/icons/openbackup.svg'
 import SaveDesignIcon from '../assets/icons/saveLogic.svg'
 import SaveDesignAsIcon from '../assets/icons/saveas.svg'
+import MeasureIcon from '../assets/icons/measure.svg'
 import ExportIcon from '../assets/icons/export.svg'
 import UpdateIcon from '../assets/icons/update.svg'
 // Window buttons
@@ -23,6 +24,7 @@ import { InternalUtilities, RNGSpamGen } from '../utils/InternalStuffs'
 import { openFileAndParse } from '../utils/FileImporter'
 import { getLocaleKey } from '../locales/Locale'
 import UpdaterModal from './submodals/UpdaterModal'
+import Dropdown from './Dropdown'
 
 export default function WindowBar(): React.ReactElement {
   const [isMaximized, setMaximized] = useState<boolean>(false)
@@ -162,6 +164,8 @@ export default function WindowBar(): React.ReactElement {
     { title: getLocaleKey('editor.menu.about'), onAction: spawnAboutModal }
   ]
 
+  const defaultMeasure: number[] = [1000, 500, 200, 100, 50, 25, 10, 5, 1]
+
   return (
     <>
       <div className={styles['window-bar']}>
@@ -200,6 +204,16 @@ export default function WindowBar(): React.ReactElement {
             <img src={MenuIcon} />
           </button>
           <span onClick={resetZoom}>{zoom.toFixed(2)}x</span>
+          <img src={MeasureIcon} width={20} style={{ marginLeft: '16px' }} />
+          <Dropdown
+            options={defaultMeasure.map((measure) => ({value: measure, label: `${measure / 100}m (${measure}cm)`}))}
+            defaultIndex={6}
+            onChange={(value) => {
+              if (renderer) {
+                renderer.gridSpacing = value as number
+              }
+            }}
+          />
         </div>
         <div className={styles['window-bar-dragger']}></div>
         {window.process.platform != 'darwin' && (
