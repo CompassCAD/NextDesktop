@@ -378,6 +378,9 @@ input[type="checkbox"] {
   padding: 10px;
   border-radius: 10px;
 }
+.componentlist-selector.componentlist-selector-selected {
+  background-color: var(--theme);
+}
 .workflow-toolbar::-webkit-scrollbar {
   display: none;
 }

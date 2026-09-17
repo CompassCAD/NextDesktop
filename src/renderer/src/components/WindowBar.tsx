@@ -129,6 +129,14 @@ export default function WindowBar(): React.ReactElement {
       if (renderer) openFileAndParse(renderer)
       return
     }
+    if (ctrlOrMeta && keyLower === 'q') {
+      e.preventDefault()
+      if (renderer) {
+        setSnapped(!isSnapped)
+        renderer.snap = !isSnapped
+      }
+      return
+    }
 
     if (e.key === 'Alt') {
       const opening = !menuOpened
@@ -202,35 +210,37 @@ export default function WindowBar(): React.ReactElement {
     onAction?: () => void
   }
 
+  const controlKey = window.process.platform === 'darwin' ? 'Cmd' : 'Ctrl'
+
   const menuItemDefs: MenuItemDef[] = [
     {
       icon: NewFileIcon,
       title: getLocaleKey('editor.menu.newDesign'),
-      keyCombinations: ['Ctrl', 'N']
+      keyCombinations: [controlKey, 'N']
     },
     {
       icon: OpenFileIcon,
       title: getLocaleKey('editor.menu.openDesign'),
-      keyCombinations: ['Ctrl', 'O'],
+      keyCombinations: [controlKey, 'O'],
       onAction: () => openFileAndParse(renderer!)
     },
     { icon: BackupIcon, title: getLocaleKey('editor.menu.openBackups') },
     {
       icon: SaveDesignIcon,
       title: getLocaleKey('editor.menu.saveDesign'),
-      keyCombinations: ['Ctrl', 'S'],
+      keyCombinations: [controlKey, 'S'],
       onAction: () => void saveFile(renderer!)
     },
     {
       icon: SaveDesignAsIcon,
       title: getLocaleKey('editor.menu.saveAs'),
-      keyCombinations: ['Ctrl', 'Alt', 'S'],
+      keyCombinations: [controlKey, 'Alt', 'S'],
       onAction: () => void saveFile(renderer!, { forceSaveDialog: true })
     },
     {
       icon: ExportIcon,
       title: getLocaleKey('editor.menu.exportToSvg'),
-      keyCombinations: ['Ctrl', 'E']
+      keyCombinations: [controlKey, 'E']
     },
     ...(import.meta.env.DEV
       ? [
@@ -287,34 +297,35 @@ export default function WindowBar(): React.ReactElement {
             id="menu-opener"
             icon={UndoIcon}
             title={getLocaleKey('editor.window.undo')}
-            keyCombinations={['Ctrl', 'Z']}
+            keyCombinations={[controlKey, 'Z']}
             onClick={renderer?.undo}
           />
           <MenuButton
             id="menu-opener"
             icon={RedoIcon}
             title={getLocaleKey('editor.window.redo')}
-            keyCombinations={['Ctrl', 'Y']}
+            keyCombinations={[controlKey, 'Y']}
             onClick={renderer?.redo}
           />
           <MenuButton
             id="menu-opener"
             icon={ZoomInIcon}
             title={getLocaleKey('editor.window.zoomIn')}
-            keyCombinations={['Ctrl', '+']}
+            keyCombinations={[controlKey, '+']}
             onClick={() => renderer?.setZoom(renderer.zoomIn)}
           />
+          <span onClick={resetZoom}>{zoom.toFixed(2)}x</span>
           <MenuButton
             id="menu-opener"
             icon={ZoomOutIcon}
             title={getLocaleKey('editor.window.zoomOut')}
-            keyCombinations={['Ctrl', '-']}
+            keyCombinations={[controlKey, '-']}
             onClick={() => renderer?.setZoom(renderer.zoomOut)}
           />
           <MenuButton
             id="menu-opener"
             icon={isSnapped ? SnapOn : SnapOff}
-            keyCombinations={['Ctrl', 'Q']}
+            keyCombinations={[controlKey, 'Q']}
             title={
               isSnapped
                 ? getLocaleKey('editor.window.disableSnap')
@@ -325,7 +336,6 @@ export default function WindowBar(): React.ReactElement {
               renderer!.snap = !isSnapped
             }}
           />
-          <span onClick={resetZoom}>{zoom.toFixed(2)}x</span>
           <MenuButton id="menu-opener" icon={MeasureIcon} />
           <Dropdown
             options={defaultMeasure.map((measure) => ({

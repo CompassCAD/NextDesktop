@@ -29,10 +29,13 @@ import {
   Arc,
   Shape,
   Picture,
-  Polygon
+  Polygon,
+  componentTypes
 } from '../engine/Component'
 import Slider from './CustomSlider'
 import { getLocaleKey } from '../locales/Locale'
+import Types from '@renderer/engine/Types'
+import { Vector2 } from '@renderer/engine/Engine'
 
 enum InspectorState {
   Properties,
@@ -128,6 +131,73 @@ export default function Inspector(): React.ReactElement {
     })
   }
 
+  const animateToComponentOrigin = (index: number): void => {
+    if (!renderer) return
+    setInspectorState(InspectorState.Hierarchy)
+    const component: Component = renderer.logicDisplay?.components[index] as Component
+    // eslint-disable-next-line prefer-const
+    let dest: Vector2 = { x: 0, y: 0 }
+    switch (component.type) {
+      case componentTypes.point:
+      case componentTypes.picture:
+      case componentTypes.label:
+      case componentTypes.shape:
+        {
+          const temporaryPointInVector = component as Point
+          dest.x = temporaryPointInVector.x
+          dest.y = temporaryPointInVector.y
+        }
+        break
+      case componentTypes.line:
+      case componentTypes.rectangle:
+      case componentTypes.measure:
+        {
+          const temporaryLineInVector = component as Line
+          dest.x = (temporaryLineInVector.x1 + temporaryLineInVector.x2) / 2
+          dest.y = (temporaryLineInVector.y1 + temporaryLineInVector.y2) / 2
+        }
+        break
+      case componentTypes.circle:
+      case componentTypes.arc:
+        {
+          const temporaryCircleInVector = component as Circle
+          dest.x = temporaryCircleInVector.x1
+          dest.y = temporaryCircleInVector.y1
+        }
+        break
+      case componentTypes.polygon:
+        {
+          const temporaryPolygonInVector = component as Polygon
+          dest.x = temporaryPolygonInVector.vectors[0].x
+          dest.y = temporaryPolygonInVector.vectors[0].y
+        }
+        break
+      default:
+        break
+    }
+    const initialCamPos: Vector2 = {
+      x: renderer.camX,
+      y: renderer.camY
+    }
+    let startTime: number = 0
+    const duration: number = 500
+
+    const animate = (time: number): void => {
+      if (!startTime) startTime = time
+      const elapsedDelta: number = time - startTime
+      const progress = 1 - Math.pow(1 - Math.min(elapsedDelta / duration, 1), 3)
+      const initialZoom = renderer.targetZoom
+      renderer.camX = initialCamPos.x + (dest.x - initialCamPos.x) * progress
+      renderer.camY = initialCamPos.y + (dest.y - initialCamPos.y) * progress
+      renderer.targetZoom = initialZoom + (1 - initialZoom) * progress
+      renderer.markDirty('animateToComponentOrigin')
+      if (progress < 1) {
+        requestAnimationFrame(animate)
+      }
+    }
+    requestAnimationFrame(animate)
+  }
+
   return (
     <div className={`${styles['inspector-right']} ${isHidden ? styles['hidden'] : ''}`}>
       <div className={styles['inspector-header']}>
@@ -162,9 +232,19 @@ export default function Inspector(): React.ReactElement {
         {inspectorState == InspectorState.Hierarchy &&
           (filteredComponents.length > 0 ? (
             <div className={styles['hierarchy-componentlist']}>
-              {filteredComponents.map(({ comp, originalIndex }) => (
-                <div key={originalIndex} className={`${styles['componentlist-selector']}`}>
-                  <img src={componentImages[comp.type]} /> {comp.name}
+              {filteredComponents.map((item, originalIndex) => (
+                <div
+                  key={originalIndex}
+                  className={`${styles['componentlist-selector']}${component === componentArray[item.originalIndex] ? ` ${styles['componentlist-selector-selected']}` : ''}`}
+                  onClick={() => {
+                    renderer?.setMode(Types.NavigationTypes.Select)
+                    renderer?.selectComponent(item.originalIndex)
+                    // also update local inspector state immediately so selection updates when clicked in the list
+                    setComponent(item.comp as AnyComponent)
+                  }}
+                  onDoubleClick={() => animateToComponentOrigin(item.originalIndex)}
+                >
+                  <img src={componentImages[item.comp.type]} /> {item.comp.name}
                 </div>
               ))}
             </div>
