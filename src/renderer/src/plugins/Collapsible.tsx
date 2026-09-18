@@ -1,4 +1,6 @@
 import { useState } from 'react'
+import BackIcon from '../assets/icons/back.svg'
+import styles from '../style/index.module.css'
 
 export default function Collapsible({
   title,
@@ -12,25 +14,22 @@ export default function Collapsible({
   const [open, setOpen] = useState(defaultOpen)
 
   return (
-    <div style={{ border: '1px solid var(--border, #3336)', borderRadius: 6 }}>
-      <button
-        onClick={() => setOpen((o) => !o)}
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: 6,
-          width: '100%',
-          textAlign: 'left',
-          background: 'transparent',
-          border: 'none',
-          padding: '6px 8px',
-          cursor: 'pointer'
-        }}
-      >
-        <span style={{ transform: open ? 'rotate(90deg)' : 'none', transition: 'transform 0.1s' }}>▶</span>
+    <div className={styles['collapsible-container']}>
+      <button onClick={() => setOpen((o) => !o)} className={styles['collapsible-button']}>
+        <span
+          style={{
+            transform: open ? 'rotate(270deg)' : 'rotate(180deg)',
+            transition: 'transform 0.1s',
+            width: 18,
+            height: 18,
+            display: 'inline-block'
+          }}
+        >
+          <img src={BackIcon} alt="Toggle" width={18}/>
+        </span>
         <span style={{ fontWeight: 600 }}>{title}</span>
       </button>
-      {open && <div style={{ padding: '4px 8px 8px 8px' }}>{children}</div>}
+      {open && <div className={styles['collapsible-content']}>{children}</div>}
     </div>
   )
 }

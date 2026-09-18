@@ -331,9 +331,13 @@ input[type="checkbox"] {
   flex-wrap: nowrap;
   gap: 10px;
   margin-top: 10px;
-  width: 100%;
+  max-width: 100%;
+  overflow-x: scroll;
   box-sizing: border-box;
   overflow-wrap:break-word;
+}
+.inspector-bottom::-webkit-scrollbar {
+  display: none;
 }
 .inspector-bottom button {
   -webkit-appearance: none;
@@ -655,4 +659,50 @@ input[type="checkbox"] {
 }
 @keyframes l23 {
   100% {transform: rotate(1turn)}
+}
+.plugin-container-button-group {
+  width: 100%;
+  display: flex;
+  flex-wrap: wrap;
+  flex-direction: column;
+  gap: 5px;
+}
+.collapsible-container {
+  width: 100%;
+  display: flex;
+  border-radius: 10px;
+  flex-direction: column;
+  background-color: var(--secondary);
+  transition: all 0.25s ease;
+}
+.collapsible-button {
+  appearance: none;
+  padding: 10px;
+  border: none;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 10px;
+  color: var(--text);
+  font-family: var(--font);
+  background-color: var(--secondary);
+}
+.collapsible-content {
+  display: flex;
+  animation: slidedown 0.25s ease;
+  flex-direction: column;
+  gap: 5px;
+  padding: 10px;
+}
+.collapsible-content button, .collapsible-content input[type=text] {
+  appearance: none;
+  width: 100%;
+  padding: 5px;
+  border: 0.5px solid var(--outline);
+  background-color: var(--primary);
+  font-family: var(--font);
+  color: var(--text);
+  border: none;
+  border-radius: 10px;
 }

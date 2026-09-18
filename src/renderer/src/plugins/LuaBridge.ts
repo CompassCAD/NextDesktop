@@ -1,6 +1,9 @@
 import { lua, lauxlib, lualib, to_luastring } from 'fengari'
 import * as interop from 'fengari-interop'
 import type { LuaNode } from './types'
+// Adjust this import path if GraphicsRenderer lives somewhere else relative
+// to this file — it's the class defined in Engine.ts.
+import type { GraphicsRenderer } from '../engine/Engine'
 
 // Pure-Lua "ui" module. Component builders read the array part of their
 // argument table as children and the hash part as props, so
@@ -13,7 +16,6 @@ local M = {}
 local currentComponent = nil
 local hookIndex = 0
 
--- Call wrapper executed right before calling a tab's render function
 function M._beginRender(componentKey)
   currentComponent = componentKey
   hookIndex = 0
@@ -24,7 +26,6 @@ function M._endRender()
   hookIndex = 0
 end
 
--- Component Storage: { [componentKey] = { hooks = {}, effects = {} } }
 local componentState = {}
 
 local function getComponentStorage(key)
@@ -34,7 +35,6 @@ local function getComponentStorage(key)
   return componentState[key]
 end
 
--- UI.useState(initialValue)
 function M.useState(initialValue)
   assert(currentComponent, "useState must be called inside a render function")
   
@@ -42,25 +42,21 @@ function M.useState(initialValue)
   hookIndex = hookIndex + 1
   local idx = hookIndex
 
-  -- Initialize hook state on first render
   if storage.hooks[idx] == nil then
     storage.hooks[idx] = initialValue
   end
 
   local ownerKey = currentComponent
 
-  -- Stateful updater function
   local function setState(newValue)
     local currentState = storage.hooks[idx]
     
-    -- Support functional updates: setState(function(prev) return prev + 1 end)
     if type(newValue) == "function" then
       newValue = newValue(currentState)
     end
 
     if currentState ~= newValue then
       storage.hooks[idx] = newValue
-      -- Automatically trigger UI re-render on state change
       __native_requestUpdate()
     end
   end
@@ -68,7 +64,6 @@ function M.useState(initialValue)
   return storage.hooks[idx], setState
 end
 
--- Helper array/value equality check for useEffect dependencies
 local function depsEqual(oldDeps, newDeps)
   if oldDeps == nil or newDeps == nil then return false end
   if #oldDeps ~= #newDeps then return false end
@@ -78,7 +73,6 @@ local function depsEqual(oldDeps, newDeps)
   return true
 end
 
--- UI.useEffect(effectFn, deps)
 function M.useEffect(effectFn, deps)
   assert(currentComponent, "useEffect must be called inside a render function")
 
@@ -90,12 +84,10 @@ function M.useEffect(effectFn, deps)
   local hasChanged = not deps or not depsEqual(effectRecord.deps, deps)
 
   if hasChanged then
-    -- Run cleanup from previous effect if present
     if type(effectRecord.cleanup) == "function" then
       effectRecord.cleanup()
     end
 
-    -- Run new effect
     local cleanup = effectFn()
 
     storage.effects[idx] = {
@@ -105,7 +97,6 @@ function M.useEffect(effectFn, deps)
   end
 end
 
--- Core UI Primitive Builders
 local function makeComponent(kind)
   return function(t)
     t = t or {}
@@ -130,6 +121,67 @@ function M.registerTab(name, renderFn)
 end
 
 package.loaded.ui = M
+return M
+`
+
+// Pure-Lua "engine" module. Thin, friendly wrappers around the
+// __native_engine_* C functions installed in installEngineBridge(). Every
+// native call is safe to make before a renderer is connected — they either
+// return nil/false or raise a clear Lua error, rather than crashing.
+const ENGINE_LUA_SOURCE = `
+local M = {}
+
+function M.isConnected()
+  return __native_engine_isConnected()
+end
+
+-- { width, height, zoom, targetZoom, camX, camY, mode }, or nil if no
+-- renderer is connected yet.
+function M.getInfo()
+  return __native_engine_getInfo()
+end
+
+-- Cursor position in canvas-local/frame coordinates: { x, y }.
+function M.getCursor()
+  return __native_engine_getCursor()
+end
+
+-- Numeric mode constants (AddPoint, AddLine, Select, Navigate, ...), the
+-- same table the renderer itself uses for renderer.mode.
+function M.getModes()
+  return __native_engine_getModes()
+end
+
+function M.getMode()
+  return __native_engine_getMode()
+end
+
+function M.setMode(mode)
+  return __native_engine_setMode(mode)
+end
+
+-- Multiplies the current zoom by factor, same as the renderer's own
+-- setZoom(); clamped/centered the same way scroll-wheel zoom is.
+function M.setZoom(factor)
+  return __native_engine_setZoom(factor)
+end
+
+-- Flags the canvas as needing a redraw next frame. Call this after a plugin
+-- changes anything the engine should reflect visually.
+function M.markDirty(reason)
+  return __native_engine_markDirty(reason or "lua plugin")
+end
+
+function M.getComponentCount()
+  return __native_engine_getComponentCount()
+end
+
+-- Index of the currently selected component, or nil if nothing is selected.
+function M.getSelectedIndex()
+  return __native_engine_getSelectedIndex()
+end
+
+package.loaded.engine = M
 return M
 `
 
@@ -163,6 +215,11 @@ export class LuaPluginHost {
   private tabs = new Map<string, RegisteredTab>()
   private listeners = new Set<UpdateListener>()
   private currentGroup = '(unknown)'
+  // The live CAD engine, once connected via connectRenderer(). Extensions
+  // are loaded (and may even register tabs) before the canvas/renderer
+  // exists, so this starts out null and every __native_engine_* function
+  // has to tolerate that.
+  private renderer: GraphicsRenderer | null = null
 
   constructor() {
     this.L = lauxlib.luaL_newstate()
@@ -177,20 +234,41 @@ export class LuaPluginHost {
     lua.lua_pop(this.L, 1)
 
     this.installBridge()
+    this.installEngineBridge()
     this.runSource(UI_LUA_SOURCE, '<ui-module>')
+    this.runSource(ENGINE_LUA_SOURCE, '<engine-module>')
+  }
+
+  /**
+   * Wire this host up to the live GraphicsRenderer so Lua extensions can
+   * read/drive the CAD canvas via `require("engine")`. Safe to call after
+   * extensions have already been loaded (typical: the host is created and
+   * extensions run before the <canvas> and its renderer exist) — nothing
+   * here re-runs extension code, it just makes the __native_engine_*
+   * functions start returning real data instead of nil/errors.
+   */
+  connectRenderer(renderer: GraphicsRenderer): void {
+    this.renderer = renderer
+    this.emitUpdate()
+  }
+
+  /** Detach the renderer (e.g. canvas is being torn down/replaced). */
+  disconnectRenderer(): void {
+    this.renderer = null
   }
 
   private installBridge(): void {
-    // Raw Lua C functions: (L) => number of results pushed. This is the
-    // same calling convention Fengari's own stdlib is implemented with —
-    // no fengari-interop involved on this path at all.
     const registerTabCFn = (L: any): number => {
       // stack: 1 = name (string), 2 = renderFn (function)
       const name = lua.lua_tojsstring(L, 1)
       lua.lua_pushvalue(L, 2)
       const ref = lauxlib.luaL_ref(L, lua.LUA_REGISTRYINDEX)
       const renderFn = () => this.callRef(ref) as LuaNode | undefined
-      this.tabs.set(name, { name, group: this.currentGroup, renderFn })
+
+      // Uses active currentGroup set during runExtension()
+      const group = this.currentGroup !== '(unknown)' ? this.currentGroup : name
+
+      this.tabs.set(name, { name, group, renderFn })
       this.emitUpdate()
       return 0
     }
@@ -203,6 +281,141 @@ export class LuaPluginHost {
     }
     lua.lua_pushcfunction(this.L, requestUpdateCFn)
     lua.lua_setglobal(this.L, '__native_requestUpdate')
+  }
+
+  // --- Engine bridge: exposes a curated, read/drive subset of GraphicsRenderer
+  // to Lua as __native_engine_* globals. Same rules as installBridge(): raw
+  // Lua C API only (lua_push*/lua_to*), nothing routed through
+  // fengari-interop, so there's never an ambiguous "is this actually
+  // callable" value involved. Every function checks `this.renderer` itself
+  // rather than assuming connectRenderer() has already run.
+  private installEngineBridge(): void {
+    const requireRenderer = (L: any): GraphicsRenderer | null => {
+      if (!this.renderer) {
+        lauxlib.luaL_error(L, 'Engine is not connected to a renderer yet')
+        return null // unreachable — luaL_error longjmps out of the Lua call
+      }
+      return this.renderer
+    }
+
+    const isConnectedCFn = (L: any): number => {
+      lua.lua_pushboolean(L, this.renderer !== null)
+      return 1
+    }
+    lua.lua_pushcfunction(this.L, isConnectedCFn)
+    lua.lua_setglobal(this.L, '__native_engine_isConnected')
+
+    const getInfoCFn = (L: any): number => {
+      if (!this.renderer) {
+        lua.lua_pushnil(L)
+        return 1
+      }
+      const r = this.renderer
+      const setNum = (key: string, value: number) => {
+        lua.lua_pushnumber(L, value)
+        lua.lua_setfield(L, -2, key)
+      }
+      lua.lua_newtable(L)
+      setNum('width', r.displayWidth)
+      setNum('height', r.displayHeight)
+      setNum('zoom', r.zoom)
+      setNum('targetZoom', r.targetZoom)
+      setNum('camX', r.camX)
+      setNum('camY', r.camY)
+      setNum('mode', r.mode)
+      return 1
+    }
+    lua.lua_pushcfunction(this.L, getInfoCFn)
+    lua.lua_setglobal(this.L, '__native_engine_getInfo')
+
+    const getCursorCFn = (L: any): number => {
+      const r = requireRenderer(L)
+      if (!r) return 0
+      lua.lua_newtable(L)
+      lua.lua_pushnumber(L, r.getCursorXInFrame())
+      lua.lua_setfield(L, -2, 'x')
+      lua.lua_pushnumber(L, r.getCursorYInFrame())
+      lua.lua_setfield(L, -2, 'y')
+      return 1
+    }
+    lua.lua_pushcfunction(this.L, getCursorCFn)
+    lua.lua_setglobal(this.L, '__native_engine_getCursor')
+
+    const getModesCFn = (L: any): number => {
+      const r = requireRenderer(L)
+      if (!r) return 0
+      lua.lua_newtable(L)
+      for (const key of Object.keys(r.modes)) {
+        lua.lua_pushnumber(L, r.modes[key])
+        lua.lua_setfield(L, -2, key)
+      }
+      return 1
+    }
+    lua.lua_pushcfunction(this.L, getModesCFn)
+    lua.lua_setglobal(this.L, '__native_engine_getModes')
+
+    const getModeCFn = (L: any): number => {
+      const r = requireRenderer(L)
+      if (!r) return 0
+      lua.lua_pushnumber(L, r.mode)
+      return 1
+    }
+    lua.lua_pushcfunction(this.L, getModeCFn)
+    lua.lua_setglobal(this.L, '__native_engine_getMode')
+
+    const setModeCFn = (L: any): number => {
+      const r = requireRenderer(L)
+      if (!r) return 0
+      const mode = lua.lua_tonumber(L, 1)
+      r.setMode(mode)
+      return 0
+    }
+    lua.lua_pushcfunction(this.L, setModeCFn)
+    lua.lua_setglobal(this.L, '__native_engine_setMode')
+
+    const setZoomCFn = (L: any): number => {
+      const r = requireRenderer(L)
+      if (!r) return 0
+      const factor = lua.lua_tonumber(L, 1)
+      r.setZoom(factor)
+      return 0
+    }
+    lua.lua_pushcfunction(this.L, setZoomCFn)
+    lua.lua_setglobal(this.L, '__native_engine_setZoom')
+
+    const markDirtyCFn = (L: any): number => {
+      const r = requireRenderer(L)
+      if (!r) return 0
+      const reason = lua.lua_isstring(L, 1) ? lua.lua_tojsstring(L, 1) : 'lua plugin'
+      r.markDirty(reason)
+      return 0
+    }
+    lua.lua_pushcfunction(this.L, markDirtyCFn)
+    lua.lua_setglobal(this.L, '__native_engine_markDirty')
+
+    const getComponentCountCFn = (L: any): number => {
+      const r = requireRenderer(L)
+      if (!r) return 0
+      lua.lua_pushnumber(L, r.logicDisplay?.components.length ?? 0)
+      return 1
+    }
+    lua.lua_pushcfunction(this.L, getComponentCountCFn)
+    lua.lua_setglobal(this.L, '__native_engine_getComponentCount')
+
+    const getSelectedIndexCFn = (L: any): number => {
+      const r = requireRenderer(L)
+      if (!r) return 0
+      if (r.selectedComponent === null) {
+        lua.lua_pushnil(L)
+      } else {
+        // Lua's UI.registerTab etc. talk to plugin authors in 1-based terms
+        // (Lua arrays are 1-indexed), so shift this out of JS's 0-based index.
+        lua.lua_pushnumber(L, r.selectedComponent + 1)
+      }
+      return 1
+    }
+    lua.lua_pushcfunction(this.L, getSelectedIndexCFn)
+    lua.lua_setglobal(this.L, '__native_engine_getSelectedIndex')
   }
 
   private emitUpdate(): void {
@@ -399,6 +612,7 @@ export class LuaPluginHost {
   dispose(): void {
     this.listeners.clear()
     this.tabs.clear()
+    this.renderer = null
     lua.lua_close(this.L)
   }
 }

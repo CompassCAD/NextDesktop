@@ -3,6 +3,7 @@ import { usePluginHost, PluginTabView } from './PluginRuntime'
 import { loadAllExtensions } from './ExtensionLoader'
 import Collapsible from './Collapsible'
 import type { LoadError } from './types'
+import styles from '../style/index.module.css'
 
 function basename(path: string): string {
   const parts = path.split(/[\\/]/)
@@ -37,7 +38,7 @@ export default function PluginsPanel(): React.ReactElement {
   if (!loaded) return <p>Loading extensions…</p>
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+    <div className={styles['plugin-container-button-group']}>
       {loadErrors.length > 0 && (
         <div style={{ color: 'var(--error, red)', fontSize: 12 }}>
           {loadErrors.map((e) => (
@@ -52,9 +53,9 @@ export default function PluginsPanel(): React.ReactElement {
         <p>No plugin tabs registered.</p>
       ) : (
         groups.map((g, i) => (
-          <Collapsible key={g.group} title={basename(g.group)} defaultOpen={i === 0}>
+          <Collapsible key={g.group} title={basename(g.group)}>
             {g.tabNames.length > 1 && (
-              <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap', marginBottom: 6 }}>
+              <div>
                 {g.tabNames.map((name) => (
                   <button
                     key={name}

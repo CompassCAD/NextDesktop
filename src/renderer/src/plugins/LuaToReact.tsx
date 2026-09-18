@@ -86,26 +86,41 @@ export function renderLuaNode(node: unknown, key?: React.Key): React.ReactNode {
           {toText(props.label)}
         </button>
       )
-    case 'Input':
-      return (
+    case 'Input': {
+      const value = toText(props.value)
+      const hasHandler = typeof props.onChange === 'function'
+
+      return hasHandler ? (
         <input
           key={key}
-          value={toText(props.value)}
+          type="text"
+          value={value}
           placeholder={toText(props.placeholder)}
-          onChange={(e) => callIfFn(props.onChange, e.target.value)}
+          onChange={(e) => props.onChange(e.target.value)}
         />
+      ) : (
+        <input key={key} type="text" defaultValue={value} placeholder={toText(props.placeholder)} />
       )
-    case 'Checkbox':
+    }
+    case 'Checkbox': {
+      const isChecked = !!props.checked
+      const hasHandler = typeof props.onChange === 'function'
+
       return (
         <label key={key} style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-          <input
-            type="checkbox"
-            checked={!!props.checked}
-            onChange={(e) => callIfFn(props.onChange, e.target.checked)}
-          />
+          {hasHandler ? (
+            <input
+              type="checkbox"
+              checked={isChecked}
+              onChange={(e) => props.onChange(e.target.checked)}
+            />
+          ) : (
+            <input type="checkbox" defaultChecked={isChecked} />
+          )}
           {toText(props.label) || null}
         </label>
       )
+    }
     default:
       return (
         <div key={key} style={{ color: 'var(--error, red)' }}>
