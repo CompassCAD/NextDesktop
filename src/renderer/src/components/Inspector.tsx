@@ -19,7 +19,7 @@ import RulerSymbol from '../assets/icons/measure.svg'
 import PropertiesIcon from '../assets/icons/properties.svg'
 import HierarchyIcon from '../assets/icons/hierarchy.svg'
 // Reuses an existing icon as a placeholder — swap in a dedicated plugins/puzzle-piece icon when available.
-import PluginsIcon from '../assets/icons/properties.svg'
+import PluginsIcon from '../assets/icons/plugin.svg'
 import PluginsPanel from '../plugins/PluginsPanel'
 import {
   Component,
