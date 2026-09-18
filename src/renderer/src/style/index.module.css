@@ -331,7 +331,7 @@ input[type="checkbox"] {
   flex-wrap: nowrap;
   gap: 10px;
   margin-top: 10px;
-  max-width: 100%;
+  width: 100%;
   overflow-x: scroll;
   box-sizing: border-box;
   overflow-wrap:break-word;
