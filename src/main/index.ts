@@ -127,6 +127,10 @@ app.whenReady().then(() => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow()
   });
 
+  if (!fs.existsSync(path.join(app.getPath('userData'), 'extensions'))) {
+    fs.mkdirSync(path.join(app.getPath('userData'), 'extensions'))
+  }
+
   autoUpdater.checkForUpdatesAndNotify().catch(() => {
     console.log('[updater] offline or no updates available, skipping');
   })

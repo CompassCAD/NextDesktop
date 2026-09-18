@@ -4,6 +4,11 @@ CompassCAD NEXT (*stylized as CompassCAD NEXT*), also known as **Project Sova**,
 
 **EXCLUSIVE: This version of CompassCAD will be the first version accessible for Mac users! Windows and Linux still get our support.**
 
+## 🛠️ Features
+- Same, traditional CompassCAD engine and UX
+- Lua-based plugin scripting (unlike older JS-based plugins)
+- Redefined UI2
+
 ## 📂 Structure
 - `resources`: System level resources (icons)
 - `src/main`: Main Electron entry code
