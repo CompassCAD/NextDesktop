@@ -1,47 +1,69 @@
 import React from 'react'
 
-// fengari-interop wraps every non-primitive Lua value (tables *and*
-// functions) in a proxy whose `typeof` is 'function' — so a Lua *table*
-// reads back as typeof 'function' too. Two consequences drive everything
-// below:
-//   1. Never gate on typeof === 'object' to detect a Lua table.
-//   2. Never enumerate a Lua table's keys (Object.keys/for-in aren't
-//      reliable against these proxies). Only ever read known field names
-//      and known numeric indices — which the proxy's `get` trap does
-//      support directly.
-// A stray function/proxy landing in a text position is exactly what threw
-// "Functions are not valid as a React child" — toText() below is the
-// backstop: it never lets a non-primitive reach JSX as text.
-
 function isLuaNode(v: unknown): v is Record<string, any> {
   return v != null && (typeof v === 'object' || typeof v === 'function')
 }
 
 function toText(v: unknown): string {
   if (v == null) return ''
-  if (typeof v === 'function') return '' // a table/function leaked in where a string was expected
-  return String(v)
-}
+  
+  if (typeof v === 'string' || typeof v === 'number' || typeof v === 'boolean') {
+    return String(v)
+  }
 
-function childCount(node: Record<string, any>): number {
-  const n = Number(node.childCount ?? 0)
-  return Number.isFinite(n) && n > 0 ? n : 0
+  if (typeof v === 'function' || typeof v === 'object') {
+    if (typeof (v as any).toString === 'function') {
+      const str = (v as any).toString()
+      if (str && !str.startsWith('function:') && str !== '[object Object]') {
+        return str
+      }
+    }
+    return ''
+  }
+
+  return String(v)
 }
 
 function callIfFn(fn: unknown, ...args: unknown[]): void {
   if (typeof fn === 'function') fn(...args)
 }
 
+function getChildren(node: Record<string, any>): unknown[] {
+  const children: unknown[] = []
+
+  // Check if children are stored in node.children or directly array-indexed on the node
+  const source = isLuaNode(node.children) ? node.children : node
+
+  // 1-based indexing for Lua compatibility
+  let i = 1
+  while (source[i] !== undefined) {
+    children.push(source[i])
+    i++
+  }
+
+  // Fallback if node.length or node.childCount is explicitly provided
+  if (children.length === 0) {
+    const count = Number(node.childCount ?? node.length ?? 0)
+    for (let j = 1; j <= count; j++) {
+      if (source[j] !== undefined) {
+        children.push(source[j])
+      }
+    }
+  }
+
+  return children
+}
+
 export function renderLuaNode(node: unknown, key?: React.Key): React.ReactNode {
   if (!isLuaNode(node)) return null
 
-  const kind = toText(node.type)
+  const kind = String(node.type ?? '')
   const props = isLuaNode(node.props) ? node.props : {}
-  const count = childCount(node)
-  const children: React.ReactNode[] = []
-  for (let i = 1; i <= count; i++) {
-    children.push(renderLuaNode(node.children?.[i], i))
-  }
+  const rawChildren = getChildren(node)
+  
+  console.log('Rendering LuaNode:', { kind, props, count: rawChildren.length, key })
+
+  const children = rawChildren.map((child, index) => renderLuaNode(child, index))
 
   switch (kind) {
     case 'Column':
@@ -87,7 +109,7 @@ export function renderLuaNode(node: unknown, key?: React.Key): React.ReactNode {
     default:
       return (
         <div key={key} style={{ color: 'var(--error, red)' }}>
-          Unknown component: {toText(kind) || '(none)'}
+          Unknown component: {kind || '(none)'}
         </div>
       )
   }
