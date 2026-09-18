@@ -34,8 +34,9 @@ function getChildren(node: Record<string, any>): unknown[] {
   // Check if children are stored in node.children or directly array-indexed on the node
   const source = isLuaNode(node.children) ? node.children : node
 
-  // 1-based indexing for Lua compatibility
-  let i = 1
+  // Determine starting index (0 or 1) depending on how the Lua bridge serialized the table
+  let i = source[0] !== undefined ? 0 : 1
+  
   while (source[i] !== undefined) {
     children.push(source[i])
     i++
@@ -44,7 +45,8 @@ function getChildren(node: Record<string, any>): unknown[] {
   // Fallback if node.length or node.childCount is explicitly provided
   if (children.length === 0) {
     const count = Number(node.childCount ?? node.length ?? 0)
-    for (let j = 1; j <= count; j++) {
+    const startIndex = source[0] !== undefined ? 0 : 1
+    for (let j = startIndex; j < count + startIndex; j++) {
       if (source[j] !== undefined) {
         children.push(source[j])
       }
