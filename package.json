@@ -27,7 +27,10 @@
     "@electron-toolkit/utils": "^4.0.0",
     "derakuma": "0.6.7",
     "electron-log": "^5.4.4",
-    "electron-updater": "^6.8.9"
+    "electron-updater": "^6.8.9",
+    "fengari": "^0.1.5",
+    "fengari-interop": "^0.1.4",
+    "fengari-web": "^0.1.4"
   },
   "devDependencies": {
     "@electron-toolkit/eslint-config-prettier": "^3.0.0",
@@ -50,6 +53,7 @@
     "source-map": "^0.8.0",
     "source-map-support": "^0.5.21",
     "typescript": "^5.8.3",
-    "vite": "^7.0.5"
+    "vite": "^7.0.5",
+    "vite-plugin-node-polyfills": "^0.28.0"
   }
 }

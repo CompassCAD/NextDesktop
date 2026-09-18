@@ -2,6 +2,7 @@ import { contextBridge, ipcRenderer, OpenDialogSyncOptions } from 'electron'
 import { electronAPI } from '@electron-toolkit/preload'
 import fs from 'node:original-fs';
 import { writeFile } from 'fs';
+import path from 'path'
 
 // Custom APIs for renderer
 const api = {
@@ -12,7 +13,17 @@ const api = {
   showSaveFileDialog: (options: OpenDialogSyncOptions) =>
     ipcRenderer.invoke('dialog:showSaveFileDialog', options),
   forwardLog: (source: any, args: any) => ipcRenderer.send('renderer-log', source, args),
-  getAppVersion: () => ipcRenderer.invoke('req-version')
+  getAppVersion: () => ipcRenderer.invoke('req-version'),
+  getExtensionLists: async () => {
+    const extensionDir: string = await ipcRenderer.invoke('extensions:fetch')
+
+    if (!fs.existsSync(extensionDir)) return []
+
+    return fs
+      .readdirSync(extensionDir)
+      .filter((name) => name.toLowerCase().endsWith('.lua'))
+      .map((name) => path.join(extensionDir, name))
+  },
 }
 
 const updater = {

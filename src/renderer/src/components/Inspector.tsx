@@ -18,6 +18,9 @@ import RulerSymbol from '../assets/icons/measure.svg'
 
 import PropertiesIcon from '../assets/icons/properties.svg'
 import HierarchyIcon from '../assets/icons/hierarchy.svg'
+// Reuses an existing icon as a placeholder — swap in a dedicated plugins/puzzle-piece icon when available.
+import PluginsIcon from '../assets/icons/properties.svg'
+import PluginsPanel from '../plugins/PluginsPanel'
 import {
   Component,
   Point,
@@ -39,7 +42,8 @@ import { Vector2 } from '@renderer/engine/Engine'
 
 enum InspectorState {
   Properties,
-  Hierarchy
+  Hierarchy,
+  Plugins
 }
 
 type AnyComponent =
@@ -253,6 +257,7 @@ export default function Inspector(): React.ReactElement {
               <p>nope</p>
             </>
           ))}
+        {inspectorState == InspectorState.Plugins && <PluginsPanel />}
       </div>
       <div className={styles['inspector-bottom']}>
         <button
@@ -268,6 +273,13 @@ export default function Inspector(): React.ReactElement {
         >
           <img width={18} src={HierarchyIcon} />
           <span>{getLocaleKey('editor.inspector.menu.hierarchy')}</span>
+        </button>
+        <button
+          className={inspectorState == InspectorState.Plugins ? styles['active'] : ''}
+          onClick={() => setInspectorState(InspectorState.Plugins)}
+        >
+          <img width={18} src={PluginsIcon} />
+          <span>Plugins</span>
         </button>
       </div>
     </div>

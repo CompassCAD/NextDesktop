@@ -10,7 +10,8 @@ declare global {
       showOpenFileDialog: (options?: OpenDialogSyncOptions) => Promise<string[] | undefined>,
       showSaveFileDialog: (options?: SaveDialogSyncOptions) => Promise<string[] | undefined>,
       forwardLog: (source: any, args: any) => void,
-      getAppVersion: () => string
+      getAppVersion: () => string,
+      getExtensionLists: () => string[],
     },
     process: NodeJS.Process,
     updater: {

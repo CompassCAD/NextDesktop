@@ -156,6 +156,10 @@ ipcMain.handle('dialog:showOpenFileDialog', (_event, options) => {
 ipcMain.handle('dialog:showSaveFileDialog', (_event, options) => {
   return dialog.showSaveDialogSync(options)
 })
+ipcMain.handle('extensions:fetch', () => {
+  console.log(`I am looking at ${path.join(app.getPath('userData'), 'extensions')}`)
+  return path.join(app.getPath('userData'), 'extensions')
+})
 ipcMain.on('renderer-log', (_event, source, args) => {
   console.log(`[${source}]`, ...args);
 });
