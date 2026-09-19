@@ -83,6 +83,31 @@
       "menu": {
         "properties": "Properties",
         "hierarchy": "Hierarchy"
+      },
+      "general": {
+        "active": "Active",
+        "radius": "Radius",
+        "name": "Name",
+        "color": "Color",
+        "opacity": "Opacity",
+        "position": "Position",
+        "size": "Size",
+        "coverage": "Coverage"
+      },
+      "text": {
+        "heading": "Label Properties",
+        "text": "Text",
+        "fontSize": "Font Size"
+      },
+      "picture": {
+        "heading": "Image Properties",
+        "source": "Source"
+      },
+      "polygon": {
+        "heading": "Polygon Properties",
+        "fillColor": "Fill Color",
+        "strokeColor": "Stroke Color",
+        "enableStroke": "Enable Stroke"
       }
     }
   }
