@@ -5,7 +5,7 @@ import { convertDxfToCompassCad } from './dxfparse'
 
 let currentFilePath: string | undefined
 
-const getDialogPath = (file: string | string[] | undefined): string | undefined => {
+export const getDialogPath = (file: string | string[] | undefined): string | undefined => {
   if (!file) return undefined
   if (Array.isArray(file)) return file[0]
   return file

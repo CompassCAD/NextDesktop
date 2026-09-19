@@ -5,7 +5,7 @@ declare global {
   interface Window {
     electron: ElectronAPI
     api: {
-      readFile: (filePath: string) => string,
+      readFile: (filePath: string, encoding?: BufferEncoding) => string,
       writeFile: (filePath: string, data: string | Uint8Array | Buffer) => void,
       showOpenFileDialog: (options?: OpenDialogSyncOptions) => Promise<string[] | undefined>,
       showSaveFileDialog: (options?: SaveDialogSyncOptions) => Promise<string[] | undefined>,

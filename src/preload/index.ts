@@ -6,7 +6,7 @@ import path from 'path'
 
 // Custom APIs for renderer
 const api = {
-  readFile: (filePath: string) => fs.readFileSync(filePath, 'utf-8'),
+  readFile: (filePath: string, encoding?: BufferEncoding) => fs.readFileSync(filePath, encoding || 'utf-8'),
   writeFile: (filePath: string, data: string | Uint8Array | Buffer) => fs.writeFileSync(filePath, data, 'utf-8'),
   showOpenFileDialog: (options: OpenDialogSyncOptions) =>
     ipcRenderer.invoke('dialog:showOpenFileDialog', options),

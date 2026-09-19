@@ -39,6 +39,7 @@ import Slider from './CustomSlider'
 import { getLocaleKey } from '../locales/Locale'
 import Types from '@renderer/engine/Types'
 import { Vector2 } from '@renderer/engine/Engine'
+import ImagePicker from './ImagePicker'
 
 enum InspectorState {
   Properties,
@@ -79,8 +80,7 @@ export default function Inspector(): React.ReactElement {
   const [inspectorState, setInspectorState] = useState<InspectorState>(InspectorState.Properties)
   const [component, setComponent] = useState<AnyComponent | null>(null)
   const [isHidden, setIsHidden] = useState<boolean>(false)
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const [hierarchySearch, setHierarchySearch] = useState<string>('')
+  const [hierarchySearch] = useState<string>('')
   const [componentArray, setComponentArray] = useState<Component[]>([])
 
   const filteredComponents = useMemo(() => {
@@ -125,7 +125,10 @@ export default function Inspector(): React.ReactElement {
         renderer.logicDisplay.components[renderer.selectedComponent] = finalComponent
         renderer.markDirty('instantaneous component change')
         renderer.saveState()
-        setComponentArray(renderer.logicDisplay.components)
+        setComponentArray([...renderer.logicDisplay.components])
+        if (renderer.onComponentArrayChanged) {
+          renderer.onComponentArrayChanged()
+        }
       }
       return finalComponent
     })
@@ -412,10 +415,9 @@ export default function Inspector(): React.ReactElement {
                   <h3>{getLocaleKey('editor.inspector.picture.heading')}</h3>
                   <div className={styles['input-container']}>
                     <label>{getLocaleKey('editor.inspector.picture.source')}</label>
-                    <input
-                      type="text"
-                      value={component.pictureSource ?? ''}
-                      onChange={(e) => handleComponentChange('pictureSource', e.target.value)}
+                    <ImagePicker
+                      defaultValue={component.pictureSource ?? ''}
+                      onChange={(newValue) => handleComponentChange('pictureSource', newValue)}
                     />
                   </div>
                 </>
