@@ -2253,7 +2253,8 @@ export class GraphicsRenderer {
           break
       }
       this.updateQuadtreeEntry(component)
-      this.markDirty('Component moved');
+      this.markDirty('Component moved')
+      this.notifyComponentChange()
       return true
     }
     return false

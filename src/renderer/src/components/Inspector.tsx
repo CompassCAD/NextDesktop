@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import styles from '../style/index.module.css'
-import { useEffect, useState, useMemo } from 'react'
+import { useEffect, useState, useMemo, useCallback } from 'react'
 import { useRenderer } from './RendererContextProvider'
 import CollapseToRight from '../assets/icons/collapse-right.svg'
 import NoPropertiesIcon from '../assets/icons/unselected-state.svg'
@@ -85,53 +85,69 @@ export default function Inspector(): React.ReactElement {
 
   const filteredComponents = useMemo(() => {
     return componentArray
-      .map((comp, i) => {
-        return { comp: comp, originalIndex: i }
-      })
-      .filter((item) => {
-        return item.comp.name.toLowerCase().includes(hierarchySearch.toLowerCase())
-      })
+      .map((comp, i) => ({ comp, originalIndex: i }))
+      .filter((item) => item.comp.name.toLowerCase().includes(hierarchySearch.toLowerCase()))
   }, [componentArray, hierarchySearch])
+
+  // Helper to sync selection and force React to see a new reference
+  const syncSelectedComponent = useCallback(() => {
+    if (!renderer) return
+    if (renderer.selectedComponent !== null && renderer.logicDisplay) {
+      const selected = renderer.logicDisplay.components[renderer.selectedComponent]
+      if (selected) {
+        // Create a shallow copy while preserving prototype/class instance methods
+        const cloned = Object.assign(Object.create(Object.getPrototypeOf(selected)), selected)
+        setComponent(cloned as AnyComponent)
+        return
+      }
+    }
+    setComponent(null)
+  }, [renderer])
 
   useEffect(() => {
     if (!renderer) return
 
-    renderer.onComponentChangeCallback = () => {
-      setComponent(null)
-      if (renderer.selectedComponent != null) {
-        const selected = renderer.logicDisplay?.components[renderer.selectedComponent]
-        setComponent(selected as AnyComponent)
-      }
+    const handleComponentUpdate = (): void => {
+      syncSelectedComponent()
     }
 
-    renderer.onComponentArrayChanged = () => {
+    const handleArrayUpdate = (): void => {
       setComponentArray([...(renderer.logicDisplay?.components ?? [])])
+      syncSelectedComponent()
     }
+
+    renderer.onComponentChangeCallback = handleComponentUpdate
+    renderer.onComponentArrayChanged = handleArrayUpdate
+
+    // Initial state sync
+    handleArrayUpdate()
 
     return () => {
       renderer.onComponentChangeCallback = undefined as any
       renderer.onComponentArrayChanged = undefined as any
     }
-  }, [renderer])
+  }, [renderer, syncSelectedComponent])
 
   const handleComponentChange = (key: string, value: string | boolean | number): void => {
-    setComponent((prev) => {
-      if (!prev) return null
-      const updated = Object.create(Object.getPrototypeOf(prev))
-      Object.assign(updated, prev)
-      ;(updated as Record<string, any>)[key] = value
-      const finalComponent = updated as AnyComponent
-      if (renderer && renderer.logicDisplay && renderer.selectedComponent !== null) {
-        renderer.logicDisplay.components[renderer.selectedComponent] = finalComponent
-        renderer.markDirty('instantaneous component change')
-        renderer.saveState()
-        setComponentArray([...renderer.logicDisplay.components])
-        if (renderer.onComponentArrayChanged) {
-          renderer.onComponentArrayChanged()
-        }
-      }
-      return finalComponent
-    })
+    if (!component || !renderer || !renderer.logicDisplay || renderer.selectedComponent === null) {
+      return
+    }
+
+    const activeComp = renderer.logicDisplay.components[renderer.selectedComponent] as Record<
+      string,
+      any
+    >
+    if (!activeComp) return
+
+    // Apply values directly onto the engine reference
+    activeComp[key] = value
+
+    renderer.markDirty('instantaneous component change')
+    renderer.saveState()
+
+    // Sync state to trigger component re-render
+    syncSelectedComponent()
+    setComponentArray([...renderer.logicDisplay.components])
   }
 
   const handlePositionChange = (key: string, rawVal: string): void => {
@@ -157,7 +173,7 @@ export default function Inspector(): React.ReactElement {
     if (!renderer) return
     setInspectorState(InspectorState.Hierarchy)
     const comp: Component = renderer.logicDisplay?.components[index] as Component
-    let dest: Vector2 = { x: 0, y: 0 }
+    const dest: Vector2 = { x: 0, y: 0 }
     switch (comp.type) {
       case componentTypes.point:
       case componentTypes.picture:
@@ -200,8 +216,8 @@ export default function Inspector(): React.ReactElement {
       x: renderer.camX,
       y: renderer.camY
     }
-    let startTime: number = 0
-    const duration: number = 500
+    let startTime = 0
+    const duration = 500
 
     const animate = (time: number): void => {
       if (!startTime) startTime = time
@@ -264,6 +280,17 @@ export default function Inspector(): React.ReactElement {
                 </div>
               )}
 
+              {'rotation' in component && (
+                <div className={styles['input-container']}>
+                  <label>{getLocaleKey('editor.inspector.general.rotation')}</label>
+                  <input
+                    type="number"
+                    value={(component as any).rotation}
+                    onChange={(e) => handleComponentChange('rotation', parseFloat(e.target.value))}
+                  />
+                </div>
+              )}
+
               {/* Name */}
               {'name' in component && (
                 <div className={styles['input-container']}>
@@ -306,16 +333,18 @@ export default function Inspector(): React.ReactElement {
                 component instanceof Shape) && (
                 <div className={styles['input-group-row']}>
                   <label>{getLocaleKey('editor.inspector.general.position')}</label>
-                  <input
-                    type="number"
-                    value={(component as any).x ?? ''}
-                    onChange={(e) => handlePositionChange('x', e.target.value)}
-                  />
-                  <input
-                    type="number"
-                    value={(component as any).y ?? ''}
-                    onChange={(e) => handlePositionChange('y', e.target.value)}
-                  />
+                  <div>
+                    <input
+                      type="number"
+                      value={(component as any).x ?? ''}
+                      onChange={(e) => handlePositionChange('x', e.target.value)}
+                    />
+                    <input
+                      type="number"
+                      value={(component as any).y ?? ''}
+                      onChange={(e) => handlePositionChange('y', e.target.value)}
+                    />
+                  </div>
                 </div>
               )}
 
@@ -328,60 +357,110 @@ export default function Inspector(): React.ReactElement {
                 <>
                   <div className={styles['input-group-row']}>
                     <label>{getLocaleKey('editor.inspector.general.position')}</label>
-                    <input
-                      type="number"
-                      value={(component as any).x1 ?? ''}
-                      onChange={(e) => handlePositionChange('x1', e.target.value)}
-                    />
-                    <input
-                      type="number"
-                      value={(component as any).y1 ?? ''}
-                      onChange={(e) => handlePositionChange('y1', e.target.value)}
-                    />
+                    <div>
+                      <input
+                        type="number"
+                        value={(component as any).x1 ?? ''}
+                        onChange={(e) => handlePositionChange('x1', e.target.value)}
+                      />
+                      <input
+                        type="number"
+                        value={(component as any).y1 ?? ''}
+                        onChange={(e) => handlePositionChange('y1', e.target.value)}
+                      />
+                    </div>
                   </div>
                   <div className={styles['input-group-row']}>
                     <label>{getLocaleKey('editor.inspector.general.size')}</label>
-                    <input
-                      type="number"
-                      value={
-                        typeof (component as any).x2 === 'number' &&
-                        typeof (component as any).x1 === 'number'
-                          ? (component as any).x2 - (component as any).x1
-                          : ''
-                      }
-                      onChange={(e) => handleSizeChange('width', e.target.value)}
-                      placeholder="Width"
-                    />
-                    <input
-                      type="number"
-                      value={
-                        typeof (component as any).y2 === 'number' &&
-                        typeof (component as any).y1 === 'number'
-                          ? (component as any).y2 - (component as any).y1
-                          : ''
-                      }
-                      onChange={(e) => handleSizeChange('height', e.target.value)}
-                      placeholder="Height"
-                    />
+                    <div>
+                      <input
+                        type="number"
+                        value={
+                          typeof (component as any).x2 === 'number' &&
+                          typeof (component as any).x1 === 'number'
+                            ? (component as any).x2 - (component as any).x1
+                            : ''
+                        }
+                        onChange={(e) => handleSizeChange('width', e.target.value)}
+                        placeholder="Width"
+                      />
+                      <input
+                        type="number"
+                        value={
+                          typeof (component as any).y2 === 'number' &&
+                          typeof (component as any).y1 === 'number'
+                            ? (component as any).y2 - (component as any).y1
+                            : ''
+                        }
+                        onChange={(e) => handleSizeChange('height', e.target.value)}
+                        placeholder="Height"
+                      />
+                    </div>
                   </div>
                 </>
               )}
 
               {/* Arc Coverage */}
               {component instanceof Arc && (
-                <div className={styles['input-group-row']}>
-                  <label>{getLocaleKey('editor.inspector.general.coverage')}</label>
-                  <input
-                    type="number"
-                    value={component.x3 ?? ''}
-                    onChange={(e) => handlePositionChange('x3', e.target.value)}
-                  />
-                  <input
-                    type="number"
-                    value={component.y3 ?? ''}
-                    onChange={(e) => handlePositionChange('y3', e.target.value)}
-                  />
-                </div>
+                <>
+                  <div className={styles['input-group-row']}>
+                    <label>{getLocaleKey('editor.inspector.general.position')}</label>
+                    <div>
+                      <input
+                        type="number"
+                        value={(component as any).x1 ?? ''}
+                        onChange={(e) => handlePositionChange('x1', e.target.value)}
+                      />
+                      <input
+                        type="number"
+                        value={(component as any).y1 ?? ''}
+                        onChange={(e) => handlePositionChange('y1', e.target.value)}
+                      />
+                    </div>
+                  </div>
+                  <div className={styles['input-group-row']}>
+                    <label>{getLocaleKey('editor.inspector.general.size')}</label>
+                    <div>
+                      <input
+                        type="number"
+                        value={
+                          typeof (component as any).x2 === 'number' &&
+                          typeof (component as any).x1 === 'number'
+                            ? (component as any).x2 - (component as any).x1
+                            : ''
+                        }
+                        onChange={(e) => handleSizeChange('width', e.target.value)}
+                        placeholder="Width"
+                      />
+                      <input
+                        type="number"
+                        value={
+                          typeof (component as any).y2 === 'number' &&
+                          typeof (component as any).y1 === 'number'
+                            ? (component as any).y2 - (component as any).y1
+                            : ''
+                        }
+                        onChange={(e) => handleSizeChange('height', e.target.value)}
+                        placeholder="Height"
+                      />
+                    </div>
+                  </div>
+                  <div className={styles['input-group-row']}>
+                    <label>{getLocaleKey('editor.inspector.general.coverage')}</label>
+                    <div>
+                      <input
+                        type="number"
+                        value={component.x3 ?? ''}
+                        onChange={(e) => handlePositionChange('x3', e.target.value)}
+                      />
+                      <input
+                        type="number"
+                        value={component.y3 ?? ''}
+                        onChange={(e) => handlePositionChange('y3', e.target.value)}
+                      />
+                    </div>
+                  </div>
+                </>
               )}
 
               {/* Text Properties */}

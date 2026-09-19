@@ -90,6 +90,7 @@
         "name": "Name",
         "color": "Color",
         "opacity": "Opacity",
+        "rotation": "Rotation",
         "position": "Position",
         "size": "Size",
         "coverage": "Coverage"

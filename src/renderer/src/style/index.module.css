@@ -371,7 +371,7 @@ input[type="checkbox"] {
   gap: 10px;
   width: 100%;
 }
-.input-container {
+.input-container, .input-group-row {
   display: flex;
   align-items: center;
   justify-content: space-between;
