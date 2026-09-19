@@ -4,6 +4,26 @@ import type { LuaNode } from './types'
 // Adjust this import path if GraphicsRenderer lives somewhere else relative
 // to this file — it's the class defined in Engine.ts.
 import type { GraphicsRenderer } from '../engine/Engine'
+// Component.ts is independent of Engine.ts/Logic.ts — it's just the shape
+// library. Pulling it in here (not from Engine.ts) is what lets the bridge
+// build a real Point/Line/Circle/... from a plain Lua table without needing
+// anything renderer-specific.
+import {
+  Component,
+  Point,
+  Line,
+  Circle,
+  Rectangle,
+  Measure,
+  Label,
+  Arc,
+  Shape,
+  Picture,
+  Polygon,
+  Vector,
+  BoundBox,
+  componentTypes
+} from '../engine/Component'
 
 // Pure-Lua "ui" module. Component builders read the array part of their
 // argument table as children and the hash part as props, so
@@ -181,6 +201,127 @@ function M.getSelectedIndex()
   return __native_engine_getSelectedIndex()
 end
 
+-- Numeric type constants matching componentTypes in Component.ts (point=1,
+-- line=2, circle=3, ...). Handy if you'd rather compare/switch on numbers
+-- than the string names used everywhere below.
+M.componentTypes = __native_engine_getComponentTypes()
+
+-- Low-level: add any component by type name ("point", "line", "circle",
+-- "rectangle", "arc", "measure", "label", "shape", "picture", "polygon",
+-- "boundBox") plus a props table matching that class's constructor fields.
+-- Returns the new component's 1-based index in engine.getComponents().
+-- Every M.<shape>(...) helper below is just a friendlier wrapper over this.
+function M.addComponent(componentType, props)
+  local index = __native_engine_addComponent(componentType, props or {})
+  if index == nil then
+    error(
+      "engine.addComponent: the renderer can't accept components yet " ..
+      "(type=" .. tostring(componentType) .. "). " ..
+      "This usually means the canvas is still starting up — try again once the viewport is loaded."
+    )
+  end
+  return index
+end
+
+function M.point(x, y, opts)
+  opts = opts or {}
+  return M.addComponent("point", { x = x, y = y, opacity = opts.opacity, name = opts.name, rotation = opts.rotation })
+end
+
+function M.line(x1, y1, x2, y2, opts)
+  opts = opts or {}
+  return M.addComponent("line", {
+    x1 = x1, y1 = y1, x2 = x2, y2 = y2,
+    radius = opts.radius, color = opts.color, opacity = opts.opacity, name = opts.name, rotation = opts.rotation
+  })
+end
+
+function M.circle(x1, y1, x2, y2, opts)
+  opts = opts or {}
+  return M.addComponent("circle", {
+    x1 = x1, y1 = y1, x2 = x2, y2 = y2,
+    radius = opts.radius, color = opts.color, opacity = opts.opacity, name = opts.name, rotation = opts.rotation
+  })
+end
+
+function M.rectangle(x1, y1, x2, y2, opts)
+  opts = opts or {}
+  return M.addComponent("rectangle", {
+    x1 = x1, y1 = y1, x2 = x2, y2 = y2,
+    radius = opts.radius, color = opts.color, opacity = opts.opacity, name = opts.name, rotation = opts.rotation
+  })
+end
+
+function M.measure(x1, y1, x2, y2, opts)
+  opts = opts or {}
+  return M.addComponent("measure", {
+    x1 = x1, y1 = y1, x2 = x2, y2 = y2,
+    radius = opts.radius, opacity = opts.opacity, name = opts.name, rotation = opts.rotation
+  })
+end
+
+function M.label(x, y, text, opts)
+  opts = opts or {}
+  return M.addComponent("label", {
+    x = x, y = y, text = text,
+    fontSize = opts.fontSize, opacity = opts.opacity, name = opts.name, rotation = opts.rotation
+  })
+end
+
+function M.arc(x1, y1, x2, y2, x3, y3, opts)
+  opts = opts or {}
+  return M.addComponent("arc", {
+    x1 = x1, y1 = y1, x2 = x2, y2 = y2, x3 = x3, y3 = y3,
+    radius = opts.radius, color = opts.color, opacity = opts.opacity, name = opts.name, rotation = opts.rotation
+  })
+end
+
+function M.picture(x, y, pictureSource, opts)
+  opts = opts or {}
+  return M.addComponent("picture", {
+    x = x, y = y, pictureSource = pictureSource,
+    opacity = opts.opacity, name = opts.name, rotation = opts.rotation
+  })
+end
+
+-- vectors: array of {x=..., y=...} tables.
+function M.polygon(vectors, opts)
+  opts = opts or {}
+  return M.addComponent("polygon", {
+    vectors = vectors,
+    color = opts.color, strokeColor = opts.strokeColor, enableStroke = opts.enableStroke,
+    opacity = opts.opacity, name = opts.name, rotation = opts.rotation
+  })
+end
+
+function M.boundBox(x1, y1, x2, y2, name)
+  return M.addComponent("boundBox", { x1 = x1, y1 = y1, x2 = x2, y2 = y2, name = name })
+end
+
+-- children: array of plain descriptor tables, e.g. { type = "rectangle", x1 = 0, ... },
+-- nested the same way props does for every other helper here. Useful for
+-- building a compound Shape in one call instead of one addComponent per part.
+function M.shape(x, y, children, opts)
+  opts = opts or {}
+  return M.addComponent("shape", { x = x, y = y, components = children, name = opts.name, rotation = opts.rotation })
+end
+
+-- Every live component as a plain table (fields match the Component.ts
+-- class, plus a "typeName" string for convenience). 1-indexed, like every
+-- other Lua array here.
+function M.getComponents()
+  return __native_engine_getComponents()
+end
+
+function M.getComponent(index)
+  return __native_engine_getComponent(index)
+end
+
+-- Returns true if a component existed at that (1-based) index and was removed.
+function M.removeComponent(index)
+  return __native_engine_removeComponent(index)
+end
+
 package.loaded.engine = M
 return M
 `
@@ -247,14 +388,10 @@ export class LuaPluginHost {
    * here re-runs extension code, it just makes the __native_engine_*
    * functions start returning real data instead of nil/errors.
    */
-  connectRenderer(renderer: GraphicsRenderer): void {
+  public setRenderer(renderer: GraphicsRenderer): void {
     this.renderer = renderer
+    console.log('renderer connected')
     this.emitUpdate()
-  }
-
-  /** Detach the renderer (e.g. canvas is being torn down/replaced). */
-  disconnectRenderer(): void {
-    this.renderer = null
   }
 
   private installBridge(): void {
@@ -289,14 +426,22 @@ export class LuaPluginHost {
   // fengari-interop, so there's never an ambiguous "is this actually
   // callable" value involved. Every function checks `this.renderer` itself
   // rather than assuming connectRenderer() has already run.
+  //
+  // IMPORTANT: none of these ever raise a Lua error just because the
+  // renderer isn't connected yet. Extensions are loaded — and their tabs
+  // can be rendered — before the <canvas>/renderer exists (see
+  // connectRenderer's docstring), so a tab's Render() calling e.g.
+  // engine.getComponentCount() during that window is normal, expected
+  // usage, not misuse. This used to call lauxlib.luaL_error() here, which
+  // throws a real Lua error out of whatever native call triggered it; if
+  // that call happened inside a render pass that gets retried on every
+  // emitUpdate() (tab registration fires one), the render → error → retry
+  // cycle never settled and froze the tab. Getters now return nil/0/an
+  // empty table and actions silently no-op instead. A genuinely bad call
+  // (e.g. an unknown component type name) still raises a real Lua error —
+  // that's a programmer mistake, not a timing issue.
   private installEngineBridge(): void {
-    const requireRenderer = (L: any): GraphicsRenderer | null => {
-      if (!this.renderer) {
-        lauxlib.luaL_error(L, 'Engine is not connected to a renderer yet')
-        return null // unreachable — luaL_error longjmps out of the Lua call
-      }
-      return this.renderer
-    }
+    const requireRenderer = (_L: any): GraphicsRenderer | null => this.renderer
 
     const isConnectedCFn = (L: any): number => {
       lua.lua_pushboolean(L, this.renderer !== null)
@@ -330,7 +475,10 @@ export class LuaPluginHost {
 
     const getCursorCFn = (L: any): number => {
       const r = requireRenderer(L)
-      if (!r) return 0
+      if (!r) {
+        lua.lua_pushnil(L)
+        return 1
+      }
       lua.lua_newtable(L)
       lua.lua_pushnumber(L, r.getCursorXInFrame())
       lua.lua_setfield(L, -2, 'x')
@@ -343,7 +491,10 @@ export class LuaPluginHost {
 
     const getModesCFn = (L: any): number => {
       const r = requireRenderer(L)
-      if (!r) return 0
+      if (!r) {
+        lua.lua_pushnil(L)
+        return 1
+      }
       lua.lua_newtable(L)
       for (const key of Object.keys(r.modes)) {
         lua.lua_pushnumber(L, r.modes[key])
@@ -356,7 +507,10 @@ export class LuaPluginHost {
 
     const getModeCFn = (L: any): number => {
       const r = requireRenderer(L)
-      if (!r) return 0
+      if (!r) {
+        lua.lua_pushnil(L)
+        return 1
+      }
       lua.lua_pushnumber(L, r.mode)
       return 1
     }
@@ -365,7 +519,7 @@ export class LuaPluginHost {
 
     const setModeCFn = (L: any): number => {
       const r = requireRenderer(L)
-      if (!r) return 0
+      if (!r) return 0 // no-op: nothing to set the mode on yet
       const mode = lua.lua_tonumber(L, 1)
       r.setMode(mode)
       return 0
@@ -375,7 +529,7 @@ export class LuaPluginHost {
 
     const setZoomCFn = (L: any): number => {
       const r = requireRenderer(L)
-      if (!r) return 0
+      if (!r) return 0 // no-op
       const factor = lua.lua_tonumber(L, 1)
       r.setZoom(factor)
       return 0
@@ -385,7 +539,7 @@ export class LuaPluginHost {
 
     const markDirtyCFn = (L: any): number => {
       const r = requireRenderer(L)
-      if (!r) return 0
+      if (!r) return 0 // no-op: no canvas to mark dirty yet
       const reason = lua.lua_isstring(L, 1) ? lua.lua_tojsstring(L, 1) : 'lua plugin'
       r.markDirty(reason)
       return 0
@@ -395,8 +549,10 @@ export class LuaPluginHost {
 
     const getComponentCountCFn = (L: any): number => {
       const r = requireRenderer(L)
-      if (!r) return 0
-      lua.lua_pushnumber(L, r.logicDisplay?.components.length ?? 0)
+      // 0, not nil: this return value is meant to be used directly in
+      // arithmetic/string-building (see demo_components.lua), and a plugin
+      // rendering before connection genuinely has zero live components.
+      lua.lua_pushnumber(L, r?.logicDisplay?.components.length ?? 0)
       return 1
     }
     lua.lua_pushcfunction(this.L, getComponentCountCFn)
@@ -404,8 +560,7 @@ export class LuaPluginHost {
 
     const getSelectedIndexCFn = (L: any): number => {
       const r = requireRenderer(L)
-      if (!r) return 0
-      if (r.selectedComponent === null) {
+      if (!r || r.selectedComponent === null) {
         lua.lua_pushnil(L)
       } else {
         // Lua's UI.registerTab etc. talk to plugin authors in 1-based terms
@@ -416,6 +571,295 @@ export class LuaPluginHost {
     }
     lua.lua_pushcfunction(this.L, getSelectedIndexCFn)
     lua.lua_setglobal(this.L, '__native_engine_getSelectedIndex')
+
+    // --- Component bridge: lets Lua construct any Component.ts subclass and
+    // drop it into the live logicDisplay. Component.ts has no dependency on
+    // Engine.ts, so this part of the bridge only needs a renderer to know
+    // *where* to put the finished component, not to build it.
+
+    const getComponentTypesCFn = (L: any): number => {
+      lua.lua_newtable(L)
+      for (const key of Object.keys(componentTypes)) {
+        lua.lua_pushnumber(L, (componentTypes as Record<string, number>)[key])
+        lua.lua_setfield(L, -2, key)
+      }
+      return 1
+    }
+    lua.lua_pushcfunction(this.L, getComponentTypesCFn)
+    lua.lua_setglobal(this.L, '__native_engine_getComponentTypes')
+
+    const addComponentCFn = (L: any): number => {
+      const r = requireRenderer(L)
+      if (!r) {
+        // Don't raise a Lua C-api error here; return nil so the Lua-side
+        // wrapper can handle it or extensions can detect the nil result.
+        lua.lua_pushnil(L)
+        return 1
+      }
+      if (!r.logicDisplay) {
+        // Similarly, return nil while the renderer is still initialising.
+        lua.lua_pushnil(L)
+        return 1
+      }
+
+      const typeArg =
+        lua.lua_type(L, 1) === lua.LUA_TSTRING
+          ? lua.lua_tojsstring(L, 1)
+          : lua.lua_type(L, 1) === lua.LUA_TNUMBER
+            ? lua.lua_tonumber(L, 1)
+            : null
+      if (typeArg === null) {
+        lauxlib.luaL_error(
+          L,
+          'engine.addComponent expects a component type (string name or number) as the first argument'
+        )
+        return 0
+      }
+
+      let props: Record<string, unknown> = {}
+      if (lua.lua_istable(L, 2)) {
+        try {
+          props = this.luaToJs(2) as Record<string, unknown>
+        } catch (e) {
+          lauxlib.luaL_error(
+            L,
+            'engine.addComponent: could not read props table — ' +
+              (e instanceof Error ? e.message : String(e))
+          )
+          return 0
+        }
+      }
+
+      let component: Component
+      try {
+        component = this.buildComponent(typeArg, props)
+      } catch (e) {
+        lauxlib.luaL_error(L, e instanceof Error ? e.message : String(e))
+        return 0
+      }
+
+      try {
+        r.logicDisplay.addComponent(component)
+        r.saveState()
+      } catch (e) {
+        lauxlib.luaL_error(
+          L,
+          'engine.addComponent: could not insert component — ' +
+            (e instanceof Error ? e.message : String(e))
+        )
+        return 0
+      }
+
+      lua.lua_pushnumber(L, r.logicDisplay.components.length)
+      return 1
+    }
+    lua.lua_pushcfunction(this.L, addComponentCFn)
+    lua.lua_setglobal(this.L, '__native_engine_addComponent')
+
+    const getComponentsCFn = (L: any): number => {
+      const r = requireRenderer(L)
+      const components = r?.logicDisplay?.components ?? []
+      this.pushJsValue(components.map((c) => this.componentToPlainObject(c)))
+      return 1
+    }
+    lua.lua_pushcfunction(this.L, getComponentsCFn)
+    lua.lua_setglobal(this.L, '__native_engine_getComponents')
+
+    const getComponentCFn = (L: any): number => {
+      const r = requireRenderer(L)
+      const index = lua.lua_tonumber(L, 1) - 1 // Lua is 1-based
+      const component = r?.logicDisplay?.components[index]
+      if (!component) {
+        lua.lua_pushnil(L)
+        return 1
+      }
+      this.pushJsValue(this.componentToPlainObject(component))
+      return 1
+    }
+    lua.lua_pushcfunction(this.L, getComponentCFn)
+    lua.lua_setglobal(this.L, '__native_engine_getComponent')
+
+    const removeComponentCFn = (L: any): number => {
+      const r = requireRenderer(L)
+      if (!r || !r.logicDisplay) {
+        lua.lua_pushboolean(L, false)
+        return 1
+      }
+      const index = lua.lua_tonumber(L, 1) - 1 // Lua is 1-based
+      if (index < 0 || index >= r.logicDisplay.components.length) {
+        lua.lua_pushboolean(L, false)
+        return 1
+      }
+      r.logicDisplay.components.splice(index, 1)
+      if (r.selectedComponent === index) r.selectedComponent = null
+      r.saveState()
+      lua.lua_pushboolean(L, true)
+      return 1
+    }
+    lua.lua_pushcfunction(this.L, removeComponentCFn)
+    lua.lua_setglobal(this.L, '__native_engine_removeComponent')
+  }
+
+  /**
+   * Turns a Lua-supplied component type (name or numeric componentTypes
+   * value) plus a plain-object props bag into a real Component.ts instance.
+   * Mirrors LogicDisplay.importJSON's switch in Logic.ts, except it reads
+   * from arbitrary Lua-authored props instead of a previously-serialized
+   * component, and — for `shape` — recurses so a Shape's children can be
+   * described inline as nested {type=..., ...} tables from Lua.
+   */
+  private buildComponent(type: string | number, props: Record<string, unknown>): Component {
+    const typeNum =
+      typeof type === 'number' ? type : (componentTypes as Record<string, number>)[type]
+    const num = (v: unknown, fallback?: number): number | undefined =>
+      typeof v === 'number' ? v : fallback
+    const str = (v: unknown, fallback?: string): string | undefined =>
+      typeof v === 'string' ? v : fallback
+    const bool = (v: unknown, fallback?: boolean): boolean | undefined =>
+      typeof v === 'boolean' ? v : fallback
+
+    switch (typeNum) {
+      case componentTypes.point:
+        return new Point(
+          num(props.x, 0),
+          num(props.y, 0),
+          num(props.opacity),
+          str(props.name),
+          num(props.rotation)
+        )
+      case componentTypes.line:
+        return new Line(
+          num(props.x1, 0),
+          num(props.y1, 0),
+          num(props.x2, 0),
+          num(props.y2, 0),
+          num(props.radius),
+          str(props.color),
+          num(props.opacity),
+          str(props.name),
+          num(props.rotation)
+        )
+      case componentTypes.circle:
+        return new Circle(
+          num(props.x1, 0),
+          num(props.y1, 0),
+          num(props.x2, 0),
+          num(props.y2, 0),
+          num(props.radius),
+          str(props.color),
+          num(props.opacity),
+          str(props.name),
+          num(props.rotation)
+        )
+      case componentTypes.rectangle:
+        return new Rectangle(
+          num(props.x1, 0),
+          num(props.y1, 0),
+          num(props.x2, 0),
+          num(props.y2, 0),
+          num(props.radius),
+          str(props.color),
+          num(props.opacity),
+          str(props.name),
+          num(props.rotation)
+        )
+      case componentTypes.arc:
+        return new Arc(
+          num(props.x1, 0),
+          num(props.y1, 0),
+          num(props.x2, 0),
+          num(props.y2, 0),
+          num(props.x3, 0),
+          num(props.y3, 0),
+          num(props.radius),
+          str(props.color),
+          num(props.opacity),
+          str(props.name),
+          num(props.rotation)
+        )
+      case componentTypes.measure:
+        return new Measure(
+          num(props.x1, 0),
+          num(props.y1, 0),
+          num(props.x2, 0),
+          num(props.y2, 0),
+          num(props.radius),
+          num(props.opacity),
+          str(props.name),
+          num(props.rotation)
+        )
+      case componentTypes.label:
+        return new Label(
+          num(props.x, 0),
+          num(props.y, 0),
+          str(props.text),
+          num(props.fontSize),
+          num(props.opacity),
+          str(props.name),
+          num(props.rotation)
+        )
+      case componentTypes.picture:
+        return new Picture(
+          num(props.x, 0),
+          num(props.y, 0),
+          str(props.pictureSource),
+          num(props.opacity),
+          str(props.name),
+          num(props.rotation)
+        )
+      case componentTypes.polygon: {
+        const vectors = Array.isArray(props.vectors)
+          ? (props.vectors as Array<{ x: number; y: number }>).map((v) => new Vector(v.x, v.y))
+          : []
+        return new Polygon(
+          vectors,
+          str(props.color),
+          str(props.strokeColor),
+          num(props.opacity),
+          bool(props.enableStroke),
+          str(props.name),
+          num(props.rotation)
+        )
+      }
+      case componentTypes.boundBox:
+        return new BoundBox(
+          num(props.x1, 0),
+          num(props.y1, 0),
+          num(props.x2, 0),
+          num(props.y2, 0),
+          str(props.name)
+        )
+      case componentTypes.shape: {
+        const shape = new Shape(
+          num(props.x, 0),
+          num(props.y, 0),
+          str(props.name),
+          num(props.rotation)
+        )
+        if (Array.isArray(props.components)) {
+          for (const child of props.components as Array<Record<string, unknown>>) {
+            if (child && typeof child.type === 'string') {
+              shape.addComponent(this.buildComponent(child.type, child))
+            }
+          }
+        }
+        return shape
+      }
+      default:
+        throw new Error(
+          `Unknown component type "${type}" — expected one of: ${Object.keys(componentTypes).join(', ')}`
+        )
+    }
+  }
+
+  /** JSON round-trip is the simplest reliable way to get a plain, Lua-pushable object out of a Component instance (drops methods, keeps every data field). */
+  private componentToPlainObject(component: Component): Record<string, unknown> {
+    const plain = JSON.parse(JSON.stringify(component)) as Record<string, unknown>
+    const typeNames = Object.fromEntries(
+      Object.entries(componentTypes).map(([name, num]) => [num, name])
+    )
+    plain.typeName = typeNames[plain.type as number]
+    return plain
   }
 
   private emitUpdate(): void {
@@ -554,6 +998,31 @@ export class LuaPluginHost {
       lua.lua_pushnumber(this.L, v)
     } else {
       lua.lua_pushliteral(this.L, String(v))
+    }
+  }
+
+  /**
+   * Recursive counterpart to pushJsPrimitive/luaToJs: pushes an arbitrary
+   * JS value (primitive, array, or plain object) onto the Lua stack as its
+   * Lua equivalent. Arrays become 1-indexed Lua array-tables, objects
+   * become hash tables — used to hand whole components (or lists of them)
+   * back to Lua from __native_engine_get*.
+   */
+  private pushJsValue(v: unknown): void {
+    if (Array.isArray(v)) {
+      lua.lua_newtable(this.L)
+      v.forEach((item, i) => {
+        this.pushJsValue(item)
+        lua.lua_rawseti(this.L, -2, i + 1)
+      })
+    } else if (v !== null && typeof v === 'object') {
+      lua.lua_newtable(this.L)
+      for (const [key, val] of Object.entries(v as Record<string, unknown>)) {
+        this.pushJsValue(val)
+        lua.lua_setfield(this.L, -2, key)
+      }
+    } else {
+      this.pushJsPrimitive(v)
     }
   }
 

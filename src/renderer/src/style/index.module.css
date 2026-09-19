@@ -663,7 +663,7 @@ input[type="checkbox"] {
 .plugin-container-button-group {
   width: 100%;
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   flex-direction: column;
   gap: 5px;
 }

@@ -2,10 +2,21 @@ import { useEffect, useState } from 'react'
 import { LuaPluginHost } from './LuaBridge'
 import { renderLuaNode } from './LuaToReact'
 
-/** One host per mount of the Plugins tab; disposed on unmount. */
+// Shared Lua host for the whole app. Creating one host instance avoids
+// multiple hosts being created in different component trees which can
+// lead to the renderer being set on a different host than the one used
+// to load/run extensions (a race condition causing "no renderer is
+// connected" errors). Keep the host alive for the app lifetime.
+let sharedHost: LuaPluginHost | null = null
+
 export function usePluginHost(): LuaPluginHost {
-  const [host] = useState(() => new LuaPluginHost())
-  useEffect(() => () => host.dispose(), [host])
+  const [host] = useState(() => {
+    if (!sharedHost) sharedHost = new LuaPluginHost()
+    return sharedHost
+  })
+  // Do not dispose the shared host on unmount — it is intentionally
+  // long-lived for the lifetime of the application to avoid races.
+  useEffect(() => undefined, [host])
   return host
 }
 

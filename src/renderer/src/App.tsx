@@ -6,12 +6,14 @@ import Toolbar from './components/Toolbar'
 import TextPrompt from './components/TextPrompt'
 import { RendererProvider, useRenderer } from './components/RendererContextProvider'
 import Inspector from './components/Inspector'
-import { getLocaleKey, SetLanguage } from './locales/Locale'
+import { getLocaleKey } from './locales/Locale'
 import PublicBetaModal from './components/submodals/PublicBeta'
+import { usePluginHost } from './plugins/PluginRuntime' // <-- Import plugin host context
 
 function AppContent(): React.JSX.Element {
   const canvas = useRef<HTMLCanvasElement>(null)
   const { renderer, isReady, createRenderer } = useRenderer()
+  const host = usePluginHost() // <-- Access Lua host
 
   const resize = (): void => {
     if (canvas.current && renderer) {
@@ -28,18 +30,20 @@ function AppContent(): React.JSX.Element {
     }
   }
 
-  // Create the renderer once the canvas exists.
+  // Pass renderer to the Lua plugin host whenever renderer changes
+  useEffect(() => {
+    if (renderer && host) {
+      host.setRenderer(renderer)
+    }
+  }, [renderer, host])
+
   useEffect(() => {
     if (canvas.current) {
       console.log('[main] canvas is available and ready')
       createRenderer(canvas.current, window.innerWidth, window.innerHeight)
     }
-    // createRenderer is stable (useCallback with no deps) and is itself
-    // idempotent, so this is still effectively "run once".
   }, [createRenderer])
 
-  // Size the canvas as soon as the renderer becomes available, and again
-  // on every window resize.
   useEffect(() => {
     resize()
     const handleResize = (): void => resize()
@@ -47,8 +51,8 @@ function AppContent(): React.JSX.Element {
     return () => window.removeEventListener('resize', handleResize)
   }, [renderer])
 
-  if (!localStorage.getItem('PUBLICBETA_DoNotShowThatShitEverAgain') || localStorage.getItem('PUBLICBETA_DoNotShowThatShitEverAgain') == 'false') {
-    openModal(getLocaleKey('editor.publicBeta.welcome'), <PublicBetaModal />);
+  if (!localStorage.getItem('PUBLICBETA_DoNotShowThatShitEverAgain') || localStorage.getItem('PUBLICBETA_DoNotShowThatShitEverAgain') === 'false') {
+    openModal(getLocaleKey('editor.publicBeta.welcome'), <PublicBetaModal />)
   }
 
   return (
@@ -73,4 +77,4 @@ function App(): React.JSX.Element {
   )
 }
 
-export default App;
+export default App
