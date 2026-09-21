@@ -124,8 +124,8 @@ export default function Toolbar(): React.ReactElement {
     {
       icon: DeleteIcon,
       localeString: 'editor.toolbox.delete',
-      keyName: 'r',
-      keyCode: Types.default.KeyCodes.R,
+      keyName: 'y',
+      keyCode: Types.default.KeyCodes.Y,
       state: Types.default.NavigationTypes.Delete
     },
     {
