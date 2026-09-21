@@ -1,0 +1,126 @@
+{
+  "name": "Français",
+  "editor": {
+    "publicBeta": {
+      "welcome": "Bienvenue dans la bêta publique de CompassCAD NEXT !",
+      "segments": {
+        "body_segment1": "Bienvenue dans la bêta publique Desktop de CompassCAD NEXT ! Nous sommes ravis de vous compter parmi nous !",
+        "body_segment2": "Avant de commencer, nous souhaitons vous avertir des points suivants.",
+        "warns": {
+          "doNotDailyDrive": "Veuillez ne pas encore utiliser cette version de CompassCAD au quotidien.",
+          "lotsOfBugs": "Gardez à l'esprit qu'il y aura BEAUCOUP DE BUGS, ainsi que des boutons incomplets ou non fonctionnels.",
+          "missingFeatures": "Il y aura BEAUCOUP de fonctionnalités et de boutons manquants par rapport aux versions desktop et web.",
+          "noSettingChange": "Il n'y a aucun moyen de modifier les paramètres (pour le moment). Si vous souhaitez le faire, il faudra bidouiller.",
+          "alternative": "Si vous cherchez une version utilisable au quotidien, utilisez CompassCAD Desktop (< 2.1.0) ou la version web."
+        },
+        "askForConsent": "Ceci étant dit, commencez par cocher « J'accepte », puis fermez cette fenêtre surgissante.",
+        "checkListConsent": "J'accepte le fait qu'il y aura des bugs et je serai responsable en cas de perte de projets.",
+        "dontShow": "Ne plus afficher, s'il vous plaît.",
+        "riskAccepted": "Risque accepté. Nous n'afficherons plus ce dialogue, mais soyez prudent. Vous entrez dans une zone bêta instable."
+      }
+    },
+    "sysdialogs": {
+      "openFile": "Ouvrir un fichier CompassCAD / importer un fichier non-CompassCAD",
+      "saveFile": "Enregistrer un fichier CompassCAD"
+    },
+    "window": {
+      "menu": "Menu",
+      "undo": "Annuler",
+      "redo": "Rétablir",
+      "zoomIn": "Zoom avant",
+      "zoomOut": "Zoom arrière",
+      "disableSnap": "Désactiver l'alignement",
+      "enableSnap": "Aligner sur la grille"
+    },
+    "menu": {
+      "newDesign": "Nouveau projet",
+      "openDesign": "Ouvrir un projet",
+      "openBackups": "Ouvrir les sauvegardes",
+      "saveDesign": "Enregistrer le projet",
+      "saveAs": "Enregistrer sous",
+      "exportToSvg": "Exporter en SVG",
+      "checkForUpdates": "Rechercher des mises à jour",
+      "about": "À propos de CompassCAD NEXT"
+    },
+    "updaterModal": {
+      "checkingForUpdates": "Recherche de mises à jour...",
+      "noUpdatesAvailable": "Aucune mise à jour disponible. Vous êtes à jour.",
+      "checkAgain": "Révérifier",
+      "updateAvailable": "Mise à jour disponible !",
+      "updateMessage": "Téléchargez la mise à jour dès maintenant et installez-la lorsqu'elle est prête.",
+      "downloadUpdate": "Télécharger la mise à jour",
+      "downloadingUpdate": "Téléchargement de la mise à jour...",
+      "updateDownloaded": "Mise à jour téléchargée ! Redémarrez CompassCAD NEXT pour l'installer.",
+      "updateFinished": "Redémarrez CompassCAD NEXT pour terminer l'installation.",
+      "restartNow": "Redémarrer maintenant",
+      "couldntCheckForUpdates": "Impossible de vérifier les mises à jour. Veuillez vérifier votre connexion Internet et réessayer.",
+      "tryAgain": "Réessayer"
+    },
+    "about": {
+      "openSourceLicenses": "Licences Open Source"
+    },
+    "toolbox": {
+      "select": "Sélectionner",
+      "navigate": "Naviguer",
+      "move": "Déplacer",
+      "delete": "Supprimer",
+      "addPoint": "Ajouter un point",
+      "addLine": "Ajouter une ligne",
+      "addRectangle": "Ajouter un rectangle",
+      "addCircle": "Ajouter un cercle",
+      "addArc": "Ajouter un arc",
+      "addMeasure": "Ajouter une mesure",
+      "addLabel": "Ajouter un texte",
+      "addImage": "Ajouter une image",
+      "addPolygon": "Ajouter un polygone",
+      "addBoundbox": "Ajouter un englobant"
+    },
+    "inspector": {
+      "header": "Inspecteur",
+      "properties": {
+        "nothingOnSelected": "Sélectionnez un composant pour afficher ses détails ici.",
+        "nothingOnHierarchy": "Rien dans la hiérarchie. Ajoutez un élément pour afficher la liste des composants ici.",
+        "extensionLoading": "Chargement des extensions...",
+        "noPluginsLoaded": "Aucun extension chargée. Installez votre première extension Lua en collant votre fichier Lua dans ce dossier.",
+        "searchInHierarchy": "Rechercher dans la hiérarchie...",
+        "openPluginsFolder": "Ouvrir le dossier des extensions"
+      },
+      "menu": {
+        "properties": "Propriétés",
+        "hierarchy": "Hiérarchie",
+        "plugins": "Extensions"
+      },
+      "general": {
+        "active": "Actif",
+        "radius": "Rayon",
+        "name": "Nom",
+        "color": "Couleur",
+        "opacity": "Opacité",
+        "rotation": "Rotation",
+        "position": "Position",
+        "size": "Taille",
+        "coverage": "Couverture"
+      },
+      "text": {
+        "heading": "Propriétés du texte",
+        "text": "Texte",
+        "fontSize": "Taille de la police"
+      },
+      "picture": {
+        "heading": "Propriétés de l'image",
+        "source": "Source"
+      },
+      "polygon": {
+        "heading": "Propriétés du polygone",
+        "fillColor": "Couleur de remplissage",
+        "strokeColor": "Couleur du contour",
+        "enableStroke": "Activer le contour"
+      },
+      "imagepicker": {
+        "heading": "Choisir une image",
+        "uploadFromFile": "Ajouter une image depuis l'ordinateur",
+        "useURL": "ou utiliser l'URL d'une image."
+      }
+    }
+  }
+}
