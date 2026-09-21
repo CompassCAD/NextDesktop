@@ -24,6 +24,8 @@ const api = {
       .filter((name) => name.toLowerCase().endsWith('.lua'))
       .map((name) => path.join(extensionDir, name))
   },
+  openExternal: (url: string) => ipcRenderer.invoke('app:openExternal', url),
+  joinPathToRelativeAppPath: (destination: string) => path.join(ipcRenderer.sendSync('app:getAppPath'), destination)
 }
 
 const updater = {

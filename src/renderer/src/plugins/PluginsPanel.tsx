@@ -70,7 +70,14 @@ export default function PluginsPanel(): React.ReactElement {
         <div className={styles['properties-nothing']} style={{ flex: 1 }}>
           <img src={NoPluginIcon} width={56} alt="Unselected" />
           <p>{getLocaleKey('editor.inspector.properties.noPluginsLoaded')}</p>
-          <button style={{ marginTop: '10px' }}>Open Plugin Directory</button>
+          <button
+            style={{ marginTop: '10px' }}
+            onClick={() =>
+              window.api.openExternal(window.api.joinPathToRelativeAppPath('extensions'))
+            }
+          >
+            {getLocaleKey('editor.inspector.properties.openPluginsFolder')}
+          </button>
         </div>
       ) : (
         groups.map((g) => (

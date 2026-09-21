@@ -78,7 +78,12 @@
     "inspector": {
       "header": "インスペクター",
       "properties": {
-        "nothingOnSelected": "コンポーネントを選択すると、ここに詳細が表示されます。"
+        "nothingOnSelected": "コンポーネントを選択すると、ここに詳細が表示されます。",
+        "nothingOnHierarchy": "ヒエラルキーにコンポーネントがありません。何かを配置して、コンポーネントリストをここに表示してください。",
+        "extensionLoading": "プラグインを読み込み中...",
+        "noPluginsLoaded": "プラグインが読み込まれていません。Luaファイルを貼り付けて最初のプラグインをインストールしてください。",
+        "searchInHierarchy": "ヒエラルキーで検索...",
+        "openPluginsFolder": "プラグインフォルダを開く"
       },
       "menu": {
         "properties": "プロパティ",

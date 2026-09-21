@@ -398,6 +398,7 @@ input[type="checkbox"] {
   width: 100%;
   align-items: center;
   display: flex;
+  flex: 1;
   flex-direction: column;
   justify-content: center;
 }
@@ -418,11 +419,45 @@ input[type="checkbox"] {
 .properties-nothing button:hover {
   background-color: var(--secondary);
 }
+.hierarchy-column {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: 100%;
+}
+.searchfield-flexbox {
+  display: flex;
+  align-items: center;
+  background-color: var(--secondary);
+  gap: 2px;
+  border-radius: 10px;
+}
+.searchfield-flexbox img {
+  padding: 5px;
+}
+.searchfield-flexbox input[type=text] {
+  appearance: none;
+  border: none;
+  background-color: rgba(0,0,0,0);
+  font-family: var(--font);
+  color: var(--text);
+  padding: 10px;
+  padding-left: 4px;
+  display: flex;
+  flex: 1;
+}
+.searchfield-flexbox input[type=text]:focus-visible {
+  outline: none;
+}
 .hierarchy-componentlist {
   display: flex;
   flex-direction: column;
   width: 100%;
   gap: 10px;
+  overflow-y: scroll;
+}
+.hierarchy-componentlist::-webkit-scrollbar {
+  display: none;
 }
 .componentlist-selector {
   display: flex;
@@ -717,6 +752,10 @@ input[type="checkbox"] {
   flex-wrap: nowrap;
   flex-direction: column;
   gap: 5px;
+  overflow-y: scroll;
+}
+.plugin-container-button-group::-webkit-scrollbar {
+  display: none;
 }
 .collapsible-container {
   width: 100%;

@@ -81,7 +81,9 @@
         "nothingOnSelected": "Select a component, then your component details should appear here.",
         "nothingOnHierarchy": "Nothing on the hierarchy, go place something and your component list will go here.",
         "extensionLoading": "Loading plugins...",
-        "noPluginsLoaded": "No plugins are loaded. Install your first plugin with Lua by pasting your Lua extension file, in this directory."
+        "noPluginsLoaded": "No plugins are loaded. Install your first plugin with Lua by pasting your Lua extension file, in this directory.",
+        "searchInHierarchy": "Search in hierarchy...",
+        "openPluginsFolder": "Open Plugins Folder"
       },
       "menu": {
         "properties": "Properties",

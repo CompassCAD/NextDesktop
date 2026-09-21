@@ -164,6 +164,13 @@ ipcMain.handle('extensions:fetch', () => {
   console.log(`I am looking at ${path.join(app.getPath('userData'), 'extensions')}`)
   return path.join(app.getPath('userData'), 'extensions')
 })
+ipcMain.handle('app:openExternal', (_event, url) => {
+  console.log(`Opening external URL: ${url}`)
+  shell.openExternal(url)
+})
+ipcMain.on('app:getAppPath', (event) => {
+  event.returnValue = app.getPath('userData')
+})
 ipcMain.on('renderer-log', (_event, source, args) => {
   console.log(`[${source}]`, ...args);
 });

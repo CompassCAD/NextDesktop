@@ -12,6 +12,8 @@ declare global {
       forwardLog: (source: any, args: any) => void,
       getAppVersion: () => string,
       getExtensionLists: () => string[],
+      openExternal: (url: string) => void,
+      joinPathToRelativeAppPath: (destination: string) => string,
     },
     process: NodeJS.Process,
     updater: {

@@ -78,7 +78,12 @@
     "inspector": {
       "header": "Inspektör",
       "properties": {
-        "nothingOnSelected": "Välj en komponent för att visa dina komponentdetaljer här."
+        "nothingOnSelected": "Välj en komponent för att visa dina komponentdetaljer här.",
+        "nothingOnHierarchy": "Ingenting finns i hierarkin ännu, placera något så kommer komponentlistan att visas här.",
+        "extensionLoading": "Laddar plugins...",
+        "noPluginsLoaded": "Inga plugins är laddade. Installera din första plugin med Lua genom att klistra in din Lua-tilläggsfil i den här katalogen.",
+        "searchInHierarchy": "Sök i hierarkin...",
+        "openPluginsFolder": "Öppna Plugins Mapp"
       },
       "menu": {
         "properties": "Egenskaper",

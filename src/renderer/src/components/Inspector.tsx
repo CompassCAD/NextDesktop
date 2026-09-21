@@ -21,6 +21,7 @@ import PropertiesIcon from '../assets/icons/properties.svg'
 import HierarchyIcon from '../assets/icons/hierarchy.svg'
 import PluginsIcon from '../assets/icons/plugin.svg'
 import PluginsPanel from '../plugins/PluginsPanel'
+import SearchIcon from '../assets/icons/search.svg'
 import {
   Component,
   Point,
@@ -81,7 +82,7 @@ export default function Inspector(): React.ReactElement {
   const [inspectorState, setInspectorState] = useState<InspectorState>(InspectorState.Properties)
   const [component, setComponent] = useState<AnyComponent | null>(null)
   const [isHidden, setIsHidden] = useState<boolean>(false)
-  const [hierarchySearch] = useState<string>('')
+  const [hierarchySearch, setHierarchySearch] = useState<string>('')
   const [componentArray, setComponentArray] = useState<Component[]>([])
 
   const filteredComponents = useMemo(() => {
@@ -245,9 +246,11 @@ export default function Inspector(): React.ReactElement {
           </button>
         )}
         <h2>{getLocaleKey('editor.inspector.header')}</h2>
-        <button onClick={() => setIsHidden(true)}>
-          <img src={CollapseToRight} width={20} />
-        </button>
+        {!isHidden && (
+          <button onClick={() => setIsHidden(true)}>
+            <img src={CollapseToRight} width={20} />
+          </button>
+        )}
       </div>
 
       <div className={styles['inspector-content']}>
@@ -547,34 +550,47 @@ export default function Inspector(): React.ReactElement {
             </div>
           ))}
 
-        {inspectorState === InspectorState.Hierarchy &&
-          (filteredComponents.length > 0 ? (
-            <div className={styles['hierarchy-componentlist']}>
-              {filteredComponents.map((item) => (
-                <div
-                  key={item.originalIndex}
-                  className={`${styles['componentlist-selector']}${
-                    component === componentArray[item.originalIndex]
-                      ? ` ${styles['componentlist-selector-selected']}`
-                      : ''
-                  }`}
-                  onClick={() => {
-                    renderer?.setMode(Types.NavigationTypes.Select)
-                    renderer?.selectComponent(item.originalIndex)
-                    setComponent(item.comp as AnyComponent)
-                  }}
-                  onDoubleClick={() => animateToComponentOrigin(item.originalIndex)}
-                >
-                  <img src={componentImages[item.comp.type]} alt="" /> {item.comp.name}
-                </div>
-              ))}
+        {inspectorState === InspectorState.Hierarchy && (
+          <div className={styles['hierarchy-column']}>
+            <div className={styles['searchfield-flexbox']}>
+              <img src={SearchIcon} width={24} />
+              <input
+                type="text"
+                defaultValue={hierarchySearch}
+                className={styles['hierarchy-textinput']}
+                onChange={(e) => setHierarchySearch(e.target.value)}
+                placeholder={getLocaleKey('editor.inspector.properties.searchInHierarchy')}
+              />
             </div>
-          ) : (
-            <div className={styles['properties-nothing']}>
-              <img src={NoHierarchyIcon} width={56} alt="Unselected" />
-              <p>{getLocaleKey('editor.inspector.properties.nothingOnHierarchy')}</p>
-            </div>
-          ))}
+            {filteredComponents.length > 0 ? (
+              <div className={styles['hierarchy-componentlist']}>
+                {filteredComponents.map((item) => (
+                  <div
+                    key={item.originalIndex}
+                    className={`${styles['componentlist-selector']}${
+                      component === componentArray[item.originalIndex]
+                        ? ` ${styles['componentlist-selector-selected']}`
+                        : ''
+                    }`}
+                    onClick={() => {
+                      renderer?.setMode(Types.NavigationTypes.Select)
+                      renderer?.selectComponent(item.originalIndex)
+                      setComponent(item.comp as AnyComponent)
+                    }}
+                    onDoubleClick={() => animateToComponentOrigin(item.originalIndex)}
+                  >
+                    <img src={componentImages[item.comp.type]} alt="" /> {item.comp.name}
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className={styles['properties-nothing']}>
+                <img src={NoHierarchyIcon} width={56} alt="Unselected" />
+                <p>{getLocaleKey('editor.inspector.properties.nothingOnHierarchy')}</p>
+              </div>
+            )}
+          </div>
+        )}
 
         {inspectorState === InspectorState.Plugins && <PluginsPanel />}
       </div>
