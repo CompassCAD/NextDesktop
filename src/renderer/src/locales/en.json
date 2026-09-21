@@ -78,11 +78,15 @@
     "inspector": {
       "header": "Inspector",
       "properties": {
-        "nothingOnSelected": "Select a component, then your component details should appear here."
+        "nothingOnSelected": "Select a component, then your component details should appear here.",
+        "nothingOnHierarchy": "Nothing on the hierarchy, go place something and your component list will go here.",
+        "extensionLoading": "Loading plugins...",
+        "noPluginsLoaded": "No plugins are loaded. Install your first plugin with Lua by pasting your Lua extension file, in this directory."
       },
       "menu": {
         "properties": "Properties",
-        "hierarchy": "Hierarchy"
+        "hierarchy": "Hierarchy",
+        "plugins": "Plugins"
       },
       "general": {
         "active": "Active",
@@ -109,6 +113,11 @@
         "fillColor": "Fill Color",
         "strokeColor": "Stroke Color",
         "enableStroke": "Enable Stroke"
+      },
+      "imagepicker": {
+        "heading": "Pick an image",
+        "uploadFromFile": "Add Image from Computer",
+        "useURL": "or use an image URL."
       }
     }
   }

@@ -82,7 +82,39 @@
       },
       "menu": {
         "properties": "Egenskaper",
-        "hierarchy": "Hierarki"
+        "hierarchy": "Hierarki",
+        "plugins": "Plugins"
+      },
+      "general": {
+        "active": "Aktiv",
+        "radius": "Radius",
+        "name": "Namn",
+        "color": "Färg",
+        "opacity": "Opacitet",
+        "rotation": "Rotation",
+        "position": "Position",
+        "size": "Storlek",
+        "coverage": "Täckt yta"
+      },
+      "text": {
+        "heading": "Egenskaper för etikett",
+        "text": "Text",
+        "fontSize": "Teckenstorlek"
+      },
+      "picture": {
+        "heading": "Egenskaper för bild",
+        "source": "Källa"
+      },
+      "polygon": {
+        "heading": "Egenskaper för polygon",
+        "fillColor": "Fyllfärg",
+        "strokeColor": "Strokelinje",
+        "enableStroke": "Aktivera Strokelinje"
+      },
+      "imagepicker": {
+        "heading": "Välj en bild",
+        "uploadFromFile": "Lägg till bild från datorn",
+        "useURL": "eller använd en bild-URL."
       }
     }
   }

@@ -4,6 +4,7 @@ import { useEffect, useState, useMemo, useCallback } from 'react'
 import { useRenderer } from './RendererContextProvider'
 import CollapseToRight from '../assets/icons/collapse-right.svg'
 import NoPropertiesIcon from '../assets/icons/unselected-state.svg'
+import NoHierarchyIcon from '../assets/icons/no-hierarchy.svg'
 
 import PointSymbol from '../assets/icons/point.svg'
 import LineSymbol from '../assets/icons/line.svg'
@@ -569,7 +570,10 @@ export default function Inspector(): React.ReactElement {
               ))}
             </div>
           ) : (
-            <p>nope</p>
+            <div className={styles['properties-nothing']}>
+              <img src={NoHierarchyIcon} width={56} alt="Unselected" />
+              <p>{getLocaleKey('editor.inspector.properties.nothingOnHierarchy')}</p>
+            </div>
           ))}
 
         {inspectorState === InspectorState.Plugins && <PluginsPanel />}
@@ -595,7 +599,7 @@ export default function Inspector(): React.ReactElement {
           onClick={() => setInspectorState(InspectorState.Plugins)}
         >
           <img width={18} src={PluginsIcon} alt="" />
-          <span>Plugins</span>
+          <span>{getLocaleKey('editor.inspector.menu.plugins')}</span>
         </button>
       </div>
     </div>

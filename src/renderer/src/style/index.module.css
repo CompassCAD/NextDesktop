@@ -153,6 +153,9 @@
     align-items: center;
     gap: 10px;
 }
+.modal-content button:hover {
+    background-color: var(--secondary);
+}
 
 input[type="checkbox"] {
   -webkit-appearance: none;
@@ -399,9 +402,21 @@ input[type="checkbox"] {
   justify-content: center;
 }
 .properties-nothing p {
-  color: #3a3a3a;
+  color: #636363;
   text-align: center;
   max-width: 80%;
+}
+.properties-nothing button {
+  appearance: none;
+  font-family: var(--font);
+  color: var(--text);
+  background-color: var(--primary);
+  border-radius: 10px;
+  border: 0.5px solid var(--outline);
+  padding: 10px;
+}
+.properties-nothing button:hover {
+  background-color: var(--secondary);
 }
 .hierarchy-componentlist {
   display: flex;
@@ -706,11 +721,12 @@ input[type="checkbox"] {
 .collapsible-container {
   width: 100%;
   display: flex;
-  border-radius: 10px;
   flex-direction: column;
+  border-radius: 10px;
   background-color: var(--secondary);
-  transition: all 0.25s ease;
+  /* Do NOT use transition: all here */
 }
+
 .collapsible-button {
   appearance: none;
   padding: 10px;
@@ -723,10 +739,28 @@ input[type="checkbox"] {
   color: var(--text);
   font-family: var(--font);
   background-color: var(--secondary);
+  cursor: pointer;
+  /* Ensure button height stays static */
+  flex-shrink: 0;
 }
+
+/* Grid animation wrapper */
+.collapsible-grid {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.collapsible-grid.is-open {
+  grid-template-rows: 1fr;
+}
+
+.collapsible-wrapper {
+  overflow: hidden;
+}
+
 .collapsible-content {
   display: flex;
-  animation: slidedown 0.25s ease;
   flex-direction: column;
   gap: 5px;
   padding: 10px;
@@ -741,6 +775,9 @@ input[type="checkbox"] {
   color: var(--text);
   border: none;
   border-radius: 10px;
+}
+.collapsible-content button:hover, .collapsible-content input[type=text]:hover {
+  background-color: var(--secondary);
 }
 .image-picker-container {
   display: flex;

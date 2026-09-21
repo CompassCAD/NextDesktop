@@ -82,7 +82,39 @@
       },
       "menu": {
         "properties": "プロパティ",
-        "hierarchy": "ヒエラルキー"
+        "hierarchy": "ヒエラルキー",
+        "plugins": "プラグイン"
+      },
+      "general": {
+        "active": "アクティブ",
+        "radius": "半径",
+        "name": "名前",
+        "color": "色",
+        "opacity": "不透明度",
+        "rotation": "回転",
+        "position": "位置",
+        "size": "サイズ",
+        "coverage": "カバレッジ"
+      },
+      "text": {
+        "heading": "ラベルのプロパティ",
+        "text": "テキスト",
+        "fontSize": "フォントサイズ"
+      },
+      "picture": {
+        "heading": "画像のプロパティ",
+        "source": "ソース"
+      },
+      "polygon": {
+        "heading": "ポリゴンのプロパティ",
+        "fillColor": "塗りつぶしの色",
+        "strokeColor": "線の色",
+        "enableStroke": "線を有効にする"
+      },
+      "imagepicker": {
+        "heading": "画像を選択",
+        "uploadFromFile": "コンピューターから画像を追加",
+        "useURL": "または画像のURLを使用"
       }
     }
   }

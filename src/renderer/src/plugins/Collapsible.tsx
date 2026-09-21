@@ -19,17 +19,23 @@ export default function Collapsible({
         <span
           style={{
             transform: open ? 'rotate(270deg)' : 'rotate(180deg)',
-            transition: 'transform 0.1s',
+            transition: 'transform 0.1s linear', // explicit linear transition for icon
             width: 18,
             height: 18,
             display: 'inline-block'
           }}
         >
-          <img src={BackIcon} alt="Toggle" width={18}/>
+          <img src={BackIcon} alt="Toggle" width={18} />
         </span>
         <span style={{ fontWeight: 600 }}>{title}</span>
       </button>
-      {open && <div className={styles['collapsible-content']}>{children}</div>}
+
+      {/* The animated grid wrapper strictly isolates the height change */}
+      <div className={`${styles['collapsible-grid']} ${open ? styles['is-open'] : ''}`}>
+        <div className={styles['collapsible-wrapper']}>
+          <div className={styles['collapsible-content']}>{children}</div>
+        </div>
+      </div>
     </div>
   )
 }

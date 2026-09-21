@@ -3,6 +3,7 @@ import UploadImageIcon from '../assets/icons/upimg.svg'
 import CloseIcon from '../assets/icons/close.svg'
 import styles from '../style/index.module.css'
 import { getDialogPath } from '@renderer/utils/FileImporter'
+import { getLocaleKey } from '@renderer/locales/Locale'
 
 interface ImagePickerProps {
   defaultValue: string
@@ -23,7 +24,7 @@ export default function ImagePicker(props: ImagePickerProps): React.ReactElement
 
   const openImagePicker = async (): Promise<void> => {
     const file = await window.api.showOpenFileDialog({
-      title: 'Select an image',
+      title: getLocaleKey('editor.inspector.imagepicker.heading'),
       filters: [{ name: 'Images', extensions: ['jpg', 'jpeg', 'png', 'gif', 'webp'] }]
     })
     const filePath = getDialogPath(file)
@@ -62,7 +63,7 @@ export default function ImagePicker(props: ImagePickerProps): React.ReactElement
           }}
         >
           <div className={styles['image-picker-modal-header']}>
-            <h3>Pick an image</h3>
+            <h3>{getLocaleKey('editor.inspector.imagepicker.heading')}</h3>
             <img
               src={CloseIcon}
               alt="Close"
@@ -72,11 +73,11 @@ export default function ImagePicker(props: ImagePickerProps): React.ReactElement
           </div>
           <div className={styles['image-picker-modal-image']} onClick={openImagePicker}>
             <div className={styles['image-picker-modal-image-hover']}>
-              <span>Add Image from Computer</span>
+              <span>{getLocaleKey('editor.inspector.imagepicker.uploadFromFile')}</span>
             </div>
             <img src={imageSrc} alt="Selected" height={200} />
           </div>
-          <span>or use an image URL.</span>
+          <span>{getLocaleKey('editor.inspector.imagepicker.useURL')}</span>
           <input
             type="text"
             placeholder="Image URL"

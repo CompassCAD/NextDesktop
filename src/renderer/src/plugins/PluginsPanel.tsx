@@ -5,6 +5,8 @@ import { useRenderer } from '../components/RendererContextProvider' // <-- Impor
 import Collapsible from './Collapsible'
 import type { LoadError } from './types'
 import styles from '../style/index.module.css'
+import NoPluginIcon from '../assets/icons/stroke-plugin.svg'
+import { getLocaleKey } from '@renderer/locales/Locale'
 
 function basename(path: string): string {
   const parts = path.split(/[\\/]/)
@@ -44,7 +46,13 @@ export default function PluginsPanel(): React.ReactElement {
     return unsub
   }, [host, isReady]) // <-- Re-run when renderer isReady changes
 
-  if (!isReady || !loaded) return <p>Loading extensions…</p>
+  if (!isReady || !loaded)
+    return (
+      <div className={styles['properties-nothing']} style={{ flex: 1 }}>
+        <img src={NoPluginIcon} width={56} alt="Unselected" />
+        <p>{getLocaleKey('editor.inspector.properties.extensionLoading')}</p>
+      </div>
+    )
 
   return (
     <div className={styles['plugin-container-button-group']}>
@@ -59,7 +67,11 @@ export default function PluginsPanel(): React.ReactElement {
       )}
 
       {groups.length === 0 ? (
-        <p>No plugin tabs registered.</p>
+        <div className={styles['properties-nothing']} style={{ flex: 1 }}>
+          <img src={NoPluginIcon} width={56} alt="Unselected" />
+          <p>{getLocaleKey('editor.inspector.properties.noPluginsLoaded')}</p>
+          <button style={{ marginTop: '10px' }}>Open Plugin Directory</button>
+        </div>
       ) : (
         groups.map((g) => (
           <Collapsible key={g.group} title={basename(g.group)}>
@@ -76,7 +88,9 @@ export default function PluginsPanel(): React.ReactElement {
                 ))}
               </div>
             )}
-            {activeTabByGroup[g.group] && <PluginTabView host={host} tabName={activeTabByGroup[g.group]} />}
+            {activeTabByGroup[g.group] && (
+              <PluginTabView host={host} tabName={activeTabByGroup[g.group]} />
+            )}
           </Collapsible>
         ))
       )}
