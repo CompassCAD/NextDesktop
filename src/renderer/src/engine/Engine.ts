@@ -1930,7 +1930,6 @@ export class GraphicsRenderer {
           else if (cmd.command === 'MP') path.lineTo(px, py)
         }
       }
-      this.context.stroke();
     }
   }
   drawArc(
@@ -2124,6 +2123,9 @@ export class GraphicsRenderer {
         this.context.lineTo(this.getCursorXInFrame(), this.displayHeight)
         this.context.closePath()
         this.context.stroke()
+
+        this.context.lineWidth = 0.2
+        this.context.strokeStyle = '#ccc'
 
         this.context.beginPath()
         this.context.moveTo(-this.displayWidth, this.getCursorYInFrame())
