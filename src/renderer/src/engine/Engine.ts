@@ -123,18 +123,22 @@ export class GraphicsRenderer {
   dragHandle: string | null
   private dragRotationOrigin: Vector2 | null
   private dragHandlePositions: Map<string, Vector2> | null
-  lastSelectedComponent: number | null;
-  _debugMode: boolean;
-  private _debugHitboxes: Map<string, { start: Vector2, end: Vector2, func?: () => void }> = new Map();
-  private _dirty: boolean;
-  private _colorCache: Map<string, string>;
-  private _quadtree: QuadTree<Component> | null = null;
-  private _isQuadtreeDirty: boolean = true;
-  private _componentIndexes: Map<Component, number> = new Map();
-  private _dragDidModify: boolean = false;
-  private _pathBatches: Map<string, { path: Path2D; strokeStyle: string; lineWidth: number; lineJoin: CanvasLineJoin }> = new Map();
-  private _WARNING_MAYLAGSHIT_debugMode: boolean;
-  private _test_enableExperimentalCJK: boolean;
+  lastSelectedComponent: number | null
+  _debugMode: boolean
+  private _debugHitboxes: Map<string, { start: Vector2; end: Vector2; func?: () => void }> =
+    new Map()
+  private _dirty: boolean
+  private _colorCache: Map<string, string>
+  private _quadtree: QuadTree<Component> | null = null
+  private _isQuadtreeDirty: boolean = true
+  private _componentIndexes: Map<Component, number> = new Map()
+  private _dragDidModify: boolean = false
+  private _pathBatches: Map<
+    string,
+    { path: Path2D; strokeStyle: string; lineWidth: number; lineJoin: CanvasLineJoin }
+  > = new Map()
+  private _WARNING_MAYLAGSHIT_debugMode: boolean
+  private _test_enableExperimentalCJK: boolean
 
   constructor(displayRef: HTMLCanvasElement | null, width: number, height: number) {
     this.modes = {
@@ -177,7 +181,7 @@ export class GraphicsRenderer {
     this.temporaryObjectArray = []
     this.temporaryVectorIndex = 0
     this.temporaryVectors = []
-    this.imageCache = new LRUCache(256);
+    this.imageCache = new LRUCache(256)
     this.displayWidth = width
     this.displayHeight = height
     this.offsetX = 0
@@ -222,30 +226,30 @@ export class GraphicsRenderer {
     this.dragRotationOrigin = null
     this.dragHandlePositions = null
     this.lastSelectedComponent = null
-    this._dirty = false;
-    this._colorCache = new Map();
-    this._test_enableExperimentalCJK = true;
-    this.fb = new DerakumaParser(this._test_enableExperimentalCJK ? AnsiCJK : AnsiFont);
-    this._WARNING_MAYLAGSHIT_debugMode = false;
-    this._debugMode = import.meta.env.DEV;
+    this._dirty = false
+    this._colorCache = new Map()
+    this._test_enableExperimentalCJK = true
+    this.fb = new DerakumaParser(this._test_enableExperimentalCJK ? AnsiCJK : AnsiFont)
+    this._WARNING_MAYLAGSHIT_debugMode = false
+    this._debugMode = import.meta.env.DEV
   }
 
-  private _lastCamX = NaN;
-  private _lastCamY = NaN;
-  private _lastZoom = NaN;
-  private _lastOffsetX = NaN;
-  private _lastOffsetY = NaN;
-  private _glyphLayoutCache: Map<string, any> = new Map();
-  private _textWidthCache: Map<string, number> = new Map();
-  private _bulkImportActive: boolean = false;
-  private static readonly MIN_VISIBLE_PX = 1;
-  private static SPACE_PER_CHAR = 1.8;
-  private _charSpacingOverrides: Map<string, number> = new Map();
-  private _spacedGlyphLayoutCache: Map<string, any[]> = new Map();
-  private _drawHitBoxBoundaries: boolean = false;
-  private _isEnteringHitbox: boolean = false;
-  private _enableTopDebugStrings: boolean = true;
-  private _copiableDebugStrings: string = "";
+  private _lastCamX = NaN
+  private _lastCamY = NaN
+  private _lastZoom = NaN
+  private _lastOffsetX = NaN
+  private _lastOffsetY = NaN
+  private _glyphLayoutCache: Map<string, any> = new Map()
+  private _textWidthCache: Map<string, number> = new Map()
+  private _bulkImportActive: boolean = false
+  private static readonly MIN_VISIBLE_PX = 1
+  private static SPACE_PER_CHAR = 1.8
+  private _charSpacingOverrides: Map<string, number> = new Map()
+  private _spacedGlyphLayoutCache: Map<string, any[]> = new Map()
+  private _drawHitBoxBoundaries: boolean = false
+  private _isEnteringHitbox: boolean = false
+  private _enableTopDebugStrings: boolean = true
+  private _copiableDebugStrings: string = ''
   private _debugToast: {
     text: string
     color: string
@@ -253,10 +257,7 @@ export class GraphicsRenderer {
     durationMs: number
   } | null = null
 
-  private showDebugToast(
-    text: string,
-    options?: { color?: string; durationMs?: number }
-  ) {
+  private showDebugToast(text: string, options?: { color?: string; durationMs?: number }) {
     const durationMs = options?.durationMs ?? 1200
     this._debugToast = {
       text,
@@ -281,53 +282,59 @@ export class GraphicsRenderer {
     // - canvas-local pixel coordinates (origin = top-left) are converted into
     // - centered canvas coordinates (origin = canvas center) which is what the
     //   drawing context uses after the translate(this.displayWidth/2, this.displayHeight/2).
-    const canvas = this.displayRef;
-    let startCanvas = { x: start.x, y: start.y };
-    let endCanvas = { x: end.x, y: end.y };
+    const canvas = this.displayRef
+    let startCanvas = { x: start.x, y: start.y }
+    let endCanvas = { x: end.x, y: end.y }
 
     if (canvas) {
-      const rect = canvas.getBoundingClientRect();
+      const rect = canvas.getBoundingClientRect()
 
       // Heuristic to accept either canvas-local coords (0..width) or page/client coords.
       const inCanvasSpace = (p: Vector2) =>
-        p.x >= 0 && p.x <= rect.width && p.y >= 0 && p.y <= rect.height;
+        p.x >= 0 && p.x <= rect.width && p.y >= 0 && p.y <= rect.height
       const inClientSpace = (p: Vector2) =>
-        p.x >= rect.left && p.x <= rect.right && p.y >= rect.top && p.y <= rect.bottom;
+        p.x >= rect.left && p.x <= rect.right && p.y >= rect.top && p.y <= rect.bottom
 
       if (inClientSpace(start) || inClientSpace(end)) {
         // Convert from page/client coordinates -> canvas-local
-        startCanvas = { x: start.x - rect.left, y: start.y - rect.top };
-        endCanvas = { x: end.x - rect.left, y: end.y - rect.top };
+        startCanvas = { x: start.x - rect.left, y: start.y - rect.top }
+        endCanvas = { x: end.x - rect.left, y: end.y - rect.top }
       } else if (!inCanvasSpace(start) || !inCanvasSpace(end)) {
         // If neither heuristic matches, still attempt to interpret them as canvas-local
         // but clamp to bounds to avoid wildly off-screen values.
         startCanvas = {
           x: Math.max(0, Math.min(rect.width, startCanvas.x)),
           y: Math.max(0, Math.min(rect.height, startCanvas.y))
-        };
+        }
         endCanvas = {
           x: Math.max(0, Math.min(rect.width, endCanvas.x)),
           y: Math.max(0, Math.min(rect.height, endCanvas.y))
-        };
+        }
       }
     }
 
     // Convert to centered coords (matching the translated drawing origin).
-    const centeredStart = { x: startCanvas.x - this.displayWidth / 2, y: startCanvas.y - this.displayHeight / 2 };
-    const centeredEnd = { x: endCanvas.x - this.displayWidth / 2, y: endCanvas.y - this.displayHeight / 2 };
+    const centeredStart = {
+      x: startCanvas.x - this.displayWidth / 2,
+      y: startCanvas.y - this.displayHeight / 2
+    }
+    const centeredEnd = {
+      x: endCanvas.x - this.displayWidth / 2,
+      y: endCanvas.y - this.displayHeight / 2
+    }
 
-    this._debugHitboxes.set(id, { start: centeredStart, end: centeredEnd, func });
+    this._debugHitboxes.set(id, { start: centeredStart, end: centeredEnd, func })
   }
 
   private _internal_getGlyphsInASynchronousManner(text: string): any[] | null {
-    const cached = this._glyphLayoutCache.get(text);
-    if (cached) return cached;
+    const cached = this._glyphLayoutCache.get(text)
+    if (cached) return cached
 
-    const glyphs = this.fb.getSentenceCommand(text);
-    this.cleanLog(glyphs);
-    this._glyphLayoutCache.set(text, glyphs);
-    this.markDirty('resolving glyph layout: ' + text);
-    return glyphs; // was `return null` — caller got nothing on the first lookup
+    const glyphs = this.fb.getSentenceCommand(text)
+    this.cleanLog(glyphs)
+    this._glyphLayoutCache.set(text, glyphs)
+    this.markDirty('resolving glyph layout: ' + text)
+    return glyphs // was `return null` — caller got nothing on the first lookup
   }
 
   setIndividualCharacterSpacing(char: string, spacing: number) {
@@ -370,20 +377,23 @@ export class GraphicsRenderer {
   }
 
   markDirty(why: string = 'unknown') {
-    this._dirty = true;
-    this.cleanLog(`Marked as dirty: ${why}`);
+    this._dirty = true
+    this.cleanLog(`Marked as dirty: ${why}`)
   }
 
   cleanLog(content: any) {
     if (this._WARNING_MAYLAGSHIT_debugMode) {
-      console.log(`[renderer] ${content}`);
+      console.log(`[renderer] ${content}`)
     }
   }
 
   private getColorWithOpacityFromCache(color: string, opacity: number): string {
     const key = color + '|' + opacity
     let v = this._colorCache.get(key)
-    if (!v) { v = color + _num2hex(opacity); this._colorCache.set(key, v) }
+    if (!v) {
+      v = color + _num2hex(opacity)
+      this._colorCache.set(key, v)
+    }
     return v
   }
 
@@ -456,33 +466,33 @@ export class GraphicsRenderer {
         this.showDebugToast('CANNOT generate blob', {
           color: '#ff6666',
           durationMs: 1800
-        });
-        return; // important: stop here
+        })
+        return // important: stop here
       }
 
       try {
-        const item = new ClipboardItem({ "image/png": blob });
-        await navigator.clipboard.write([item]);
+        const item = new ClipboardItem({ 'image/png': blob })
+        await navigator.clipboard.write([item])
 
         this.showDebugToast('Copied canvas snapshot to clipboard', {
           color: '#ffff00',
           durationMs: 1500
-        });
+        })
       } catch (e) {
         this.showDebugToast(`CANNOT copy (why: ${String(e)})`, {
           color: '#ff6666',
           durationMs: 1800
-        });
+        })
       }
-    }, "image/png");
-  };
+    }, 'image/png')
+  }
 
   toggleTopDebug = () => {
-    this._enableTopDebugStrings = !this._enableTopDebugStrings;
+    this._enableTopDebugStrings = !this._enableTopDebugStrings
   }
 
   async start() {
-    this.markDirty('Engine started');
+    this.markDirty('Engine started')
     this.logicDisplay = new LogicDisplay()
     this.zoom = 1
     this.temporaryObjectArray = []
@@ -493,12 +503,17 @@ export class GraphicsRenderer {
     if (!context) {
       throw new Error('Failed to get 2D context')
     }
-    this.context = context;
-    this.appendDebugHitboxes('test', { x: 560, y: 552 }, { x: 775, y: 580 }, this.copyDebugStrings);
-    this.appendDebugHitboxes('test1', { x: 800, y: 552 }, { x: 1090, y: 580 }, this.copyDebugSnapshot);
-    this.appendDebugHitboxes('test2', { x: 1110, y: 552 }, { x: 1235, y: 580 }, this.toggleTopDebug);
-    await this.fb.ready();
-    this.markDirty('after font load');
+    this.context = context
+    this.appendDebugHitboxes('test', { x: 560, y: 552 }, { x: 775, y: 580 }, this.copyDebugStrings)
+    this.appendDebugHitboxes(
+      'test1',
+      { x: 800, y: 552 },
+      { x: 1090, y: 580 },
+      this.copyDebugSnapshot
+    )
+    this.appendDebugHitboxes('test2', { x: 1110, y: 552 }, { x: 1235, y: 580 }, this.toggleTopDebug)
+    await this.fb.ready()
+    this.markDirty('after font load')
   }
   scaleForHighDPI(dpi: number) {
     if (this.enableHighDPI) {
@@ -507,63 +522,85 @@ export class GraphicsRenderer {
     }
   }
   drawUnscalableStrokeVector(vectors: Vector2[], x: number, y: number) {
-    this.context!.strokeStyle = "#fff";
-    this.context!.lineWidth = 1;
-    this.context?.beginPath();
-    const minScale = 1.1; // never shrink the vector below this world-scale factor
-    const invZoom = Math.max(1 / this.zoom, minScale);
+    this.context!.strokeStyle = '#fff'
+    this.context!.lineWidth = 1
+    this.context?.beginPath()
+    const minScale = 1.1 // never shrink the vector below this world-scale factor
+    const invZoom = Math.max(1 / this.zoom, minScale)
     for (let i = 0; i < vectors.length; i++) {
-      const px = (x + this.cOutX) * this.zoom + vectors[i].x * invZoom;
-      const py = (y + this.cOutY) * this.zoom + vectors[i].y * invZoom;
+      const px = (x + this.cOutX) * this.zoom + vectors[i].x * invZoom
+      const py = (y + this.cOutY) * this.zoom + vectors[i].y * invZoom
       if (i == 0) {
-        this.context?.moveTo(px, py);
+        this.context?.moveTo(px, py)
       } else {
-        this.context?.lineTo(px, py);
+        this.context?.lineTo(px, py)
       }
     }
-    this.context?.closePath();
-    this.context?.stroke();
+    this.context?.closePath()
+    this.context?.stroke()
   }
   cleanUpBeforeImport() {
-    this._quadtree = null;
-    this._isQuadtreeDirty = true;
-    this._componentIndexes.clear();
-    this.markDirty('import started');
+    this._quadtree = null
+    this._isQuadtreeDirty = true
+    this._componentIndexes.clear()
+    this.markDirty('import started')
   }
   refreshSelectionTools() {
     if (this.selectedComponent !== null && this.logicDisplay?.components[this.selectedComponent]) {
       // we gonna draw a line bois
       switch (this.logicDisplay?.components[this.selectedComponent].type) {
         case componentTypes.line:
-          const lineThingy = this.logicDisplay?.components[this.selectedComponent] as Line;
+          const lineThingy = this.logicDisplay?.components[this.selectedComponent] as Line
           const lineRotation = lineThingy.rotation ?? 0
-          let selLineX1 = lineThingy.x1, selLineY1 = lineThingy.y1
-          let selLineX2 = lineThingy.x2, selLineY2 = lineThingy.y2
+          let selLineX1 = lineThingy.x1,
+            selLineY1 = lineThingy.y1
+          let selLineX2 = lineThingy.x2,
+            selLineY2 = lineThingy.y2
           if (lineRotation) {
             const origin = this.getRotationOrigin(lineThingy)
-            const p1 = this.rotatePoint(lineThingy.x1, lineThingy.y1, origin.x, origin.y, lineRotation)
-            const p2 = this.rotatePoint(lineThingy.x2, lineThingy.y2, origin.x, origin.y, lineRotation)
-            selLineX1 = p1.x; selLineY1 = p1.y
-            selLineX2 = p2.x; selLineY2 = p2.y
+            const p1 = this.rotatePoint(
+              lineThingy.x1,
+              lineThingy.y1,
+              origin.x,
+              origin.y,
+              lineRotation
+            )
+            const p2 = this.rotatePoint(
+              lineThingy.x2,
+              lineThingy.y2,
+              origin.x,
+              origin.y,
+              lineRotation
+            )
+            selLineX1 = p1.x
+            selLineY1 = p1.y
+            selLineX2 = p2.x
+            selLineY2 = p2.y
           }
-          this.context?.save();
-          this.context!.strokeStyle = this.selectedColor;
-          this.context!.lineWidth = 2;
-          this.context!.beginPath();
-          this.context!.moveTo(selLineX1 * this.zoom + this.cOutX * this.zoom, selLineY1 * this.zoom + this.cOutY * this.zoom);
-          this.context!.lineTo(selLineX2 * this.zoom + this.cOutX * this.zoom, selLineY2 * this.zoom + this.cOutY * this.zoom);
-          this.context?.stroke();
-          this.context?.restore();
-          break;
+          this.context?.save()
+          this.context!.strokeStyle = this.selectedColor
+          this.context!.lineWidth = 2
+          this.context!.beginPath()
+          this.context!.moveTo(
+            selLineX1 * this.zoom + this.cOutX * this.zoom,
+            selLineY1 * this.zoom + this.cOutY * this.zoom
+          )
+          this.context!.lineTo(
+            selLineX2 * this.zoom + this.cOutX * this.zoom,
+            selLineY2 * this.zoom + this.cOutY * this.zoom
+          )
+          this.context?.stroke()
+          this.context?.restore()
+          break
       }
-      if (this.zoom >= 0.5) this.drawComponentSize(this.logicDisplay?.components[this.selectedComponent]);
+      if (this.zoom >= 0.5)
+        this.drawComponentSize(this.logicDisplay?.components[this.selectedComponent])
       const selectedComponent: Component = this.logicDisplay?.components[this.selectedComponent]
       const handles = this.getComponentHandles(selectedComponent)
       for (const handle of handles) {
         if (handle.id === 'rotate') this.drawRotationCrosshair(handle.x, handle.y)
         else this.drawPoint(handle.x, handle.y, '#fff', 2, 100)
       }
-
     }
   }
   private drawRotationCrosshair(x: number, y: number): void {
@@ -609,7 +646,7 @@ export class GraphicsRenderer {
     }
     if (this.context) {
       this.context.font = `18px 'Radio Canada Big', sans-serif`
-      const textWidth = this._measureTextCached(displayText);
+      const textWidth = this._measureTextCached(displayText)
       const boxWidth = textWidth + 20
       const dummyLine = component as Line
       const boxX =
@@ -627,7 +664,7 @@ export class GraphicsRenderer {
       this.context.fillText(
         displayText,
         ((secondDummyLine.x2 - secondDummyLine.x1) / 2 + secondDummyLine.x1 + this.cOutX) *
-        this.zoom,
+          this.zoom,
         boxY + 15
       )
     }
@@ -858,7 +895,7 @@ export class GraphicsRenderer {
       this.cleanLog('array changed defined, firing')
       this.onComponentArrayChanged()
     }
-    this.markDirty('state save');
+    this.markDirty('state save')
   }
   getDistance(x1: number, y1: number, x2: number, y2: number): number {
     return Math.sqrt(Math.pow(x1 - x2, 2) + Math.pow(y1 - y2, 2))
@@ -883,8 +920,15 @@ export class GraphicsRenderer {
     }
   }
   private rebuildQuadtree(components: Component[]): void {
-    if (components.length === 0) { this._quadtree = null; this._isQuadtreeDirty = false; return }
-    let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity
+    if (components.length === 0) {
+      this._quadtree = null
+      this._isQuadtreeDirty = false
+      return
+    }
+    let minX = Infinity,
+      minY = Infinity,
+      maxX = -Infinity,
+      maxY = -Infinity
     const boxed: { c: Component; bbox: QuadTreeBounds; index: number }[] = []
     this._componentIndexes.clear()
     for (let index = 0; index < components.length; index++) {
@@ -892,8 +936,10 @@ export class GraphicsRenderer {
       if (c.active === false) continue
       const bbox = this.getComponentBoundaryBox(c)
       boxed.push({ c, bbox, index })
-      minX = Math.min(minX, bbox.minX); minY = Math.min(minY, bbox.minY)
-      maxX = Math.max(maxX, bbox.maxX); maxY = Math.max(maxY, bbox.maxY)
+      minX = Math.min(minX, bbox.minX)
+      minY = Math.min(minY, bbox.minY)
+      maxX = Math.max(maxX, bbox.maxX)
+      maxY = Math.max(maxY, bbox.maxY)
     }
     if (boxed.length === 0) {
       this._quadtree = null
@@ -901,9 +947,12 @@ export class GraphicsRenderer {
       return
     }
     const margin = 100
-    const tree = new QuadTree<Component>(
-      { minX: minX - margin, minY: minY - margin, maxX: maxX + margin, maxY: maxY + margin }
-    )
+    const tree = new QuadTree<Component>({
+      minX: minX - margin,
+      minY: minY - margin,
+      maxX: maxX + margin,
+      maxY: maxY + margin
+    })
     for (const { c, bbox, index } of boxed) {
       tree.insert(c, bbox)
       this._componentIndexes.set(c, index)
@@ -912,11 +961,20 @@ export class GraphicsRenderer {
     this._isQuadtreeDirty = false
   }
   private updateQuadtreeEntry(component: Component): void {
-    if (!this._quadtree || this._isQuadtreeDirty || !this._quadtree.update(component, this.getComponentBoundaryBox(component))) {
+    if (
+      !this._quadtree ||
+      this._isQuadtreeDirty ||
+      !this._quadtree.update(component, this.getComponentBoundaryBox(component))
+    ) {
       this._isQuadtreeDirty = true
     }
   }
-  private isComponentInCamera(bbox: { minX: number, minY: number, maxX: number, maxY: number }): boolean {
+  private isComponentInCamera(bbox: {
+    minX: number
+    minY: number
+    maxX: number
+    maxY: number
+  }): boolean {
     const padding = 50
     const halfW = this.displayWidth / 2
     const halfH = this.displayHeight / 2
@@ -935,7 +993,8 @@ export class GraphicsRenderer {
   private wrapLabelLines(text: string, maxLength = 24): string[] {
     const words = (text ?? '').split(' ')
     const lines: string[] = []
-    let tmpLength = 0, tmpText = ''
+    let tmpLength = 0,
+      tmpText = ''
     for (const w of words) {
       tmpLength += w.length + 1
       tmpText += (tmpText ? ' ' : '') + w
@@ -948,7 +1007,12 @@ export class GraphicsRenderer {
     if (tmpText.trim().length > 0) lines.push(tmpText)
     return lines.length > 0 ? lines : ['']
   }
-  private getComponentBoundaryBox(component: Component): { minX: number, minY: number, maxX: number, maxY: number } {
+  private getComponentBoundaryBox(component: Component): {
+    minX: number
+    minY: number
+    maxX: number
+    maxY: number
+  } {
     const bounds = this.getUnrotatedComponentBoundaryBox(component)
     const rotation = component.rotation ?? 0
     if (!rotation) return bounds
@@ -961,69 +1025,120 @@ export class GraphicsRenderer {
       this.rotatePoint(bounds.minX, bounds.maxY, origin.x, origin.y, rotation)
     ]
     return {
-      minX: Math.min(...corners.map(p => p.x)),
-      minY: Math.min(...corners.map(p => p.y)),
-      maxX: Math.max(...corners.map(p => p.x)),
-      maxY: Math.max(...corners.map(p => p.y))
+      minX: Math.min(...corners.map((p) => p.x)),
+      minY: Math.min(...corners.map((p) => p.y)),
+      maxX: Math.max(...corners.map((p) => p.x)),
+      maxY: Math.max(...corners.map((p) => p.y))
     }
   }
 
-  private getUnrotatedComponentBoundaryBox(component: Component): { minX: number, minY: number, maxX: number, maxY: number } {
+  private getUnrotatedComponentBoundaryBox(component: Component): {
+    minX: number
+    minY: number
+    maxX: number
+    maxY: number
+  } {
     switch (component.type) {
       case componentTypes.point:
         const p = component as Point
-        return { minX: p.x - p.radius, minY: p.y - p.radius, maxX: p.x + p.radius, maxY: p.y + p.radius }
-        break;
+        return {
+          minX: p.x - p.radius,
+          minY: p.y - p.radius,
+          maxX: p.x + p.radius,
+          maxY: p.y + p.radius
+        }
+        break
       case componentTypes.line:
         const l = component as Line
-        return { minX: Math.min(l.x1, l.x2), minY: Math.min(l.y1, l.y2), maxX: Math.max(l.x1, l.x2), maxY: Math.max(l.y1, l.y2) }
-        break;
+        return {
+          minX: Math.min(l.x1, l.x2),
+          minY: Math.min(l.y1, l.y2),
+          maxX: Math.max(l.x1, l.x2),
+          maxY: Math.max(l.y1, l.y2)
+        }
+        break
       case componentTypes.circle:
         const c = component as Circle
         const cRadius = this.getDistance(c.x1, c.y1, c.x2, c.y2)
-        return { minX: c.x1 - cRadius, minY: c.y1 - cRadius, maxX: c.x1 + cRadius, maxY: c.y1 + cRadius }
-        break;
+        return {
+          minX: c.x1 - cRadius,
+          minY: c.y1 - cRadius,
+          maxX: c.x1 + cRadius,
+          maxY: c.y1 + cRadius
+        }
+        break
       case componentTypes.rectangle:
         const r = component as Rectangle
-        return { minX: Math.min(r.x1, r.x2), minY: Math.min(r.y1, r.y2), maxX: Math.max(r.x1, r.x2), maxY: Math.max(r.y1, r.y2) }
-        break;
+        return {
+          minX: Math.min(r.x1, r.x2),
+          minY: Math.min(r.y1, r.y2),
+          maxX: Math.max(r.x1, r.x2),
+          maxY: Math.max(r.y1, r.y2)
+        }
+        break
       case componentTypes.measure:
         const m = component as Measure
-        return { minX: Math.min(m.x1, m.x2), minY: Math.min(m.y1, m.y2), maxX: Math.max(m.x1, m.x2), maxY: Math.max(m.y1, m.y2) }
-        break;
+        return {
+          minX: Math.min(m.x1, m.x2),
+          minY: Math.min(m.y1, m.y2),
+          maxX: Math.max(m.x1, m.x2),
+          maxY: Math.max(m.y1, m.y2)
+        }
+        break
       case componentTypes.arc:
         const arc = component as Arc
         // The rendered segment can pass outside its three control points.
         // Indexing the full circle is conservative but never frustum-culls it.
         const arcRadius = this.getDistance(arc.x1, arc.y1, arc.x2, arc.y2) + arc.radius / 2
-        return { minX: arc.x1 - arcRadius, minY: arc.y1 - arcRadius, maxX: arc.x1 + arcRadius, maxY: arc.y1 + arcRadius }
-        break;
+        return {
+          minX: arc.x1 - arcRadius,
+          minY: arc.y1 - arcRadius,
+          maxX: arc.x1 + arcRadius,
+          maxY: arc.y1 + arcRadius
+        }
+        break
       case componentTypes.polygon: {
         const poly = component as Polygon
-        const xs = poly.vectors.map(v => v.x), ys = poly.vectors.map(v => v.y)
-        return { minX: Math.min(...xs), minY: Math.min(...ys), maxX: Math.max(...xs), maxY: Math.max(...ys) }
+        const xs = poly.vectors.map((v) => v.x),
+          ys = poly.vectors.map((v) => v.y)
+        return {
+          minX: Math.min(...xs),
+          minY: Math.min(...ys),
+          maxX: Math.max(...xs),
+          maxY: Math.max(...ys)
+        }
       }
       case componentTypes.picture: {
         const pic = component as Picture
         const cached = this.imageCache.get(pic.pictureSource)
         const width = cached && cached !== 'ERROR' ? cached.naturalWidth : 512
         const height = cached && cached !== 'ERROR' ? cached.naturalHeight : 512
-        return { minX: pic.x - pic.radius, minY: pic.y - pic.radius, maxX: pic.x + width, maxY: pic.y + height }
+        return {
+          minX: pic.x - pic.radius,
+          minY: pic.y - pic.radius,
+          maxX: pic.x + width,
+          maxY: pic.y + height
+        }
       }
       case componentTypes.boundBox: {
         const b = component as BoundBox
-        return { minX: Math.min(b.x1, b.x2), minY: Math.min(b.y1, b.y2), maxX: Math.max(b.x1, b.x2), maxY: Math.max(b.y1, b.y2) }
+        return {
+          minX: Math.min(b.x1, b.x2),
+          minY: Math.min(b.y1, b.y2),
+          maxX: Math.max(b.x1, b.x2),
+          maxY: Math.max(b.y1, b.y2)
+        }
       }
       case componentTypes.label: {
         const lbl = component as Label
         const fontSize = lbl.fontSize ?? 14
         const localDiff = 30
-        const rowStep = localDiff + fontSize / 2          // matches drawLabel's currentLineY step
+        const rowStep = localDiff + fontSize / 2 // matches drawLabel's currentLineY step
         const avgCharWidth = fontSize * 0.6
 
         // Use the SAME wrap logic as drawLabel, not raw '\n' splitting.
-        const wrappedLines = (lbl.text ?? '').split('\n').flatMap(l => this.wrapLabelLines(l))
-        const longestLineLen = Math.max(1, ...wrappedLines.map(l => l.length))
+        const wrappedLines = (lbl.text ?? '').split('\n').flatMap((l) => this.wrapLabelLines(l))
+        const longestLineLen = Math.max(1, ...wrappedLines.map((l) => l.length))
 
         const approxWidth = longestLineLen * avgCharWidth
         const totalRows = wrappedLines.length
@@ -1031,7 +1146,7 @@ export class GraphicsRenderer {
 
         const verticalPad = fontSize * 1.5
         return {
-          minX: lbl.x - avgCharWidth,          // small horizontal pad (draw uses x - 5 offset)
+          minX: lbl.x - avgCharWidth, // small horizontal pad (draw uses x - 5 offset)
           minY: lbl.y - approxHeight - verticalPad,
           maxX: lbl.x + approxWidth,
           maxY: lbl.y + verticalPad
@@ -1042,15 +1157,22 @@ export class GraphicsRenderer {
         if (!shp.components || shp.components.length === 0) {
           return { minX: shp.x, minY: shp.y, maxX: shp.x, maxY: shp.y }
         }
-        let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity
+        let minX = Infinity,
+          minY = Infinity,
+          maxX = -Infinity,
+          maxY = -Infinity
         for (const child of shp.components) {
           const cb = this.getUnrotatedComponentBoundaryBox(child)
-          minX = Math.min(minX, cb.minX); minY = Math.min(minY, cb.minY)
-          maxX = Math.max(maxX, cb.maxX); maxY = Math.max(maxY, cb.maxY)
+          minX = Math.min(minX, cb.minX)
+          minY = Math.min(minY, cb.minY)
+          maxX = Math.max(maxX, cb.maxX)
+          maxY = Math.max(maxY, cb.maxY)
         }
         return {
-          minX: Math.min(shp.x, minX + shp.x), minY: Math.min(shp.y, minY + shp.y),
-          maxX: Math.max(shp.x, maxX + shp.x), maxY: Math.max(shp.y, maxY + shp.y)
+          minX: Math.min(shp.x, minX + shp.x),
+          minY: Math.min(shp.y, minY + shp.y),
+          maxX: Math.max(shp.x, maxX + shp.x),
+          maxY: Math.max(shp.y, maxY + shp.y)
         }
       }
       default:
@@ -1076,26 +1198,31 @@ export class GraphicsRenderer {
       }
     }
   }
-  drawAllComponents(components: Component[], moveByX: number, moveByY: number, useSpatialIndex: boolean = false) {
+  drawAllComponents(
+    components: Component[],
+    moveByX: number,
+    moveByY: number,
+    useSpatialIndex: boolean = false
+  ) {
     if (useSpatialIndex) {
       if (this._isQuadtreeDirty || !this._quadtree) this.rebuildQuadtree(components)
       const viewport = this.getCameraWorldBounds()
       const candidates = this._quadtree
         ? this._quadtree.query(viewport)
-        : components.map(c => ({ item: c, bbox: this.getComponentBoundaryBox(c) }))
+        : components.map((c) => ({ item: c, bbox: this.getComponentBoundaryBox(c) }))
       for (const { item: component, bbox } of candidates) {
-        if (component.active == false) continue;
-        if (!this.isComponentInCamera(bbox)) continue;
-        if (this.getScreenFootprintPx(component, bbox) < GraphicsRenderer.MIN_VISIBLE_PX) continue;
+        if (component.active == false) continue
+        if (!this.isComponentInCamera(bbox)) continue
+        if (this.getScreenFootprintPx(component, bbox) < GraphicsRenderer.MIN_VISIBLE_PX) continue
         this.drawComponent(component, moveByX, moveByY)
       }
       return
     }
     for (let i = 0; i < components.length; i++) {
-      if (components[i].active == false) continue;
+      if (components[i].active == false) continue
       const bbox = this.getComponentBoundaryBox(components[i])
-      if (!this.isComponentInCamera(bbox)) continue;
-      if (this.getScreenFootprintPx(components[i], bbox) < GraphicsRenderer.MIN_VISIBLE_PX) continue;
+      if (!this.isComponentInCamera(bbox)) continue
+      if (this.getScreenFootprintPx(components[i], bbox) < GraphicsRenderer.MIN_VISIBLE_PX) continue
       this.drawComponent(components[i], moveByX, moveByY)
     }
   }
@@ -1118,7 +1245,11 @@ export class GraphicsRenderer {
    * centre, so simply writing one unrotated endpoint changes that centre and
    * makes every other visible endpoint "spring" away from the cursor.
    */
-  private dragRotatedHandleWithoutSpring(component: Component, handleId: string, target: Vector2): boolean {
+  private dragRotatedHandleWithoutSpring(
+    component: Component,
+    handleId: string,
+    target: Vector2
+  ): boolean {
     const positions = this.dragHandlePositions
     const rotation = component.rotation ?? 0
     if (!positions || !rotation) return false
@@ -1134,8 +1265,10 @@ export class GraphicsRenderer {
       const center = { x: (target.x + fixed.x) / 2, y: (target.y + fixed.y) / 2 }
       const start = unrotate(handleId === 'start' ? target : fixed, center)
       const end = unrotate(handleId === 'end' ? target : fixed, center)
-      line.x1 = start.x; line.y1 = start.y
-      line.x2 = end.x; line.y2 = end.y
+      line.x1 = start.x
+      line.y1 = start.y
+      line.x2 = end.x
+      line.y2 = end.y
       return true
     }
 
@@ -1380,7 +1513,16 @@ export class GraphicsRenderer {
       }
       case componentTypes.boundBox: {
         const boundbox = component as BoundBox
-        this.drawRectangle(boundbox.x1, boundbox.y1, boundbox.x2, boundbox.y2, '#e9e9e9', 2, 50, rotation)
+        this.drawRectangle(
+          boundbox.x1,
+          boundbox.y1,
+          boundbox.x2,
+          boundbox.y2,
+          '#e9e9e9',
+          2,
+          50,
+          rotation
+        )
         break
       }
     }
@@ -1557,7 +1699,14 @@ export class GraphicsRenderer {
     this.context?.stroke()
     this.context?.restore()
   }
-  drawPoint(x: number, y: number, color: string, radius: number, opacity: number, rotation: number = 0) {
+  drawPoint(
+    x: number,
+    y: number,
+    color: string,
+    radius: number,
+    opacity: number,
+    rotation: number = 0
+  ) {
     if (!this.context) return
     const cx = (x + this.cOutX) * this.zoom
     const cy = (y + this.cOutY) * this.zoom
@@ -1587,7 +1736,11 @@ export class GraphicsRenderer {
     path.moveTo(cx + r, cy)
     path.arc(cx, cy, r, 0, Math.PI * 2, false)
   }
-  private getBatchPath(strokeStyle: string, lineWidth: number, lineJoin: CanvasLineJoin = 'miter'): Path2D {
+  private getBatchPath(
+    strokeStyle: string,
+    lineWidth: number,
+    lineJoin: CanvasLineJoin = 'miter'
+  ): Path2D {
     const key = strokeStyle + '|' + lineWidth + '|' + lineJoin
     let bucket = this._pathBatches.get(key)
     if (!bucket) {
@@ -1609,34 +1762,63 @@ export class GraphicsRenderer {
     this._pathBatches.clear()
   }
 
-  drawLine(x1: number, y1: number, x2: number, y2: number, color: string, radius: number, opacity: number, rotation: number = 0) {
+  drawLine(
+    x1: number,
+    y1: number,
+    x2: number,
+    y2: number,
+    color: string,
+    radius: number,
+    opacity: number,
+    rotation: number = 0
+  ) {
     if (!this.context) return
     const strokeStyle = this.getColorWithOpacityFromCache(color, opacity)
     const path = this.getBatchPath(strokeStyle, radius * this.zoom)
 
-    let ax = x1, ay = y1, bx = x2, by = y2
+    let ax = x1,
+      ay = y1,
+      bx = x2,
+      by = y2
     if (rotation) {
       const ox = (x1 + x2) / 2
       const oy = (y1 + y2) / 2
       const p1 = this.rotatePoint(x1, y1, ox, oy, rotation)
       const p2 = this.rotatePoint(x2, y2, ox, oy, rotation)
-      ax = p1.x; ay = p1.y; bx = p2.x; by = p2.y
+      ax = p1.x
+      ay = p1.y
+      bx = p2.x
+      by = p2.y
     }
 
     path.moveTo((ax + this.cOutX) * this.zoom, (ay + this.cOutY) * this.zoom)
     path.lineTo((bx + this.cOutX) * this.zoom, (by + this.cOutY) * this.zoom)
   }
 
-  drawCircle(x1: number, y1: number, x2: number, y2: number, color: string, radius: number, opacity: number, rotation: number = 0) {
+  drawCircle(
+    x1: number,
+    y1: number,
+    x2: number,
+    y2: number,
+    color: string,
+    radius: number,
+    opacity: number,
+    rotation: number = 0
+  ) {
     if (!this.context) return
     const strokeStyle = this.getColorWithOpacityFromCache(color, opacity)
     const path = this.getBatchPath(strokeStyle, radius * this.zoom)
 
-    let c1x = x1, c1y = y1, c2x = x2, c2y = y2
+    let c1x = x1,
+      c1y = y1,
+      c2x = x2,
+      c2y = y2
     if (rotation) {
-      const ox = x1, oy = y1
+      const ox = x1,
+        oy = y1
       const rp = this.rotatePoint(x2, y2, ox, oy, rotation)
-      c2x = rp.x; c2y = rp.y
+      c2x = rp.x
+      c2y = rp.y
     }
 
     const cx = (c1x + this.cOutX) * this.zoom
@@ -1646,7 +1828,16 @@ export class GraphicsRenderer {
     path.arc(cx, cy, r, 0, Math.PI * 2, false)
   }
 
-  drawRectangle(x1: number, y1: number, x2: number, y2: number, color: string, radius: number, opacity: number, rotation: number = 0) {
+  drawRectangle(
+    x1: number,
+    y1: number,
+    x2: number,
+    y2: number,
+    color: string,
+    radius: number,
+    opacity: number,
+    rotation: number = 0
+  ) {
     if (!this.context) return
     const strokeStyle = this.getColorWithOpacityFromCache(color, opacity)
     const path = this.getBatchPath(strokeStyle, radius * this.zoom)
@@ -1714,62 +1905,64 @@ export class GraphicsRenderer {
     textAlign: 'left' | 'center' = 'left',
     textBaseline: 'middle' | 'top' | 'bottom' = 'bottom'
   ) {
-    this.cleanLog(`Getting text for ${text}`);
-    if (!this.context) return;
+    this.cleanLog(`Getting text for ${text}`)
+    if (!this.context) return
 
     const glyphs = this._getSpacedGlyphs(text)
-    if (!glyphs) return;
+    if (!glyphs) return
 
-    const targetColor = color || '#E9E9E9';
-    const targetOpacity = opacity !== undefined ? opacity : 1.0;
-    const targetFontSize = fontSize || this.fontSize;
-    const targetThickness = thickness || 0.5;
+    const targetColor = color || '#E9E9E9'
+    const targetOpacity = opacity !== undefined ? opacity : 1.0
+    const targetFontSize = fontSize || this.fontSize
+    const targetThickness = thickness || 0.5
 
-    let minX = Infinity, maxX = -Infinity;
-    let minY = Infinity, maxY = -Infinity;
-
-    for (const glyph of glyphs) {
-      for (const cmd of glyph.commands) {
-        if (cmd.x < minX) minX = cmd.x;
-        if (cmd.x > maxX) maxX = cmd.x;
-        if (cmd.y < minY) minY = cmd.y;
-        if (cmd.y > maxY) maxY = cmd.y;
-      }
-    }
-
-    const fbWidth = (maxX >= minX) ? (maxX - minX) * targetFontSize : 0;
-    const fbHeight = (maxY >= minY) ? (maxY - minY) * targetFontSize : targetFontSize;
-
-    let localOffsetX = 0;
-    if (textAlign === 'center') localOffsetX = -fbWidth / 2;
-
-    let localOffsetY = 0;
-    if (textBaseline === 'middle') localOffsetY = fbHeight / 2;
-    else if (textBaseline === 'top') localOffsetY = fbHeight;
-
-    this.context.save();
-    this.context.translate(x, y);
-    if (rotation) this.context.rotate(rotation);
-
-    this.context.strokeStyle = targetColor + _num2hex(targetOpacity);
-    this.context.lineWidth = targetThickness * this.zoom;
-    this.context.lineCap = 'round';
-    this.context.lineJoin = 'round';
-
-    this.context.beginPath();
+    let minX = Infinity,
+      maxX = -Infinity
+    let minY = Infinity,
+      maxY = -Infinity
 
     for (const glyph of glyphs) {
       for (const cmd of glyph.commands) {
-        const px = (cmd.x * targetFontSize) + localOffsetX;
-        const py = (-cmd.y * targetFontSize) + localOffsetY;
-        if (cmd.command === 'PD') this.context.moveTo(px, py);
-        else if (cmd.command === 'MP') this.context.lineTo(px, py);
+        if (cmd.x < minX) minX = cmd.x
+        if (cmd.x > maxX) maxX = cmd.x
+        if (cmd.y < minY) minY = cmd.y
+        if (cmd.y > maxY) maxY = cmd.y
       }
     }
 
-    this.context.stroke();
-    this.context.restore();
-    return fbWidth;
+    const fbWidth = maxX >= minX ? (maxX - minX) * targetFontSize : 0
+    const fbHeight = maxY >= minY ? (maxY - minY) * targetFontSize : targetFontSize
+
+    let localOffsetX = 0
+    if (textAlign === 'center') localOffsetX = -fbWidth / 2
+
+    let localOffsetY = 0
+    if (textBaseline === 'middle') localOffsetY = fbHeight / 2
+    else if (textBaseline === 'top') localOffsetY = fbHeight
+
+    this.context.save()
+    this.context.translate(x, y)
+    if (rotation) this.context.rotate(rotation)
+
+    this.context.strokeStyle = targetColor + _num2hex(targetOpacity)
+    this.context.lineWidth = targetThickness * this.zoom
+    this.context.lineCap = 'round'
+    this.context.lineJoin = 'round'
+
+    this.context.beginPath()
+
+    for (const glyph of glyphs) {
+      for (const cmd of glyph.commands) {
+        const px = cmd.x * targetFontSize + localOffsetX
+        const py = -cmd.y * targetFontSize + localOffsetY
+        if (cmd.command === 'PD') this.context.moveTo(px, py)
+        else if (cmd.command === 'MP') this.context.lineTo(px, py)
+      }
+    }
+
+    this.context.stroke()
+    this.context.restore()
+    return fbWidth
   }
 
   drawMeasure(
@@ -1782,16 +1975,23 @@ export class GraphicsRenderer {
     opacity: number,
     rotation: number = 0
   ) {
-    let ax1 = x1, ay1 = y1, ax2 = x2, ay2 = y2
+    let ax1 = x1,
+      ay1 = y1,
+      ax2 = x2,
+      ay2 = y2
     if (rotation) {
       const ox = (x1 + x2) / 2
       const oy = (y1 + y2) / 2
       const p1 = this.rotatePoint(x1, y1, ox, oy, rotation)
       const p2 = this.rotatePoint(x2, y2, ox, oy, rotation)
-      ax1 = p1.x; ay1 = p1.y; ax2 = p2.x; ay2 = p2.y
+      ax1 = p1.x
+      ay1 = p1.y
+      ax2 = p2.x
+      ay2 = p2.y
     }
 
-    let distance = this.getDistance(ax1, ay1, ax2, ay2) * this.unitFactor * this.unitConversionFactor
+    let distance =
+      this.getDistance(ax1, ay1, ax2, ay2) * this.unitFactor * this.unitConversionFactor
     let angle = Math.atan2(ay2 - ay1, ax2 - ax1)
     var defaultArrowLength = 25
     var arrowOffset = 5
@@ -1804,14 +2004,21 @@ export class GraphicsRenderer {
     }
     const distanceText = distance.toFixed(2) + '' + this.unitMeasure
 
-    const targetFontSize = 2 * this.zoom;
+    const targetFontSize = 2 * this.zoom
     const glyphs = this._getSpacedGlyphs(distanceText)
-    if (!glyphs) return;
-    let maxX = 0;
+    if (!glyphs) return
+    let maxX = 0
     if (glyphs && glyphs.length > 0) {
-      maxX = glyphs.reduce((max, g) => Math.max(max, g.commands.reduce((m, c) => Math.max(m, c.x), 0)), 0);
+      maxX = glyphs.reduce(
+        (max, g) =>
+          Math.max(
+            max,
+            g.commands.reduce((m, c) => Math.max(m, c.x), 0)
+          ),
+        0
+      )
     }
-    const calculatedTextWidth = maxX * targetFontSize;
+    const calculatedTextWidth = maxX * targetFontSize
 
     const minDistanceForFullArrow = (defaultArrowLength * 2) / 100
     if (distance < minDistanceForFullArrow) {
@@ -1837,12 +2044,12 @@ export class GraphicsRenderer {
     this.drawArrowhead(ax1, ay1, angle, arrowLength, arrowOffset, color, radius, opacity, 0)
     this.drawArrowhead(ax2, ay2, angle, -arrowLength, arrowOffset, color, radius, opacity, 0)
 
-    let posX = midX * this.zoom + this.cOutX * this.zoom;
-    let posY = midY * this.zoom + textOffsetY * 2 + this.cOutY * this.zoom;
+    let posX = midX * this.zoom + this.cOutX * this.zoom
+    let posY = midY * this.zoom + textOffsetY * 2 + this.cOutY * this.zoom
 
     if (localDiff !== 0) {
-      posX += localDiff * Math.sin(angle);
-      posY -= localDiff * Math.cos(angle);
+      posX += localDiff * Math.sin(angle)
+      posY -= localDiff * Math.cos(angle)
     }
 
     this.drawRawFontobeneAtLocation(
@@ -1856,7 +2063,7 @@ export class GraphicsRenderer {
       angle,
       'center',
       isShortDistance ? 'top' : 'middle'
-    );
+    )
   }
 
   drawLabel(
@@ -1869,40 +2076,40 @@ export class GraphicsRenderer {
     opacity: number,
     rotation: number = 0
   ) {
-    if (!this.context) return;
+    if (!this.context) return
 
     // A label's x/y coordinates are its rotation anchor.
     const rotationOrigin = { x, y }
 
-    const localDiff = 30;
+    const localDiff = 30
     // Keep label glyphs in world space. The screen conversion below applies
     // this.zoom, so including it here would make labels scale as zoom squared.
-    const targetFontScale = fontSize / 10;
-    const condensedWidthScale = 0.75;
+    const targetFontScale = fontSize / 10
+    const condensedWidthScale = 0.75
 
-    const maxLength = 24;
-    let tmpLength = 0;
-    let tmpText = '';
-    const arrText = text.split(' ');
-    const lines: string[] = [];
+    const maxLength = 24
+    let tmpLength = 0
+    let tmpText = ''
+    const arrText = text.split(' ')
+    const lines: string[] = []
 
     for (let i = 0; i < arrText.length; i++) {
-      tmpLength += arrText[i].length + 1;
-      tmpText += (tmpText ? ' ' : '') + arrText[i];
+      tmpLength += arrText[i].length + 1
+      tmpText += (tmpText ? ' ' : '') + arrText[i]
       if (tmpLength > maxLength) {
-        lines.push(tmpText);
-        tmpLength = 0;
-        tmpText = '';
+        lines.push(tmpText)
+        tmpLength = 0
+        tmpText = ''
       }
     }
-    if (tmpText.trim().length > 0) lines.push(tmpText);
+    if (tmpText.trim().length > 0) lines.push(tmpText)
 
     for (let lineIndex = 0; lineIndex < lines.length; lineIndex++) {
-      const lineText = lines[lineIndex];
+      const lineText = lines[lineIndex]
       const glyphs = this._getSpacedGlyphs(lineText)
-      if (!glyphs) continue;
+      if (!glyphs) continue
 
-      const currentLineY = y + (lineIndex * (localDiff + (fontSize / 2)));
+      const currentLineY = y + lineIndex * (localDiff + fontSize / 2)
       const strokeStyle = this.getColorWithOpacityFromCache(color, opacity)
       const path = this.getBatchPath(strokeStyle, (radius / 2) * this.zoom, 'round')
 
@@ -1911,8 +2118,8 @@ export class GraphicsRenderer {
 
       for (const glyph of glyphs) {
         for (const cmd of glyph.commands) {
-          let lx = (cmd.x * targetFontScale * condensedWidthScale) - 5
-          let ly = (-cmd.y * targetFontScale)
+          let lx = cmd.x * targetFontScale * condensedWidthScale - 5
+          let ly = -cmd.y * targetFontScale
           if (rotation) {
             const rp = this.rotatePoint(
               lx + anchorX,
@@ -1945,11 +2152,17 @@ export class GraphicsRenderer {
     rotation: number = 0
   ) {
     if (!this.context) return
-    let ax2 = x2, ay2 = y2, ax3 = x3, ay3 = y3
+    let ax2 = x2,
+      ay2 = y2,
+      ax3 = x3,
+      ay3 = y3
     if (rotation) {
       const p2 = this.rotatePoint(x2, y2, x1, y1, rotation)
       const p3 = this.rotatePoint(x3, y3, x1, y1, rotation)
-      ax2 = p2.x; ay2 = p2.y; ax3 = p3.x; ay3 = p3.y
+      ax2 = p2.x
+      ay2 = p2.y
+      ax3 = p3.x
+      ay3 = p3.y
     }
     const firstAngle = this.getAngle(x1, y1, ax2, ay2)
     const secondAngle = this.getAngle(x1, y1, ax3, ay3)
@@ -1964,7 +2177,8 @@ export class GraphicsRenderer {
 
   drawShape(shape: Shape, rotation: number = 0) {
     if (rotation && shape.components?.length) {
-      const ox = shape.x, oy = shape.y
+      const ox = shape.x,
+        oy = shape.y
       const rotatedChildren = shape.components.map((c) => {
         const copy: any = { ...c }
         const rotateCoordinates = (xKey: string, yKey: string) => {
@@ -1978,7 +2192,9 @@ export class GraphicsRenderer {
         rotateCoordinates('x2', 'y2')
         rotateCoordinates('x3', 'y3')
         if (Array.isArray(copy.vectors)) {
-          copy.vectors = copy.vectors.map((v: Vector2) => this.rotatePoint(v.x, v.y, 0, 0, rotation))
+          copy.vectors = copy.vectors.map((v: Vector2) =>
+            this.rotatePoint(v.x, v.y, 0, 0, rotation)
+          )
         }
         return copy as Component
       })
@@ -1995,7 +2211,9 @@ export class GraphicsRenderer {
       const img = new Image()
       img.crossOrigin = 'anonymous'
       img.src = basedURL
-      img.onerror = () => { this.imageCache.set(basedURL, 'ERROR') }
+      img.onerror = () => {
+        this.imageCache.set(basedURL, 'ERROR')
+      }
       img.onload = () => {
         this.imageCache.set(basedURL, img)
         this._isQuadtreeDirty = true
@@ -2003,7 +2221,13 @@ export class GraphicsRenderer {
       }
     } else {
       const cached = this.imageCache.get(basedURL)
-      this.renderImage(x, y, cached === 'ERROR' ? null : (cached as HTMLImageElement), opacity, rotation)
+      this.renderImage(
+        x,
+        y,
+        cached === 'ERROR' ? null : (cached as HTMLImageElement),
+        opacity,
+        rotation
+      )
     }
   }
 
@@ -2069,7 +2293,7 @@ export class GraphicsRenderer {
     if (rotation) {
       const cx = vectors.reduce((s, v) => s + v.x, 0) / vectors.length
       const cy = vectors.reduce((s, v) => s + v.y, 0) / vectors.length
-      drawVectors = vectors.map(v => this.rotatePoint(v.x, v.y, cx, cy, rotation))
+      drawVectors = vectors.map((v) => this.rotatePoint(v.x, v.y, cx, cy, rotation))
     }
 
     this.context!.lineWidth = radius * this.zoom
@@ -2136,7 +2360,7 @@ export class GraphicsRenderer {
     }
   }
   flagQuadtreeDirty(dirty: boolean) {
-    this._isQuadtreeDirty = dirty;
+    this._isQuadtreeDirty = dirty
   }
   drawGrid(camXoff: number, camYoff: number) {
     const ctx = this.context
@@ -2144,8 +2368,8 @@ export class GraphicsRenderer {
 
     // --- Tunables ---
     const targetPixelSpacing = 40 // ideal on-screen distance between dots
-    const minPixelSpacing = 4     // never draw dots closer than this
-    const majorMultiplier = 10   // every Nth *base* grid line is "major"
+    const minPixelSpacing = 4 // never draw dots closer than this
+    const majorMultiplier = 10 // every Nth *base* grid line is "major"
     const minorDotSize = 1
     const majorDotSize = 2.5
 
@@ -2303,7 +2527,7 @@ export class GraphicsRenderer {
 
     if (this.readonly) this.mode = this.modes.Navigate
     else this.mode = mode
-    this.markDirty('changing modes');
+    this.markDirty('changing modes')
 
     if (this.onModeChange) {
       this.onModeChange()
@@ -2329,8 +2553,16 @@ export class GraphicsRenderer {
 
     if (this._isQuadtreeDirty || !this._quadtree) this.rebuildQuadtree(this.logicDisplay.components)
     const candidates = this._quadtree
-      ? this._quadtree.query({ minX: x - snapBox, minY: y - snapBox, maxX: x + snapBox, maxY: y + snapBox })
-      : this.logicDisplay.components.map(item => ({ item, bbox: this.getComponentBoundaryBox(item) }))
+      ? this._quadtree.query({
+          minX: x - snapBox,
+          minY: y - snapBox,
+          maxX: x + snapBox,
+          maxY: y + snapBox
+        })
+      : this.logicDisplay.components.map((item) => ({
+          item,
+          bbox: this.getComponentBoundaryBox(item)
+        }))
 
     // Querying the spatial index reduces pointer work from O(all components)
     // to O(nearby components). Keep original indexes for existing priorities.
@@ -2562,69 +2794,63 @@ export class GraphicsRenderer {
       this.onComponentChangeCallback()
     }
     this.cleanLog('component changed')
-    this.markDirty('Component changed');
+    this.markDirty('Component changed')
   }
 
   forcefullyRemoveSelectedComponentOnActiveIndex(): void {
-    this.cleanLog('attempting to delete component');
-    this.cleanLog('selected component: ' + this.temporarySelectedComponent);
+    this.cleanLog('attempting to delete component')
+    this.cleanLog('selected component: ' + this.temporarySelectedComponent)
     if (this.temporarySelectedComponent != null) {
-      if (this.logicDisplay!.components.length == 0) this._quadtree = null;
-      this.logicDisplay!.components.splice(this.temporarySelectedComponent, 1);
-      this.markDirty('component deleted');
-      this.temporarySelectedComponent = null;
-      this.selectedComponent = null;      // <-- added: was left stale, pointing at a
-      this.lastSelectedComponent = null;  // <-- shifted/invalid index after splice,
-      this._isQuadtreeDirty = true;
-      this.displayRef?.focus();           //     which threw inside refreshSelectionTools()
-      this.saveState();
-    } else {                              //     and got silently swallowed, freezing the canvas
-      this.cleanLog('not deleting, nothing was selected');
+      if (this.logicDisplay!.components.length == 0) this._quadtree = null
+      this.logicDisplay!.components.splice(this.temporarySelectedComponent, 1)
+      this.markDirty('component deleted')
+      this.temporarySelectedComponent = null
+      this.selectedComponent = null // <-- added: was left stale, pointing at a
+      this.lastSelectedComponent = null // <-- shifted/invalid index after splice,
+      this._isQuadtreeDirty = true
+      this.displayRef?.focus() //     which threw inside refreshSelectionTools()
+      this.saveState()
+    } else {
+      //     and got silently swallowed, freezing the canvas
+      this.cleanLog('not deleting, nothing was selected')
     }
   }
 
   private _arraybuf2b64(buffer: ArrayBuffer) {
-    let binary = '';
-    const bytes = new Uint8Array(buffer);
-    const len = bytes.byteLength;
-    for (let i = 0; i < len; i++) binary += String.fromCharCode(bytes[i]);
-    return btoa(binary);
+    let binary = ''
+    const bytes = new Uint8Array(buffer)
+    const len = bytes.byteLength
+    for (let i = 0; i < len; i++) binary += String.fromCharCode(bytes[i])
+    return btoa(binary)
   }
 
   pasteWhateverTheFuckIsInTheClipboard() {
     navigator.clipboard.read().then((items) => {
-      items.forEach(async item => {
-        const types = item.types;
+      items.forEach(async (item) => {
+        const types = item.types
         for (const type of types) {
           try {
             if (type === 'text/plain') {
-              const blob = await item.getType('text/plain');
-              const text = await blob.text();
-              if (text.includes('active') && text.includes('type')) { // <- It's a CompassCAD component!
+              const blob = await item.getType('text/plain')
+              const text = await blob.text()
+              if (text.includes('active') && text.includes('type')) {
+                // <- It's a CompassCAD component!
                 // WIP: handle component pasting
               } else {
                 this.logicDisplay?.addComponent(
-                  new Label(
-                    this.getCursorXLocal(),
-                    this.getCursorYLocal(),
-                    text
-                  )
+                  new Label(this.getCursorXLocal(), this.getCursorYLocal(), text)
                 )
-                this.saveState();
+                this.saveState()
               }
             } else if (type.startsWith('image/')) {
-              const blob = await item.getType(type);
-              const arrayBuffer = await blob.arrayBuffer();
-              const b64String = this._arraybuf2b64(arrayBuffer);
-              const imageUrl = `data:${type};base64,${b64String}`;
+              const blob = await item.getType(type)
+              const arrayBuffer = await blob.arrayBuffer()
+              const b64String = this._arraybuf2b64(arrayBuffer)
+              const imageUrl = `data:${type};base64,${b64String}`
               this.logicDisplay?.addComponent(
-                new Picture(
-                  this.getCursorXLocal(),
-                  this.getCursorYLocal(),
-                  imageUrl
-                )
+                new Picture(this.getCursorXLocal(), this.getCursorYLocal(), imageUrl)
               )
-              this.saveState();
+              this.saveState()
             }
           } catch (e) {
             console.log(`err: error reading clipboard: ${e}`)
@@ -2636,11 +2862,11 @@ export class GraphicsRenderer {
 
   rotateSelected() {
     if (this.logicDisplay && this.selectedComponent != null) {
-      const component = this.logicDisplay.components[this.selectedComponent];
+      const component = this.logicDisplay.components[this.selectedComponent]
       component.rotation = this.normalizeRotation((component.rotation ?? 0) + 90)
       this.updateQuadtreeEntry(component)
       this.notifyComponentChange()
-      this.saveState();
+      this.saveState()
     }
   }
 
@@ -2653,14 +2879,14 @@ export class GraphicsRenderer {
     return {
       x: v.x - this.displayWidth / 2,
       y: v.y - this.displayHeight / 2
-    };
+    }
   }
 
   postDoAfterComponentImport() {
-    if (this.onComponentArrayChanged) this.onComponentArrayChanged();
-    this._quadtree = null;
-    this.flagQuadtreeDirty(true);
-    this.markDirty('refresh after component import');
+    if (this.onComponentArrayChanged) this.onComponentArrayChanged()
+    this._quadtree = null
+    this.flagQuadtreeDirty(true)
+    this.markDirty('refresh after component import')
   }
 
   async performAction(e: MouseEvent, action: number) {
@@ -3035,11 +3261,14 @@ export class GraphicsRenderer {
               this.findIntersectionWith(this.getCursorXLocal(), this.getCursorYLocal()) ?? null
           } else {
             if (this.logicDisplay) {
-              if (this.moveComponent(
-                this.selectedComponent,
-                this.getCursorXLocal(),
-                this.getCursorYLocal()
-              )) this._dragDidModify = true
+              if (
+                this.moveComponent(
+                  this.selectedComponent,
+                  this.getCursorXLocal(),
+                  this.getCursorYLocal()
+                )
+              )
+                this._dragDidModify = true
             }
           }
         } else if (action === this.mouseAction.Down) {
@@ -3068,7 +3297,7 @@ export class GraphicsRenderer {
             this.temporarySelectedComponent !== null &&
             this.logicDisplay?.components[this.temporarySelectedComponent]
           ) {
-            this.forcefullyRemoveSelectedComponentOnActiveIndex();
+            this.forcefullyRemoveSelectedComponentOnActiveIndex()
             this.saveState()
           }
         }
@@ -3095,7 +3324,8 @@ export class GraphicsRenderer {
                 const cursorX = this.getCursorXRaw()
                 const cursorY = this.getCursorYRaw()
                 const origin = this.dragRotationOrigin
-                const angle = Math.atan2(cursorY - origin.y, cursorX - origin.x) * 180 / Math.PI + 90
+                const angle =
+                  (Math.atan2(cursorY - origin.y, cursorX - origin.x) * 180) / Math.PI + 90
                 const rotation = this.normalizeRotation(angle)
                 if (component.rotation !== rotation) {
                   component.rotation = rotation
@@ -3125,7 +3355,12 @@ export class GraphicsRenderer {
               if (component) {
                 let componentModified = false // Flag to check if component was modified
 
-                if (this.dragRotatedHandleWithoutSpring(component, this.dragHandle, { x: localX, y: localY })) {
+                if (
+                  this.dragRotatedHandleWithoutSpring(component, this.dragHandle, {
+                    x: localX,
+                    y: localY
+                  })
+                ) {
                   this._dragDidModify = true
                   this.updateQuadtreeEntry(component)
                   this.notifyComponentChange()
@@ -3144,7 +3379,13 @@ export class GraphicsRenderer {
                 let modelY = localY
                 if (dragRotation && !this.isSelfPivotingComponent(component.type)) {
                   const origin = this.getRotationOrigin(component)
-                  const unrotated = this.rotatePoint(localX, localY, origin.x, origin.y, -dragRotation)
+                  const unrotated = this.rotatePoint(
+                    localX,
+                    localY,
+                    origin.x,
+                    origin.y,
+                    -dragRotation
+                  )
                   modelX = unrotated.x
                   modelY = unrotated.y
                 }
@@ -3266,8 +3507,8 @@ export class GraphicsRenderer {
               // The rotation axis can overlap a component's centre handle, so
               // test it first. It must use unsnapped coordinates: snapping the
               // pointer makes its hit area drift as zoom changes.
-              const orderedHandles = [...handles].sort((a, b) =>
-                Number(b.id === 'rotate') - Number(a.id === 'rotate')
+              const orderedHandles = [...handles].sort(
+                (a, b) => Number(b.id === 'rotate') - Number(a.id === 'rotate')
               )
               for (const handle of orderedHandles) {
                 const isRotationHandle = handle.id === 'rotate'
@@ -3304,8 +3545,8 @@ export class GraphicsRenderer {
               const handles = component ? this.getComponentHandles(component) : []
               const handleSize = 5 / this.zoom
 
-              const orderedHandles = [...handles].sort((a, b) =>
-                Number(b.id === 'rotate') - Number(a.id === 'rotate')
+              const orderedHandles = [...handles].sort(
+                (a, b) => Number(b.id === 'rotate') - Number(a.id === 'rotate')
               )
               for (const handle of orderedHandles) {
                 // Check collision in world coordinates
@@ -3320,11 +3561,13 @@ export class GraphicsRenderer {
                 if (distSquared < hitSize * hitSize) {
                   this.dragHandle = handle.id
                   this.dragHandlePositions = new Map(
-                    handles.map(currentHandle => [currentHandle.id, { x: currentHandle.x, y: currentHandle.y }])
+                    handles.map((currentHandle) => [
+                      currentHandle.id,
+                      { x: currentHandle.x, y: currentHandle.y }
+                    ])
                   )
-                  this.dragRotationOrigin = handle.id === 'rotate'
-                    ? this.getRotationOrigin(component)
-                    : null
+                  this.dragRotationOrigin =
+                    handle.id === 'rotate' ? this.getRotationOrigin(component) : null
                   // No need to notify here, as mouse.Move will handle updates
                   return
                 }
@@ -3387,35 +3630,37 @@ export class GraphicsRenderer {
     // Misc event clickers in debug mode
     if (this._debugMode) {
       // Compute cursor position relative to the canvas and then to centered coords
-      const canvas = this.displayRef;
+      const canvas = this.displayRef
       if (canvas) {
-        const rect = canvas.getBoundingClientRect();
-        const cursorCanvasX = this.mouse!.cursorXGlobal - rect.left;
-        const cursorCanvasY = this.mouse!.cursorYGlobal - rect.top;
+        const rect = canvas.getBoundingClientRect()
+        const cursorCanvasX = this.mouse!.cursorXGlobal - rect.left
+        const cursorCanvasY = this.mouse!.cursorYGlobal - rect.top
         const cursor = {
           x: cursorCanvasX - this.displayWidth / 2,
           y: cursorCanvasY - this.displayHeight / 2
-        };
+        }
 
-        let enteredAny = false;
+        let enteredAny = false
         for (const { start, end, func } of this._debugHitboxes.values()) {
-          const minX = Math.min(start.x, end.x), maxX = Math.max(start.x, end.x);
-          const minY = Math.min(start.y, end.y), maxY = Math.max(start.y, end.y);
+          const minX = Math.min(start.x, end.x),
+            maxX = Math.max(start.x, end.x)
+          const minY = Math.min(start.y, end.y),
+            maxY = Math.max(start.y, end.y)
 
           if (cursor.x >= minX && cursor.x <= maxX && cursor.y >= minY && cursor.y <= maxY) {
-            enteredAny = true;
+            enteredAny = true
             if (action === this.mouseAction.Move) {
-              this._isEnteringHitbox = true;
+              this._isEnteringHitbox = true
             } else if (action === this.mouseAction.Down) {
               if (func) {
-                func();
+                func()
               }
             }
             // continue checking other hitboxes so multiple overlapping ones can trigger if needed
           }
         }
         if (!enteredAny) {
-          this._isEnteringHitbox = false;
+          this._isEnteringHitbox = false
         }
       }
     }
@@ -3435,8 +3680,8 @@ export class GraphicsRenderer {
     const zoomDiff = this.targetZoom - this.zoom
     this.camX -= cursorOffsetX * (zoomDiff / this.zoom)
     this.camY -= cursorOffsetY * (zoomDiff / this.zoom)
-    this.cleanLog('onZoomUpdate callback?' + this.onZoomUpdate);
-    this.markDirty('Zoom updated');
+    this.cleanLog('onZoomUpdate callback?' + this.onZoomUpdate)
+    this.markDirty('Zoom updated')
   }
   clearGrid() {
     if (this.context) {
@@ -3478,9 +3723,9 @@ export class GraphicsRenderer {
   update() {
     if (!this._dirty) {
       // this.cleanLog('update wants to be called but i am not dirty, skipping');
-      return;
-    } else this.cleanLog('update called, dirty flag is true, proceeding with update');
-    this._dirty = false;
+      return
+    } else this.cleanLog('update called, dirty flag is true, proceeding with update')
+    this._dirty = false
     this.offsetX = this.displayRef!.offsetLeft
     this.offsetY = this.displayRef!.offsetTop
     this.zoom = this.targetZoom
@@ -3492,14 +3737,14 @@ export class GraphicsRenderer {
 
     this.drawAllComponents(this.logicDisplay!.components, 0, 0, true)
     if (this.temporaryComponentType != null) this.drawTemporaryComponent()
-    this.flushBatchedPaths();
+    this.flushBatchedPaths()
     this.drawRules()
     this.refreshSelectionTools()
     if (this._debugMode) {
-      this._copiableDebugStrings = "";
-      this.drawDebugToast();
-      const defaultDebugTextSizeMultiplier = 2 * (1 / this.zoom);
-      const debugTextX = -((this.displayWidth / 2) - 80);
+      this._copiableDebugStrings = ''
+      this.drawDebugToast()
+      const defaultDebugTextSizeMultiplier = 2 * (1 / this.zoom)
+      const debugTextX = -(this.displayWidth / 2 - 80)
       const drawDebugLine = (y, text) =>
         this.drawRawFontobeneAtLocation(
           debugTextX,
@@ -3512,7 +3757,7 @@ export class GraphicsRenderer {
           0,
           'left',
           'bottom'
-        );
+        )
 
       const topLines = [
         `${fps} FPS (avg since last render time ${((1 / fps) * 1000).toFixed(2)} ms)`,
@@ -3528,25 +3773,25 @@ export class GraphicsRenderer {
         `is QuadT dirty: ${this._isQuadtreeDirty}`,
         `bulk import: ${this._bulkImportActive ? 'yes' : 'no'}`,
         `entering hitbox: ${this._isEnteringHitbox ? 'yes' : 'no'}`
-      ];
+      ]
 
       if (this._enableTopDebugStrings) {
         topLines.forEach((text, i) => {
-          drawDebugLine(-(this.displayHeight / 2 - (40 + i * 20)), text);
-          this._copiableDebugStrings += `${text}\n`;
-        });
+          drawDebugLine(-(this.displayHeight / 2 - (40 + i * 20)), text)
+          this._copiableDebugStrings += `${text}\n`
+        })
       }
 
       // Some warnings
       const warningLines = [
         `CompassCAD NEXT engine debug mode [copy debug info]  [copy image of canvas]  [${this._enableTopDebugStrings ? 'hide' : 'show'} top]`,
         `to turn off, exit development mode.`,
-        `to test w/o debugs, enter Simulate Production Mode.`,
-      ];
+        `to test w/o debugs, enter Simulate Production Mode.`
+      ]
 
       warningLines.forEach((text, i) => {
-        drawDebugLine(this.displayHeight / 2 - (100 - i * 20), text);
-      });
+        drawDebugLine(this.displayHeight / 2 - (100 - i * 20), text)
+      })
     }
     if (this.recordingMode) {
       this.drawUserCursor(
@@ -3556,16 +3801,16 @@ export class GraphicsRenderer {
     }
     if (this._drawHitBoxBoundaries) {
       // Hitboxes were normalized to centered canvas coordinates in appendDebugHitboxes.
-      this.context!.strokeStyle = '#ff0000';
+      this.context!.strokeStyle = '#ff0000'
       for (const { start, end } of this._debugHitboxes.values()) {
-        const x = Math.min(start.x, end.x);
-        const y = Math.min(start.y, end.y);
-        const w = Math.abs(end.x - start.x);
-        const h = Math.abs(end.y - start.y);
+        const x = Math.min(start.x, end.x)
+        const y = Math.min(start.y, end.y)
+        const w = Math.abs(end.x - start.x)
+        const h = Math.abs(end.y - start.y)
         // Because the drawing context has already been translated to the canvas center
         // (see clearGrid() -> translate(this.displayWidth/2, this.displayHeight/2)),
         // we can draw using centered coordinates directly.
-        this.context?.strokeRect(x, y, w, h);
+        this.context?.strokeRect(x, y, w, h)
       }
     }
     //this.fontobeneTest();
@@ -3733,11 +3978,11 @@ export const InitializeInstance = (renderer: GraphicsRenderer) => {
     { passive: false }
   )
   renderer.displayRef!.onkeyup = (e: KeyboardEvent) => {
-    renderer.cleanLog('hook: onkeyup');
+    renderer.cleanLog('hook: onkeyup')
     renderer.keyboard?.onKeyUp(e)
   }
   renderer.displayRef!.onkeydown = (e: KeyboardEvent) => {
-    renderer.cleanLog('hook: onkeydown');
+    renderer.cleanLog('hook: onkeydown')
     renderer.keyboard?.onKeyDown(e)
   }
   renderer.displayRef!.addEventListener('mousemove', (e: any) => {
@@ -3756,8 +4001,8 @@ export const InitializeInstance = (renderer: GraphicsRenderer) => {
 
   renderer.displayRef!.addEventListener('mousedown', (e: MouseEvent) => {
     if (e.which == 2) {
-      renderer.camMoving = true;
-      renderer.markDirty('Mouse moved during drag');
+      renderer.camMoving = true
+      renderer.markDirty('Mouse moved during drag')
       renderer.xCNaught = renderer.getCursorXRaw()
       renderer.yCNaught = renderer.getCursorYRaw()
     } else {
@@ -3768,8 +4013,8 @@ export const InitializeInstance = (renderer: GraphicsRenderer) => {
 
   renderer.displayRef!.addEventListener('mouseup', (e: MouseEvent) => {
     if (e.which == 2) {
-      renderer.camMoving = false;
-      renderer.markDirty('Mouse released during drag');
+      renderer.camMoving = false
+      renderer.markDirty('Mouse released during drag')
       renderer.camX += renderer.getCursorXRaw() - renderer.xCNaught
       renderer.camY += renderer.getCursorYRaw() - renderer.yCNaught
       renderer.updateCamera()
@@ -3803,16 +4048,31 @@ export const InitializeInstance = (renderer: GraphicsRenderer) => {
     { passive: false }
   )
 
-  renderer.keyboard?.addKeyEvent(true, Types.default.KeyCodes.DEL, () => {
-    renderer.cleanLog('del pressed, deleting');
-    renderer.forcefullyRemoveSelectedComponentOnActiveIndex();
-  }, { ctrl: false });
-  renderer.keyboard?.addKeyEvent(true, Types.default.KeyCodes.R, () => {
-    renderer.rotateSelected();
-  }, { ctrl: false });
-  renderer.keyboard?.addKeyEvent(true, Types.default.KeyCodes.V, () => {
-    renderer.pasteWhateverTheFuckIsInTheClipboard();
-  }, { ctrl: true });
+  renderer.keyboard?.addKeyEvent(
+    true,
+    Types.default.KeyCodes.DEL,
+    () => {
+      renderer.cleanLog('del pressed, deleting')
+      renderer.forcefullyRemoveSelectedComponentOnActiveIndex()
+    },
+    { ctrl: false }
+  )
+  renderer.keyboard?.addKeyEvent(
+    true,
+    Types.default.KeyCodes.R,
+    () => {
+      renderer.rotateSelected()
+    },
+    { ctrl: false }
+  )
+  renderer.keyboard?.addKeyEvent(
+    true,
+    Types.default.KeyCodes.V,
+    () => {
+      renderer.pasteWhateverTheFuckIsInTheClipboard()
+    },
+    { ctrl: true }
+  )
 
   let animationFrameId: number | null
   let isWindowFocused = true

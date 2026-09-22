@@ -1,0 +1,126 @@
+{
+  "name": "Bahasa Indonesia",
+  "editor": {
+    "publicBeta": {
+      "welcome": "Selamat datang di CompassCAD NEXT Public Beta!",
+      "segments": {
+        "body_segment1": "Selamat datang di CompassCAD NEXT Desktop Public Beta! Kami bangga bahwa Anda ada di sini!",
+        "body_segment2": "Sebelum Anda dapat memulai, kami ingin memperingatkan Anda tentang hal-hal berikut.",
+        "warns": {
+          "doNotDailyDrive": "Jangan gunakan versi CompassCAD ini untuk penggunaan sehari-hari dulu.",
+          "lotsOfBugs": "Perlu diingatkan bahwa akan ada BANYAK BUG, tombol yang tidak lengkap/tidak berfungsi.",
+          "missingFeatures": "Akan ada BANYAK fitur/tombol yang hilang dibandingkan versi desktop/web.",
+          "noSettingChange": "Tidak ada cara bagi Anda untuk mengubah pengaturan (untuk saat ini). Jika Anda ingin, Anda harus modifikasi code.",
+          "alternative": "Jika ingin menggunakan versi yang stabil, gunakan CompassCAD Desktop (< 2.1.0) atau versi web."
+        },
+        "askForConsent": "Dengan itu di luar jalan, mari kita mulai dengan memeriksa \"Saya Setuju\" dan kemudian menutup popup ini.",
+        "checkListConsent": "Saya setuju bahwa akan ada bug dan saya akan bertanggung jawab atas kerugian desain.",
+        "dontShow": "Jangan tampilkan lagi, tolong.",
+        "riskAccepted": "Risiko diterima. Kami tidak akan menampilkan dialog ini, tetapi harap berhati-hati. Anda memasuki wilayah beta yang berbahaya."
+      }
+    },
+    "sysdialogs": {
+      "openFile": "Buka file CompassCAD/impor file non-CompassCAD",
+      "saveFile": "Simpan file CompassCAD"
+    },
+    "window": {
+      "menu": "Menu",
+      "undo": "Urungkan",
+      "redo": "Ulangi",
+      "zoomIn": "Zoom In",
+      "zoomOut": "Zoom Out",
+      "disableSnap": "Matikan Snap",
+      "enableSnap": "Snap ke Grid"
+    },
+    "menu": {
+      "newDesign": "Desain Baru",
+      "openDesign": "Buka Desain",
+      "openBackups": "Buka Backup/Cadangan",
+      "saveDesign": "Simpan Desain",
+      "saveAs": "Simpan Sebagai",
+      "exportToSvg": "Ekspor ke SVG",
+      "checkForUpdates": "Cek update",
+      "about": "Tentang CompassCAD NEXT"
+    },
+    "updaterModal": {
+      "checkingForUpdates": "Mengecek update...",
+      "noUpdatesAvailable": "Tidak ada update tersedia. Anda sudah ter-update.",
+      "checkAgain": "Cek lagi",
+      "updateAvailable": "Update tersedia!",
+      "updateMessage": "Unduhkan update dan install saat sudah siap",
+      "downloadUpdate": "Unduhkan update",
+      "downloadingUpdate": "Mengunduh update...",
+      "updateDownloaded": "Update selesai! Mulai ulang CompassCAD NEXT untuk menginstall update.",
+      "updateFinished": "Mulai ulang CompassCAD NEXT untuk menyelesaikan instalasi.",
+      "restartNow": "Mulai ulang sekarang",
+      "couldntCheckForUpdates": "Tidak bisa mengecek update sekarang. Coba lagi sesaat waktu.",
+      "tryAgain": "Coba lagi"
+    },
+    "about": {
+      "openSourceLicenses": "Lisensi kode sumber terbuka"
+    },
+    "toolbox": {
+      "select": "Pilih",
+      "navigate": "Navigasi",
+      "move": "Pindah",
+      "delete": "Hapus",
+      "addPoint": "Tambahkan Titik",
+      "addLine": "Tambahkan Garis",
+      "addRectangle": "Tambahkan Persegi",
+      "addCircle": "Tambahkan Lingkaran",
+      "addArc": "Tambahkan Busur",
+      "addMeasure": "Tambahkan Pengukur",
+      "addLabel": "Tambahkan Label",
+      "addImage": "Tambahkan Gambar",
+      "addPolygon": "Tambahkan Poligon",
+      "addBoundbox": "Tambahkan Boundbox"
+    },
+    "inspector": {
+      "header": "Inspektor",
+      "properties": {
+        "nothingOnSelected": "Pilihlah komponen, lalu detail komponen Anda akan muncul disini",
+        "nothingOnHierarchy": "Tidak ada di hierarki, tempatkanlah komponen dan daftar komponen akan muncul",
+        "extensionLoading": "Memuat plugin...",
+        "noPluginsLoaded": "Tidak ada plugin yang termuat. Pasanglah plugin pertama dengan Lua dengan menyalin file plugin Lua Anda ke direktori ini.",
+        "searchInHierarchy": "Cari di hierarki...",
+        "openPluginsFolder": "Buka folder plugin"
+      },
+      "menu": {
+        "properties": "Properti",
+        "hierarchy": "Hierarki",
+        "plugins": "Plugin"
+      },
+      "general": {
+        "active": "Aktif",
+        "radius": "Radius",
+        "name": "Nama",
+        "color": "Warna",
+        "opacity": "Opasitas",
+        "rotation": "Rotasi",
+        "position": "Posisi",
+        "size": "Ukuran",
+        "coverage": "Cakupan"
+      },
+      "text": {
+        "heading": "Properti Label",
+        "text": "Teks",
+        "fontSize": "Ukuran Font"
+      },
+      "picture": {
+        "heading": "Properti Gambar",
+        "source": "Sumber"
+      },
+      "polygon": {
+        "heading": "Properti Poligon",
+        "fillColor": "Warna Isi",
+        "strokeColor": "Warna Garis",
+        "enableStroke": "Aktifkan Garis"
+      },
+      "imagepicker": {
+        "heading": "Pilih Gambar",
+        "uploadFromFile": "Tambahkan Gambar dari Komputer",
+        "useURL": "atau gunakan URL gambar."
+      }
+    }
+  }
+}
