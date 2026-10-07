@@ -1,0 +1,126 @@
+{
+  "name": "中文",
+  "editor": {
+    "publicBeta": {
+      "welcome": "欢迎来到 CompassCAD NEXT 公共测试版！",
+      "segments": {
+        "body_segment1": "欢迎来到 CompassCAD NEXT 桌面版公开测试！很高兴你来到这里！",
+        "body_segment2": "在你开始使用之前，我们想先提醒你以下事项。",
+        "warns": {
+          "doNotDailyDrive": "请不要将此版本的 CompassCAD 作为日常使用版本。",
+          "lotsOfBugs": "请注意，这里会有大量错误，以及不完整/无法使用的按钮。",
+          "missingFeatures": "相比桌面版/网页版，这里会缺少很多功能/按钮。",
+          "noSettingChange": "目前你无法更改设置。如果你想更改，需要使用一些非常规方法。",
+          "alternative": "如果你想找一个仍可日常使用的版本，请使用 CompassCAD Desktop（< 2.1.0）或网页版。"
+        },
+        "askForConsent": "说完这些之后，请先勾选“我同意”，然后关闭此弹窗。",
+        "checkListConsent": "我同意这里会有错误，并且我会对设计损失负责。",
+        "dontShow": "请不要再显示。",
+        "riskAccepted": "已接受风险。我们不会再显示此对话框，但请注意，你正在进入危险的测试版区域。"
+      }
+    },
+    "sysdialogs": {
+      "openFile": "打开 CompassCAD 文件/导入非 CompassCAD 文件",
+      "saveFile": "保存 CompassCAD 文件"
+    },
+    "window": {
+      "menu": "菜单",
+      "undo": "撤销",
+      "redo": "重做",
+      "zoomIn": "放大",
+      "zoomOut": "缩小",
+      "disableSnap": "禁用吸附",
+      "enableSnap": "吸附到网格"
+    },
+    "menu": {
+      "newDesign": "新建设计",
+      "openDesign": "打开设计",
+      "openBackups": "打开备份",
+      "saveDesign": "保存设计",
+      "saveAs": "另存为",
+      "exportToSvg": "导出为 SVG",
+      "checkForUpdates": "检查更新",
+      "about": "关于 CompassCAD NEXT"
+    },
+    "updaterModal": {
+      "checkingForUpdates": "正在检查更新...",
+      "noUpdatesAvailable": "没有可用更新。你已经是最新版本。",
+      "checkAgain": "再次检查",
+      "updateAvailable": "有可用更新！",
+      "updateMessage": "现在下载更新，并在准备好后安装。",
+      "downloadUpdate": "下载更新",
+      "downloadingUpdate": "正在下载更新...",
+      "updateDownloaded": "更新已下载！重启 CompassCAD NEXT 以安装更新。",
+      "updateFinished": "重启 CompassCAD NEXT 以完成安装。",
+      "restartNow": "立即重启",
+      "couldntCheckForUpdates": "无法检查更新。请检查你的网络连接并重试。",
+      "tryAgain": "重试"
+    },
+    "about": {
+      "openSourceLicenses": "开源许可证"
+    },
+    "toolbox": {
+      "select": "选择",
+      "navigate": "导航",
+      "move": "移动",
+      "delete": "删除",
+      "addPoint": "添加点",
+      "addLine": "添加线",
+      "addRectangle": "添加矩形",
+      "addCircle": "添加圆形",
+      "addArc": "添加弧线",
+      "addMeasure": "添加测量",
+      "addLabel": "添加标签",
+      "addImage": "添加图片",
+      "addPolygon": "添加多边形",
+      "addBoundbox": "添加边界框"
+    },
+    "inspector": {
+      "header": "检查器",
+      "properties": {
+        "nothingOnSelected": "选择一个组件后，它的详细信息就会显示在这里。",
+        "nothingOnHierarchy": "层级中没有内容，请先放置一些对象，你的组件列表会显示在这里。",
+        "extensionLoading": "正在加载插件...",
+        "noPluginsLoaded": "未加载任何插件。你可以在此目录中粘贴 Lua 扩展文件来安装第一个插件。",
+        "searchInHierarchy": "在层级中搜索...",
+        "openPluginsFolder": "打开插件文件夹"
+      },
+      "menu": {
+        "properties": "属性",
+        "hierarchy": "层级",
+        "plugins": "插件"
+      },
+      "general": {
+        "active": "启用",
+        "radius": "半径",
+        "name": "名称",
+        "color": "颜色",
+        "opacity": "不透明度",
+        "rotation": "旋转",
+        "position": "位置",
+        "size": "大小",
+        "coverage": "覆盖范围"
+      },
+      "text": {
+        "heading": "标签属性",
+        "text": "文本",
+        "fontSize": "字体大小"
+      },
+      "picture": {
+        "heading": "图片属性",
+        "source": "来源"
+      },
+      "polygon": {
+        "heading": "多边形属性",
+        "fillColor": "填充颜色",
+        "strokeColor": "描边颜色",
+        "enableStroke": "启用描边"
+      },
+      "imagepicker": {
+        "heading": "选择一张图片",
+        "uploadFromFile": "从电脑添加图片",
+        "useURL": "或者使用图片 URL。"
+      }
+    }
+  }
+}

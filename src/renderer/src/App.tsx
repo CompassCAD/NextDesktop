@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react'
+import { useCallback, useEffect, useRef } from 'react'
 import WindowBar from './components/WindowBar'
 import style from './style/index.module.css'
 import { ModalProvider, openModal } from './components/ModalProvider'
@@ -9,13 +9,17 @@ import Inspector from './components/Inspector'
 import { getLocaleKey } from './locales/Locale'
 import PublicBetaModal from './components/submodals/PublicBeta'
 import { usePluginHost } from './plugins/PluginRuntime' // <-- Import plugin host context
+import { ToastContainer } from './components/Toast'
+import { KonamiCode } from './components/KonamiCodeDetector'
+import { DevModeProvider, useDevMode } from './exports'
 
 function AppContent(): React.JSX.Element {
   const canvas = useRef<HTMLCanvasElement>(null)
   const { renderer, isReady, createRenderer } = useRenderer()
+  const { isDevMode, enableDevMode } = useDevMode()
   const host = usePluginHost() // <-- Access Lua host
 
-  const resize = (): void => {
+  const resize = useCallback((): void => {
     if (canvas.current && renderer) {
       const dpi = window.devicePixelRatio
       const physicalWidth = window.innerWidth * dpi
@@ -28,7 +32,7 @@ function AppContent(): React.JSX.Element {
       renderer.displayHeight = window.innerHeight
       renderer.scaleForHighDPI(dpi)
     }
-  }
+  }, [renderer])
 
   // Pass renderer to the Lua plugin host whenever renderer changes
   useEffect(() => {
@@ -36,6 +40,12 @@ function AppContent(): React.JSX.Element {
       host.setRenderer(renderer)
     }
   }, [renderer, host])
+
+  useEffect(() => {
+    if (renderer) {
+      renderer.setDebugMode(isDevMode)
+    }
+  }, [renderer, isDevMode])
 
   useEffect(() => {
     if (canvas.current) {
@@ -49,14 +59,19 @@ function AppContent(): React.JSX.Element {
     const handleResize = (): void => resize()
     window.addEventListener('resize', handleResize)
     return () => window.removeEventListener('resize', handleResize)
-  }, [renderer])
+  }, [resize])
 
-  if (!localStorage.getItem('PUBLICBETA_DoNotShowThatShitEverAgain') || localStorage.getItem('PUBLICBETA_DoNotShowThatShitEverAgain') === 'false') {
+  if (
+    !localStorage.getItem('PUBLICBETA_DoNotShowThatShitEverAgain') ||
+    localStorage.getItem('PUBLICBETA_DoNotShowThatShitEverAgain') === 'false'
+  ) {
     openModal(getLocaleKey('editor.publicBeta.welcome'), <PublicBetaModal />)
   }
 
   return (
     <>
+      <KonamiCode onSuccess={enableDevMode} />
+      <ToastContainer />
       <TextPrompt />
       <ModalProvider />
       <WindowBar />
@@ -71,9 +86,11 @@ function AppContent(): React.JSX.Element {
 
 function App(): React.JSX.Element {
   return (
-    <RendererProvider>
-      <AppContent />
-    </RendererProvider>
+    <DevModeProvider>
+      <RendererProvider>
+        <AppContent />
+      </RendererProvider>
+    </DevModeProvider>
   )
 }
 

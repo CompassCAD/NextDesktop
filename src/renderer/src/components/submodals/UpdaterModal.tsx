@@ -2,6 +2,7 @@ import React, { useEffect } from 'react'
 import styles from '../../style/index.module.css'
 import useUpdater from '../../utils/UseUpdater'
 import { getLocaleKey } from '@renderer/locales/Locale'
+import { useDevMode } from '../../exports'
 
 const containerStyle: React.CSSProperties = {
   display: 'flex',
@@ -25,6 +26,7 @@ function versionFrom(info: unknown): string | null {
 }
 
 export default function UpdaterModal(): React.ReactElement {
+  const { isDevMode } = useDevMode()
   const { status, progress, info, checkForUpdates, downloadUpdate, previewDownload, installNow } = useUpdater()
 
   useEffect(() => {
@@ -48,7 +50,7 @@ export default function UpdaterModal(): React.ReactElement {
           <button type="button" style={actionStyle} onClick={checkForUpdates}>
             {getLocaleKey('editor.updaterModal.checkAgain')}
           </button>
-          {import.meta.env.DEV && (
+          {isDevMode && (
             <button type="button" style={actionStyle} onClick={previewDownload}>
               Preview slow download
             </button>
@@ -101,7 +103,7 @@ export default function UpdaterModal(): React.ReactElement {
           <button type="button" style={actionStyle} onClick={checkForUpdates}>
             {getLocaleKey('editor.updaterModal.tryAgain')}
           </button>
-          {import.meta.env.DEV && (
+          {isDevMode && (
             <button type="button" style={actionStyle} onClick={previewDownload}>
               Preview slow download
             </button>

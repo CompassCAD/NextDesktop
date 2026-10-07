@@ -29,6 +29,7 @@ import AnsiFont from './fontobene/ansifont.bene'
 import AnsiCJK from './fontobene/ansifont-beta-cjk.bene'
 import * as Types from '../engine/Types'
 import { LRUCache, QuadTree, QuadTreeBounds } from './CacheDatas'
+import { isDevModeEnabled } from '../exports'
 
 let lastTime = performance.now()
 let frameCount = 0
@@ -231,7 +232,11 @@ export class GraphicsRenderer {
     this._test_enableExperimentalCJK = true
     this.fb = new DerakumaParser(this._test_enableExperimentalCJK ? AnsiCJK : AnsiFont)
     this._WARNING_MAYLAGSHIT_debugMode = false
-    this._debugMode = import.meta.env.DEV
+    this._debugMode = isDevModeEnabled()
+  }
+
+  setDebugMode(enabled: boolean) {
+    this._debugMode = enabled
   }
 
   private _lastCamX = NaN

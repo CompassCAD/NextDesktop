@@ -541,6 +541,7 @@ export class LuaPluginHost {
       const r = requireRenderer(L)
       if (!r) return 0 // no-op: no canvas to mark dirty yet
       const reason = lua.lua_isstring(L, 1) ? lua.lua_tojsstring(L, 1) : 'lua plugin'
+      r.flagQuadtreeDirty(true)
       r.markDirty(reason)
       return 0
     }

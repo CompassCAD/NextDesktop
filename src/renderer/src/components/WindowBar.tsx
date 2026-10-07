@@ -9,6 +9,7 @@ import { openFileAndParse, saveFile } from '../utils/FileImporter'
 import { getLocaleKey } from '../locales/Locale'
 import UpdaterModal from './submodals/UpdaterModal'
 import Dropdown from './Dropdown'
+import { useDevMode } from '../exports'
 
 import CompassCADLogoMonochrome from '../assets/icons/newlogo.svg'
 import MenuIcon from '../assets/icons/menu.svg'
@@ -89,6 +90,7 @@ export default function WindowBar(): React.ReactElement {
   const [keyboardNav, setKeyboardNav] = useState<boolean>(false)
   const [isSnapped, setSnapped] = useState<boolean>(true)
   const { renderer } = useRenderer()
+  const { isDevMode } = useDevMode()
 
   window.electron.ipcRenderer.on('isMaximized', (_event, isMaximized: boolean) => {
     console.log(`[windowbar] isMaximized: ${isMaximized}`)
@@ -242,7 +244,7 @@ export default function WindowBar(): React.ReactElement {
       title: getLocaleKey('editor.menu.exportToSvg'),
       keyCombinations: [controlKey, 'E']
     },
-    ...(import.meta.env.DEV
+    ...(isDevMode
       ? [
           { title: 'RNG Design Generator (choke test only)', onAction: _internal_spawnRngModal },
           { title: 'Internal utilities only', onAction: _internal_spawnInternalUtilsModal }
@@ -314,7 +316,9 @@ export default function WindowBar(): React.ReactElement {
             keyCombinations={[controlKey, '+']}
             onClick={() => renderer?.setZoom(renderer.zoomIn)}
           />
-          <span onClick={resetZoom}>{zoom.toFixed(2)}x</span>
+          <span style={{ fontVariantNumeric: 'tabular-nums' }} onClick={resetZoom}>
+            {zoom.toFixed(2)}x
+          </span>
           <MenuButton
             id="menu-opener"
             icon={ZoomOutIcon}
