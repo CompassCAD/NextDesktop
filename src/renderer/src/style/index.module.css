@@ -949,3 +949,23 @@ input[type="checkbox"] {
 .toast-exit {
     animation: toast-leave 0.3s ease;
 }
+.canvas-context-menu {
+  position: fixed;
+  min-width: 210px;
+  max-height: calc(100vh - 16px);
+  overflow-y: auto;
+}
+.canvas-context-menu button {
+  color: var(--text, #eee);
+  background: transparent;
+  border: 0;
+  border-radius: 5px;
+  text-align: left;
+  padding: 7px 12px;
+  cursor: pointer;
+}
+.canvas-context-menu button:hover:not(:disabled), .canvas-context-menu button:focus-visible {
+  background: var(--secondary);
+  outline: 1px solid var(--outline);
+}
+.canvas-context-menu button:disabled { opacity: .35; cursor: default; }

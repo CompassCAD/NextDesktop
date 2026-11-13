@@ -1,4 +1,5 @@
 import { measurementUnits, resolveUnit } from '../utils/SettingsOptions'
+import { expandGroups, transformComponent } from './Selection'
 import { numericPreference } from '../utils/Preferences'
 import { fonts, fontPreference, numberPreference, preference } from '../utils/Preferences'
 import {
@@ -70,6 +71,165 @@ export class GraphicsRenderer {
   displayFont: string
   temporarySelectedComponent: number | null
   selectedComponent: number | null
+  selectedComponents: number[] = []
+  contextMenuOpen = false
+
+  get isEditing(): boolean {
+    return !!this.selectionGesture || !!this.dragHandle || (this.mode !== this.modes.Select && this.mode !== this.modes.Navigate)
+  }
+  private selectionGesture: {
+    kind: 'box' | 'move' | 'scale'; start: Vector2; current: Vector2;
+    anchor: Vector2; originals: Component[]; indexes: number[]; additive: boolean
+  } | null = null
+
+  getSelection(): number[] {
+    const indexes = this.selectedComponents.length ? this.selectedComponents :
+      this.selectedComponent === null ? [] : [this.selectedComponent]
+    return expandGroups(this.logicDisplay?.components ?? [], indexes)
+  }
+
+  setSelection(indexes: number[]): void {
+    this.selectedComponents = expandGroups(this.logicDisplay?.components ?? [], indexes)
+    this.selectedComponent = this.selectedComponents.length === 1 ? this.selectedComponents[0] : null
+    this.temporarySelectedComponent = this.selectedComponent
+    this.notifyComponentChange()
+  }
+
+  selectAll(): void {
+    this.setMode(this.modes.Select)
+    this.setSelection(this.logicDisplay?.components.map((_, i) => i) ?? [])
+  }
+
+  groupSelection(ungroup = false): void {
+    const indexes = this.getSelection()
+    if (this.readonly || (!ungroup && indexes.length < 2)) return
+    const id = crypto.randomUUID()
+    for (const i of indexes) {
+      const component = this.logicDisplay!.components[i]
+      if (ungroup) delete component.groupId
+      else component.groupId = id
+    }
+    this.saveState()
+    this.setSelection(indexes)
+  }
+
+  deleteSelection(): void {
+    if (this.readonly) return
+    const indexes = new Set(this.getSelection())
+    if (!indexes.size) return
+    this.logicDisplay!.components = this.logicDisplay!.components.filter((_, i) => !indexes.has(i))
+    this.setSelection([])
+    this.saveState()
+  }
+
+  private selectionBounds(indexes = this.getSelection()) {
+    const bounds = indexes.map(i => this.getComponentBoundaryBox(this.logicDisplay!.components[i]))
+    return { minX: Math.min(...bounds.map(b => b.minX)), minY: Math.min(...bounds.map(b => b.minY)),
+      maxX: Math.max(...bounds.map(b => b.maxX)), maxY: Math.max(...bounds.map(b => b.maxY)) }
+  }
+
+  scaleSelection(k: number): void {
+    if (this.readonly || !Number.isFinite(k) || k <= 0 || k === 1 || !this.getSelection().length) return
+    const b = this.selectionBounds()
+    const x = (b.minX + b.maxX) / 2, y = (b.minY + b.maxY) / 2
+    for (const i of this.getSelection()) transformComponent(this.logicDisplay!.components[i], k, x * (1-k), y * (1-k))
+    this.saveState()
+    this.notifyComponentChange()
+  }
+
+  cancelEditing(): void {
+    if (this.selectionGesture?.kind !== 'box' && this.selectionGesture) {
+      this.selectionGesture.indexes.forEach((i, n) => Object.assign(this.logicDisplay!.components[i], this.selectionGesture!.originals[n]))
+    } else if (this._dragDidModify) {
+      const state = this.undoStack.at(-1)
+      if (state) {
+        this.logicDisplay!.components = []
+        this.logicDisplay!.importJSON(JSON.parse(state), this.logicDisplay!.components)
+      }
+    }
+    this.selectionGesture = null
+    this.dragHandle = null
+    this._dragDidModify = false
+    this.camMoving = false
+    this.setMode(this.modes.Select)
+    this._isQuadtreeDirty = true
+    this.notifyComponentChange()
+  }
+
+  private selectionAction(e: MouseEvent, action: number): boolean {
+    const point = { x: this.getCursorXRaw(), y: this.getCursorYRaw() }
+    const gesture = this.selectionGesture
+    if (gesture) {
+      gesture.current = point
+      if (action === this.mouseAction.Move && gesture.kind !== 'box') {
+        const initial = Math.hypot(gesture.start.x-gesture.anchor.x, gesture.start.y-gesture.anchor.y)
+        const k = gesture.kind === 'scale' ? Math.max(0.001, Math.hypot(point.x-gesture.anchor.x, point.y-gesture.anchor.y) / (initial || 1)) : 1
+        gesture.indexes.forEach((i, n) => {
+          const component = this.logicDisplay!.components[i]
+          Object.assign(component, structuredClone(gesture.originals[n]))
+          transformComponent(component, k, gesture.kind === 'scale' ? gesture.anchor.x*(1-k) : point.x-gesture.start.x,
+            gesture.kind === 'scale' ? gesture.anchor.y*(1-k) : point.y-gesture.start.y)
+        })
+        this._isQuadtreeDirty = true
+        this.displayRef!.style.cursor = gesture.kind === 'scale' ? Nwse1 : NavigateDragCursor
+      }
+      if (action === this.mouseAction.Up) {
+        if (gesture.kind === 'box') {
+          const b = { minX: Math.min(point.x, gesture.start.x), maxX: Math.max(point.x, gesture.start.x),
+            minY: Math.min(point.y, gesture.start.y), maxY: Math.max(point.y, gesture.start.y) }
+          const found = this.logicDisplay!.components.flatMap((c, i) => {
+            const cb = this.getComponentBoundaryBox(c)
+            return cb.minX >= b.minX && cb.maxX <= b.maxX && cb.minY >= b.minY && cb.maxY <= b.maxY ? [i] : []
+          })
+          this.setSelection([...gesture.indexes.filter(() => gesture.additive), ...found])
+        } else if (point.x !== gesture.start.x || point.y !== gesture.start.y) this.saveState()
+        this.selectionGesture = null
+        this.displayRef!.style.cursor = `url("${DefaultCursor}") 6 6, default`
+      }
+      this.notifyComponentChange()
+      return true
+    }
+    const indexes = this.getSelection()
+    const hit = this.findIntersectionWith(point.x, point.y)
+    if (action !== this.mouseAction.Down) {
+      if (indexes.length > 1 && action === this.mouseAction.Move) {
+        const b = this.selectionBounds(indexes)
+        const corner = [b.minX,b.maxX].some(x => [b.minY,b.maxY].some(y => Math.hypot(x-point.x,y-point.y) <= 8/this.zoom))
+        this.displayRef!.style.cursor = corner ? Nwse1 : hit !== null && indexes.includes(hit) ? NavigateDragCursor : DefaultCursor
+        this.markDirty('Selection hover')
+      }
+      return indexes.length > 1
+    }
+    const b = indexes.length ? this.selectionBounds(indexes) : null
+    const corner = b && [{x:b.minX,y:b.minY}, {x:b.maxX,y:b.minY}, {x:b.minX,y:b.maxY}, {x:b.maxX,y:b.maxY}]
+      .find(p => Math.hypot(p.x-point.x,p.y-point.y) <= 8/this.zoom)
+    if (corner && (e.shiftKey || indexes.length > 1)) {
+      this.selectionGesture = { kind:'scale', start:point, current:point,
+        anchor:{x:corner.x === b!.minX ? b!.maxX : b!.minX, y:corner.y === b!.minY ? b!.maxY : b!.minY},
+        originals:indexes.map(i => structuredClone(this.logicDisplay!.components[i])), indexes, additive:false }
+      return true
+    }
+    if (e.shiftKey && hit !== null) {
+      const group = expandGroups(this.logicDisplay!.components, [hit])
+      this.setSelection(indexes.includes(hit) ? indexes.filter(i => !group.includes(i)) : [...indexes, ...group])
+      return true
+    }
+    // Single-object handles keep their existing editing behavior.
+    if (indexes.length === 1) {
+      const handles = this.getComponentHandles(this.logicDisplay!.components[indexes[0]])
+      if (handles.some(h => Math.hypot(h.x-point.x,h.y-point.y) <= 8/this.zoom)) return false
+    }
+    if (hit !== null) {
+      if (!indexes.includes(hit)) this.setSelection([hit])
+      const selected = this.getSelection()
+      this.selectionGesture = { kind:'move', start:point, current:point, anchor:point,
+        originals:selected.map(i => structuredClone(this.logicDisplay!.components[i])), indexes:selected, additive:false }
+    } else {
+      this.selectionGesture = { kind:'box', start:point, current:point, anchor:point, originals:[], indexes, additive:e.shiftKey }
+      if (!e.shiftKey) this.setSelection([])
+    }
+    return true
+  }
   temporaryComponentType: number | null
   temporaryShape: Shape | null
   temporaryPoints: number[] | null[]
@@ -178,7 +338,7 @@ export class GraphicsRenderer {
     this.temporaryPoints = [null, null, null, null, null, null]
     this.selectedColor = '#0080ff'
     this.selectedRadius = 2
-    this.undoStack = []
+    this.undoStack = ['[]']
     this.redoStack = []
     this.temporaryObjectArray = []
     this.temporaryVectorIndex = 0
@@ -570,12 +730,32 @@ export class GraphicsRenderer {
     this.context?.stroke()
   }
   cleanUpBeforeImport() {
+    this.setSelection([])
+    this.selectionGesture = null
+    this.dragHandle = null
     this._quadtree = null
     this._isQuadtreeDirty = true
     this._componentIndexes.clear()
     this.markDirty('import started')
   }
   refreshSelectionTools() {
+    const indexes = this.getSelection()
+    const box = this.selectionGesture?.kind === 'box' ? this.selectionGesture : null
+    if ((indexes.length || box) && this.context) {
+      const bounds = box ? { minX:Math.min(box.start.x,box.current.x), minY:Math.min(box.start.y,box.current.y), maxX:Math.max(box.start.x,box.current.x), maxY:Math.max(box.start.y,box.current.y) } : this.selectionBounds(indexes)
+      const ctx = this.context
+      ctx.save()
+      ctx.strokeStyle = this.selectedColor
+      ctx.lineWidth = 1
+      ctx.setLineDash([4, 3])
+      ctx.strokeRect((bounds.minX+this.cOutX)*this.zoom, (bounds.minY+this.cOutY)*this.zoom, (bounds.maxX-bounds.minX)*this.zoom, (bounds.maxY-bounds.minY)*this.zoom)
+      ctx.setLineDash([])
+      if (!box) for (const x of [bounds.minX,bounds.maxX]) for (const y of [bounds.minY,bounds.maxY]) {
+        ctx.fillStyle = this.selectedColor
+        ctx.fillRect((x+this.cOutX)*this.zoom-3, (y+this.cOutY)*this.zoom-3, 6, 6)
+      }
+      ctx.restore()
+    }
     if (this.selectedComponent !== null && this.logicDisplay?.components[this.selectedComponent]) {
       // we gonna draw a line bois
       switch (this.logicDisplay?.components[this.selectedComponent].type) {
@@ -1146,8 +1326,8 @@ export class GraphicsRenderer {
         return {
           minX: pic.x - pic.radius,
           minY: pic.y - pic.radius,
-          maxX: pic.x + width,
-          maxY: pic.y + height
+          maxX: pic.x + width * (pic.imageScale ?? 1),
+          maxY: pic.y + height * (pic.imageScale ?? 1)
         }
       }
       case componentTypes.boundBox: {
@@ -1525,7 +1705,7 @@ export class GraphicsRenderer {
       }
       case componentTypes.picture: {
         const pic = component as Picture
-        this.drawPicture(pic.x + moveByX, pic.y + moveByY, pic.pictureSource, pic.opacity, rotation)
+        this.drawPicture(pic.x + moveByX, pic.y + moveByY, pic.pictureSource, pic.opacity, rotation, pic.imageScale ?? 1)
         break
       }
       case componentTypes.polygon: {
@@ -2235,7 +2415,7 @@ export class GraphicsRenderer {
     this.drawPoint(shape.x, shape.y, shape.color, shape.radius, shape.opacity, rotation)
   }
 
-  drawPicture(x: number, y: number, basedURL: string, opacity: number, rotation: number = 0) {
+  drawPicture(x: number, y: number, basedURL: string, opacity: number, rotation: number = 0, scale = 1) {
     this.drawPoint(x, y, '#00ffff', 2, opacity, rotation)
     if (!this.imageCache.has(basedURL)) {
       const img = new Image()
@@ -2256,7 +2436,8 @@ export class GraphicsRenderer {
         y,
         cached === 'ERROR' ? null : (cached as HTMLImageElement),
         opacity,
-        rotation
+        rotation,
+        scale
       )
     }
   }
@@ -2266,7 +2447,8 @@ export class GraphicsRenderer {
     y: number,
     img: HTMLImageElement | null,
     opacity: number,
-    rotation: number = 0
+    rotation: number = 0,
+    scale = 1
   ) {
     if (!img || img === null) {
       const errorShape: Shape = {
@@ -2292,8 +2474,8 @@ export class GraphicsRenderer {
       this.drawShape(errorShape, rotation)
       return
     }
-    const width = img.naturalWidth * this.zoom || 100
-    const height = img.naturalHeight * this.zoom || 100
+    const width = img.naturalWidth * this.zoom * scale || 100
+    const height = img.naturalHeight * this.zoom * scale || 100
     if (this.context) {
       const dx = (x + this.cOutX) * this.zoom
       const dy = (y + this.cOutY) * this.zoom
@@ -2516,6 +2698,7 @@ export class GraphicsRenderer {
     return false
   }
   selectComponent(index: number) {
+    if (this.mode === this.modes.Select) { this.setSelection([index]); return }
     this.selectedComponent = index
     if (index != null) {
       this.selectedComponent = index
@@ -2528,6 +2711,7 @@ export class GraphicsRenderer {
     }
   }
   unselectComponent() {
+    this.selectedComponents = []
     if (this.selectedComponent != null) {
       if (this.mode === this.modes.Move && this.previousColor) {
         this.logicDisplay!.components[this.selectedComponent].color = this.previousColor
@@ -2756,7 +2940,7 @@ export class GraphicsRenderer {
     return intersections[0].index
   }
   undo = (): void => {
-    if (this.undoStack.length > 0) {
+    if (this.undoStack.length > 1) {
       // Remove the last state from the undoStack and push it to the redoStack
       const state = this.undoStack.pop()
       if (state) {
@@ -2782,11 +2966,11 @@ export class GraphicsRenderer {
   }
   redo = (): void => {
     if (this.redoStack.length > 0) {
-      // Move the current state to the undoStack
-      this.undoStack.push(JSON.stringify(this.logicDisplay!.components))
+
 
       // Get the last state from the redoStack
       const state = this.redoStack.pop()
+      if (state) this.undoStack.push(state)
       this.cleanLog('upcoming state')
       this.cleanLog(state) // Log the state (optional)
       this.cleanLog('parsed state')
@@ -2828,6 +3012,7 @@ export class GraphicsRenderer {
   }
 
   forcefullyRemoveSelectedComponentOnActiveIndex(): void {
+    if (this.getSelection().length) { this.deleteSelection(); return }
     this.cleanLog('attempting to delete component')
     this.cleanLog('selected component: ' + this.temporarySelectedComponent)
     if (this.temporarySelectedComponent != null) {
@@ -2920,6 +3105,8 @@ export class GraphicsRenderer {
   }
 
   async performAction(e: MouseEvent, action: number) {
+    if (this.contextMenuOpen) return
+    if (this.mode === this.modes.Select && !this.readonly && this.selectionAction(e, action)) return
     switch (this.mode) {
       case this.modes.AddPoint:
         this.displayRef!.style.cursor = `url("${CrosshairCursor}") 16 16, crosshair`
@@ -3542,8 +3729,8 @@ export class GraphicsRenderer {
               )
               for (const handle of orderedHandles) {
                 const isRotationHandle = handle.id === 'rotate'
-                const cursorX = isRotationHandle ? this.getCursorXRaw() : this.getCursorXLocal()
-                const cursorY = isRotationHandle ? this.getCursorYRaw() : this.getCursorYLocal()
+                const cursorX = this.getCursorXRaw()
+                const cursorY = this.getCursorYRaw()
                 const hitSize = isRotationHandle ? 8 / this.zoom : handleSize
                 const dx = cursorX - handle.x
                 const dy = cursorY - handle.y
@@ -3581,8 +3768,8 @@ export class GraphicsRenderer {
               for (const handle of orderedHandles) {
                 // Check collision in world coordinates
                 const isRotationHandle = handle.id === 'rotate'
-                const cursorX = isRotationHandle ? this.getCursorXRaw() : this.getCursorXLocal()
-                const cursorY = isRotationHandle ? this.getCursorYRaw() : this.getCursorYLocal()
+                const cursorX = this.getCursorXRaw()
+                const cursorY = this.getCursorYRaw()
                 const hitSize = isRotationHandle ? 8 / this.zoom : handleSize
                 const dx = cursorX - handle.x
                 const dy = cursorY - handle.y
@@ -3633,7 +3820,7 @@ export class GraphicsRenderer {
           this.dragHandle = null
           this.dragRotationOrigin = null
           this.dragHandlePositions = null
-          this.displayRef!.style.cursor = 'url("../") 0 0, default'
+          this.displayRef!.style.cursor = `url("${DefaultCursor}") 6 6, default`
           // After releasing the drag, ensure the state is up-to-date
           this.notifyComponentChange()
         }
@@ -3756,8 +3943,9 @@ export class GraphicsRenderer {
       return
     } else this.cleanLog('update called, dirty flag is true, proceeding with update')
     this._dirty = false
-    this.offsetX = this.displayRef!.offsetLeft
-    this.offsetY = this.displayRef!.offsetTop
+    const canvasRect = this.displayRef!.getBoundingClientRect()
+    this.offsetX = canvasRect.left
+    this.offsetY = canvasRect.top
     this.zoom = this.targetZoom
     this.updateCamera()
     this.clearGrid()
@@ -4012,6 +4200,13 @@ export const InitializeInstance = (renderer: GraphicsRenderer) => {
     renderer.keyboard?.onKeyUp(e)
   }
   renderer.displayRef!.onkeydown = (e: KeyboardEvent) => {
+    if (e.key === 'Escape') { e.preventDefault(); renderer.cancelEditing(); return }
+    if ((e.ctrlKey || e.metaKey) && ['a','g'].includes(e.key.toLowerCase())) {
+      e.preventDefault(); e.stopPropagation()
+      if (e.key.toLowerCase() === 'a') renderer.selectAll()
+      else renderer.groupSelection(e.shiftKey)
+      return
+    }
     renderer.cleanLog('hook: onkeydown')
     renderer.keyboard?.onKeyDown(e)
   }
@@ -4030,6 +4225,9 @@ export const InitializeInstance = (renderer: GraphicsRenderer) => {
   })
 
   renderer.displayRef!.addEventListener('mousedown', (e: MouseEvent) => {
+    if (e.button === 2) return
+    renderer.displayRef!.focus()
+    renderer.mouse?.onMouseMove(e)
     if (e.which == 2) {
       renderer.camMoving = true
       renderer.markDirty('Mouse moved during drag')
@@ -4041,7 +4239,10 @@ export const InitializeInstance = (renderer: GraphicsRenderer) => {
     }
   })
 
-  renderer.displayRef!.addEventListener('mouseup', (e: MouseEvent) => {
+  window.addEventListener('mouseup', (e: MouseEvent) => {
+    if (e.button === 2) return
+    if (!renderer.mouse?.cLMB && !renderer.camMoving) return
+    renderer.mouse?.onMouseMove(e)
     if (e.which == 2) {
       renderer.camMoving = false
       renderer.markDirty('Mouse released during drag')

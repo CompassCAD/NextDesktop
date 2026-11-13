@@ -164,5 +164,21 @@
     "previewError": "Unable to load the font preview.",
     "updates": "Updates",
     "about": "About"
+  },
+  "contextMenu": {
+    "title": "Canvas actions",
+    "cancel": "Cancel current edit",
+    "selectAll": "Select all",
+    "clear": "Clear selection",
+    "group": "Group",
+    "ungroup": "Ungroup",
+    "scale": "Scale by k…",
+    "delete": "Delete selection",
+    "undo": "Undo",
+    "redo": "Redo",
+    "select": "Select tool",
+    "navigate": "Pan tool",
+    "factor": "Scale factor k (for example, 2 doubles the size)",
+    "invalid": "Enter a finite scale factor greater than zero."
   }
 }

@@ -1,3 +1,4 @@
+import CanvasContextMenu from './components/CanvasContextMenu'
 import { SETTINGS_CHANGED } from './utils/SettingsStorage'
 import { preference } from './utils/Preferences'
 import { useCallback, useEffect, useRef, useState } from 'react'
@@ -38,7 +39,7 @@ function AppContent(): React.JSX.Element {
       canvas.current.style.width = window.innerWidth + 'px'
       canvas.current.style.height = window.innerHeight - 40 + 'px'
       renderer.displayWidth = window.innerWidth
-      renderer.displayHeight = window.innerHeight
+      renderer.displayHeight = window.innerHeight - 40
       renderer.scaleForHighDPI(dpi)
     }
   }, [renderer])
@@ -85,6 +86,7 @@ function AppContent(): React.JSX.Element {
       <ModalProvider />
       <WindowBar />
       <Inspector />
+      <CanvasContextMenu />
       {isReady && <Toolbar />}
       <div className={style['canvas-container']}>
         <canvas width={window.innerWidth} height={window.innerHeight} ref={canvas} tabIndex={-1} />

@@ -203,7 +203,7 @@ export class MouseHandler {
     this.cursorYGlobal = y
   }
   onMouseMove(e: MouseEvent): void {
-    this.updateCoords(e.pageX, e.pageY)
+    this.updateCoords(e.clientX, e.clientY)
   }
   onMouseDown(e: MouseEvent): void {
     switch (e.which) {

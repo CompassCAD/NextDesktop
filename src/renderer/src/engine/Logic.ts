@@ -11,7 +11,8 @@ import {
     Picture,
     componentTypes, 
     Polygon,
-    Vector
+    Vector,
+    BoundBox
 } from "./Component";
 
 export class LogicDisplay {
@@ -66,6 +67,7 @@ export class LogicDisplay {
             if ( !arrJSON[i].active )
                 continue;
             
+            const previousLength = parent.length;
             switch (arrJSON[i].type) {
                 case componentTypes.point:
                     const point = arrJSON[i] as Point;
@@ -85,6 +87,11 @@ export class LogicDisplay {
                         line.rotation
                     ));
                     break;
+                case componentTypes.boundBox: {
+                    const box = arrJSON[i] as Rectangle;
+                    parent.push(new BoundBox(box.x1, box.y1, box.x2, box.y2, box.name));
+                    break;
+                }
                 case componentTypes.rectangle:
                     const rect = arrJSON[i] as Rectangle;
                     parent.push(new Rectangle(
@@ -182,6 +189,12 @@ export class LogicDisplay {
                         polygon.name,
                         polygon.rotation
                     ))
+            }
+            if (parent.length > previousLength) {
+                const added = parent[parent.length - 1];
+                for (const key of ['groupId', 'imageScale', 'rotation', 'color', 'radius', 'name'] as const) {
+                    if (arrJSON[i][key] !== undefined) Object.assign(added, { [key]: arrJSON[i][key] });
+                }
             }
         }
     }

@@ -13,6 +13,8 @@ export const componentTypes = {
 }
 
 export class Component {
+    groupId?: string;
+    imageScale?: number;
     active: boolean;
     type: number;
     color: string;
