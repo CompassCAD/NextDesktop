@@ -40,7 +40,8 @@
       "saveAs": "名前を付けて保存",
       "exportToSvg": "SVG形式でエクスポート",
       "checkForUpdates": "アップデートを確認",
-      "about": "CompassCAD NEXT について"
+      "about": "CompassCAD NEXT について",
+      "settings": "設定"
     },
     "updaterModal": {
       "checkingForUpdates": "アップデートを確認中…",
@@ -122,5 +123,46 @@
         "useURL": "または画像のURLを使用"
       }
     }
+  },
+  "settings": {
+    "title": "設定",
+    "general": "一般",
+    "canvas": "キャンバス",
+    "search": "設定を検索",
+    "fontFace": "既定のフォント",
+    "fontSize": "既定の文字サイズ",
+    "preview": "フォントのプレビュー",
+    "language": "言語",
+    "showBeta": "起動時にベータ版の案内を表示",
+    "showGrid": "グリッドを表示",
+    "showOrigin": "原点を表示",
+    "showRules": "カーソルガイドを表示",
+    "save": "保存",
+    "cancel": "キャンセル",
+    "saving": "保存中…",
+    "noResults": "検索に一致する設定はありません。",
+    "local": "このデバイスに保存",
+    "fontHelp": "フォントは図面の文字に適用されます。文字サイズは新しいラベルに適用されます。",
+    "error": "設定を保存できませんでした。変更は適用されていません。",
+    "invalidSize": "文字サイズは1～256で指定してください。",
+    "measurements": "計測",
+    "snap": "グリッドにスナップ",
+    "gridSpacing": "グリッド間隔（cm）",
+    "gridHelp": "図面単位で間隔を指定します。1図面単位 = 1 cm。ツールバーからも選択できます。",
+    "snapTolerance": "選択の許容範囲（画面ピクセル）",
+    "measurementUnit": "計測単位",
+    "unitsHelp": "図形の大きさを変えずに寸法ラベルとツールバーの単位を変更します。インスペクターの座標は図面単位（cm）のままです。",
+    "metricM": "メートル法 — メートル（m）",
+    "metricCm": "メートル法 — センチメートル（cm）",
+    "metricMm": "メートル法 — ミリメートル（mm）",
+    "imperialIn": "ヤード・ポンド法 — インチ（in）",
+    "imperialFt": "ヤード・ポンド法 — フィート（ft）",
+    "measurementPrecision": "計測値の小数点以下の桁数",
+    "maximumStack": "元に戻す履歴の上限",
+    "undoHelp": "保存する状態の最大数（10～500）。上限を下げると次の編集から適用されます。",
+    "invalidNumbers": "数値を確認してください：グリッド間隔0.01～100000 cm、選択許容範囲1～50 px、小数桁数0～6、履歴10～500。",
+    "previewError": "フォントのプレビューを読み込めませんでした。",
+    "updates": "アップデート",
+    "about": "このアプリについて"
   }
 }

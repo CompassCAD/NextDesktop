@@ -1,3 +1,4 @@
+import { settingsStorage } from '../../utils/SettingsStorage'
 import Broken from '../../assets/branding/brokenccad.png'
 import { openModal } from '../ModalProvider'
 import OpenSourceLicensesLogo from '../../assets/icons/oss.svg'
@@ -8,7 +9,7 @@ import React from 'react'
 export default function PublicBetaModal(): React.ReactElement {
   const [riskAccepted, setRiskAccepted] = React.useState<boolean>(false);
   const changeNotShowAgain = (e: React.ChangeEvent<HTMLInputElement>) => {
-    localStorage.setItem('PUBLICBETA_DoNotShowThatShitEverAgain', e.target.checked ? 'true' : 'false');
+    settingsStorage.setItem('PUBLICBETA_DoNotShowThatShitEverAgain', e.target.checked ? 'true' : 'false');
     setRiskAccepted(e.target.checked);
   }
   return (
@@ -23,7 +24,6 @@ export default function PublicBetaModal(): React.ReactElement {
           <li>{getLocaleKey('editor.publicBeta.segments.warns.doNotDailyDrive')}</li>
           <li>{getLocaleKey('editor.publicBeta.segments.warns.lotsOfBugs')}</li>
           <li>{getLocaleKey('editor.publicBeta.segments.warns.missingFeatures')}</li>
-          <li>{getLocaleKey('editor.publicBeta.segments.warns.noSettingChange')}</li>
           <li>{getLocaleKey('editor.publicBeta.segments.warns.alternative')}</li>
         </ol>
         <br />

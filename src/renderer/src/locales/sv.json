@@ -40,7 +40,8 @@
       "saveAs": "Spara som",
       "exportToSvg": "Exportera till SVG",
       "checkForUpdates": "Sök efter Uppdateringar",
-      "about": "Om CompassCAD NEXT"
+      "about": "Om CompassCAD NEXT",
+      "settings": "Inställningar"
     },
     "updaterModal": {
       "checkingForUpdates": "Söker efter uppdateringar...",
@@ -122,5 +123,46 @@
         "useURL": "eller använd en bild-URL."
       }
     }
+  },
+  "settings": {
+    "title": "Inställningar",
+    "general": "Allmänt",
+    "canvas": "Rityta",
+    "search": "Sök i inställningar",
+    "fontFace": "Standardtypsnitt",
+    "fontSize": "Standardtextstorlek",
+    "preview": "Förhandsvisning av typsnitt",
+    "language": "Språk",
+    "showBeta": "Visa betavälkomstmeddelandet vid start",
+    "showGrid": "Visa rutnät",
+    "showOrigin": "Visa origo",
+    "showRules": "Visa markörens hjälplinjer",
+    "save": "Spara",
+    "cancel": "Avbryt",
+    "saving": "Sparar…",
+    "noResults": "Inga inställningar matchar din sökning.",
+    "local": "Lagras på den här enheten",
+    "fontHelp": "Typsnittet används för text i ritningen. Textstorleken gäller nya etiketter.",
+    "error": "Det gick inte att spara inställningarna. Dina ändringar har inte tillämpats.",
+    "invalidSize": "Textstorleken måste vara mellan 1 och 256.",
+    "measurements": "Mått",
+    "snap": "Fäst mot rutnät",
+    "gridSpacing": "Rutnätsavstånd (cm)",
+    "gridHelp": "Anpassat avstånd i ritningsenheter: 1 ritningsenhet = 1 cm. Finns även i verktygsfältet.",
+    "snapTolerance": "Markeringstolerans (skärmpixlar)",
+    "measurementUnit": "Måttenheter",
+    "unitsHelp": "Ändrar måttetiketter och verktygsfältets enheter utan att skala geometrin. Inspektörens koordinater anges fortfarande i ritningsenheter (cm).",
+    "metricM": "Metriskt — meter (m)",
+    "metricCm": "Metriskt — centimeter (cm)",
+    "metricMm": "Metriskt — millimeter (mm)",
+    "imperialIn": "Imperial — tum (in)",
+    "imperialFt": "Imperial — fot (ft)",
+    "measurementPrecision": "Antal decimaler i mått",
+    "maximumStack": "Gräns för ångrahistorik",
+    "undoHelp": "Maximalt antal sparade tillstånd (10–500). En lägre gräns börjar gälla vid nästa ändring.",
+    "invalidNumbers": "Kontrollera talvärdena: rutnätsavstånd 0,01–100000 cm, markeringstolerans 1–50 px, decimaler 0–6 och ångrahistorik 10–500.",
+    "previewError": "Det gick inte att läsa in typsnittets förhandsvisning.",
+    "updates": "Uppdateringar",
+    "about": "Om"
   }
 }

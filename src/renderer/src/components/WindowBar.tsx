@@ -1,13 +1,17 @@
+import { preference, numericPreference } from '../utils/Preferences'
+import { settingsStorage, SETTINGS_CHANGED } from '../utils/SettingsStorage'
+import { resolveUnit, formatMeasurement } from '../utils/SettingsOptions'
+import { toast } from './Toast'
+import SettingsModal from './submodals/SettingsModal'
+import SettingsIcon from '../assets/icons/settings.svg'
 import styles from '../style/index.module.css'
 import React, { useEffect, useState } from 'react'
 import { MenuProvider, MenuContext } from './MenuProvider'
 import { openModal } from './ModalProvider'
-import AboutModal from './submodals/AboutModal'
 import { useRenderer } from './RendererContextProvider'
 import { InternalUtilities, RNGSpamGen } from '../utils/InternalStuffs'
 import { createNewFile, openFileAndParse, saveFile } from '../utils/FileImporter'
 import { getLocaleKey } from '../locales/Locale'
-import UpdaterModal from './submodals/UpdaterModal'
 import Dropdown from './Dropdown'
 import { useDevMode } from '../exports'
 
@@ -21,7 +25,6 @@ import SaveDesignIcon from '../assets/icons/saveLogic.svg'
 import SaveDesignAsIcon from '../assets/icons/saveas.svg'
 import MeasureIcon from '../assets/icons/measure.svg'
 import ExportIcon from '../assets/icons/export.svg'
-import UpdateIcon from '../assets/icons/update.svg'
 import UndoIcon from '../assets/icons/undo.svg'
 import RedoIcon from '../assets/icons/redo.svg'
 import ZoomInIcon from '../assets/icons/zoomin.svg'
@@ -84,12 +87,14 @@ function MenuButton(props: {
 }
 
 export default function WindowBar(): React.ReactElement {
+  const [settingsOpen, setSettingsOpen] = useState(false)
   const [isMaximized, setMaximized] = useState<boolean>(false)
   const [zoom, setZoom] = useState<number>(1)
   const [menuOpened, setMenuOpened] = useState<boolean>(false)
   const [focusedMenuIndex, setFocusedMenuIndex] = useState<number>(-1)
   const [keyboardNav, setKeyboardNav] = useState<boolean>(false)
-  const [isSnapped, setSnapped] = useState<boolean>(true)
+  const [isSnapped, setSnapped] = useState<boolean>(() => preference('snap', 'true') === 'true')
+  const [gridSpacing, setGridSpacing] = useState(() => numericPreference('gridSpacing'))
   const { renderer } = useRenderer()
   const { isDevMode } = useDevMode()
 
@@ -99,8 +104,19 @@ export default function WindowBar(): React.ReactElement {
     renderer?.markDirty('maximize state refresh (requires canvas resize)')
   })
   useEffect(() => {
-    if (!renderer) return
-  }, [renderer]) // Empty dependency array ensures this runs only once on mount
+    const sync = (): void => {
+      renderer?.applyPreferences()
+      setSnapped(preference('snap', 'true') === 'true')
+      setGridSpacing(numericPreference('gridSpacing'))
+    }
+    sync()
+    window.addEventListener(SETTINGS_CHANGED, sync)
+    return () => window.removeEventListener(SETTINGS_CHANGED, sync)
+  }, [renderer])
+  const savePreference = (key: string, value: string): void => {
+    try { settingsStorage.setItem(key, value) }
+    catch (error) { void toast(getLocaleKey('settings.error') + ' ' + String(error)) }
+  }
   window.addEventListener('click', (event) => {
     const target = event.target as HTMLElement
     if (!target.closest('#menu-opener') && menuOpened) {
@@ -113,8 +129,15 @@ export default function WindowBar(): React.ReactElement {
     }
   }
   window.onkeydown = (e: KeyboardEvent) => {
+    if (document.querySelector('dialog[open]')) return
     const ctrlOrMeta = e.ctrlKey || e.metaKey
     const keyLower = e.key.toLowerCase()
+
+    if (ctrlOrMeta && keyLower === ',') {
+      e.preventDefault()
+      setSettingsOpen(true)
+      return
+    }
 
     if (ctrlOrMeta && e.altKey && keyLower === 's') {
       e.preventDefault()
@@ -135,8 +158,7 @@ export default function WindowBar(): React.ReactElement {
     if (ctrlOrMeta && keyLower === 'q') {
       e.preventDefault()
       if (renderer) {
-        setSnapped(!isSnapped)
-        renderer.snap = !isSnapped
+        savePreference('snap', String(!isSnapped))
       }
       return
     }
@@ -199,12 +221,6 @@ export default function WindowBar(): React.ReactElement {
   const _internal_spawnInternalUtilsModal = (): void => {
     openModal('Internal utils (developer only)', <InternalUtilities />)
   }
-  const spawnAboutModal = (): void => {
-    openModal(getLocaleKey('editor.menu.about'), <AboutModal />)
-  }
-  const spawnUpdaterModal = (): void => {
-    openModal(getLocaleKey('editor.menu.checkForUpdates'), <UpdaterModal />)
-  }
 
   interface MenuItemDef {
     icon?: string
@@ -255,17 +271,19 @@ export default function WindowBar(): React.ReactElement {
         ]
       : []),
     {
-      icon: UpdateIcon,
-      title: getLocaleKey('editor.menu.checkForUpdates'),
-      onAction: spawnUpdaterModal
-    },
-    { title: getLocaleKey('editor.menu.about'), onAction: spawnAboutModal }
+      icon: SettingsIcon,
+      title: getLocaleKey('editor.menu.settings'),
+      keyCombinations: [controlKey, ','],
+      onAction: () => { setMenuOpened(false); setSettingsOpen(true) }
+    }
   ]
 
-  const defaultMeasure: number[] = [1000, 500, 200, 100, 50, 25, 10, 5, 1]
+  const defaultMeasure = [...new Set([1000, 500, 200, 100, 50, 25, 10, 5, 1, gridSpacing])].sort((a, b) => b - a)
+  const measurementUnit = resolveUnit(preference('measurementUnit', 'm'))
 
   return (
     <>
+      {settingsOpen && <SettingsModal onClose={() => setSettingsOpen(false)} />}
       <div className={styles['window-bar']}>
         <div className={styles['window-bar-left']}>
           {window.process.platform == 'darwin' && (
@@ -340,21 +358,18 @@ export default function WindowBar(): React.ReactElement {
                 : getLocaleKey('editor.window.enableSnap')
             }
             onClick={() => {
-              setSnapped(!isSnapped)
-              renderer!.snap = !isSnapped
+              savePreference('snap', String(!isSnapped))
             }}
           />
           <MenuButton id="menu-opener" icon={MeasureIcon} />
           <Dropdown
             options={defaultMeasure.map((measure) => ({
-              value: measure,
-              label: `${measure / 100}m (${measure}cm)`
+              value: String(measure),
+              label: formatMeasurement(measure, measurementUnit, 4).replace(/(\.\d*?[1-9])0+ |\.0+ /, '$1 ')
             }))}
-            defaultIndex={6}
+            value={String(gridSpacing)}
             onChange={(value) => {
-              if (renderer) {
-                renderer.gridSpacing = value as number
-              }
+              savePreference('gridSpacing', String(value))
             }}
           />
         </div>

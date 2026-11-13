@@ -1,3 +1,6 @@
+import { measurementUnits, resolveUnit } from '../utils/SettingsOptions'
+import { numericPreference } from '../utils/Preferences'
+import { fonts, fontPreference, numberPreference, preference } from '../utils/Preferences'
 import {
   Circle,
   Component,
@@ -25,8 +28,6 @@ import Nwse2 from '../assets/cursors/nwse-2.svg'
 import RotateCursor from '../assets/cursors/rotate.svg'
 import { callTextPrompt } from '@renderer/components/TextPrompt'
 import { DerakumaParser } from './fontobene/Derakuma'
-import AnsiFont from './fontobene/ansifont.bene'
-import AnsiCJK from './fontobene/ansifont-beta-cjk.bene'
 import * as Types from '../engine/Types'
 import { LRUCache, QuadTree, QuadTreeBounds } from './CacheDatas'
 import { isDevModeEnabled } from '../exports'
@@ -112,6 +113,7 @@ export class GraphicsRenderer {
   snap: boolean
   snapTolerance: number
   fontSize: number
+  measurementPrecision: number = 2
   maximumStack: number
   displayRef: HTMLCanvasElement | null
   context: CanvasRenderingContext2D | null
@@ -139,7 +141,6 @@ export class GraphicsRenderer {
     { path: Path2D; strokeStyle: string; lineWidth: number; lineJoin: CanvasLineJoin }
   > = new Map()
   private _WARNING_MAYLAGSHIT_debugMode: boolean
-  private _test_enableExperimentalCJK: boolean
 
   constructor(displayRef: HTMLCanvasElement | null, width: number, height: number) {
     this.modes = {
@@ -229,10 +230,34 @@ export class GraphicsRenderer {
     this.lastSelectedComponent = null
     this._dirty = false
     this._colorCache = new Map()
-    this._test_enableExperimentalCJK = true
-    this.fb = new DerakumaParser(this._test_enableExperimentalCJK ? AnsiCJK : AnsiFont)
+    this.fb = new DerakumaParser(fonts[fontPreference()].source)
+    this.applyPreferences()
     this._WARNING_MAYLAGSHIT_debugMode = false
     this._debugMode = isDevModeEnabled()
+  }
+
+  applyPreferences(): void {
+    this.fontSize = numberPreference('fontSize', 18, 1, 256)
+    this.showGrid = preference('showGrid', 'true') === 'true'
+    this.showOrigin = preference('showOrigin', 'false') === 'true'
+    this.showRules = preference('showRules', 'true') === 'true'
+    this.snap = preference('snap', 'true') === 'true'
+    this.gridSpacing = numericPreference('gridSpacing')
+    this.snapTolerance = numericPreference('snapTolerance')
+    this.maximumStack = numericPreference('maximumStack')
+    this.measurementPrecision = numericPreference('measurementPrecision')
+    const unit = resolveUnit(preference('measurementUnit', 'm'))
+    this.unitMeasure = unit
+    this.unitConversionFactor = measurementUnits[unit].factor
+    this.markDirty('settings changed')
+  }
+
+  setStrokeFont(font: DerakumaParser): void {
+    this.fb = font
+    this._glyphLayoutCache.clear()
+    this._spacedGlyphLayoutCache.clear()
+    this._isQuadtreeDirty = true
+    this.markDirty('stroke font changed')
   }
 
   setDebugMode(enabled: boolean) {
@@ -636,7 +661,7 @@ export class GraphicsRenderer {
         break
       case componentTypes.measure:
         const measure = component as Measure
-        displayText = `L: ${Number(Math.abs(measure.x2 - measure.x1).toFixed(2))} (${Number(this.getDistance(measure.x1, measure.y1, measure.x2, measure.y2) / 100).toFixed(2)}m)`
+        displayText = `L: ${Number(Math.abs(measure.x2 - measure.x1).toFixed(2))} (${Number(this.getDistance(measure.x1, measure.y1, measure.x2, measure.y2) * this.unitFactor * this.unitConversionFactor).toFixed(this.measurementPrecision)} ${this.unitMeasure})`
         break
       case componentTypes.circle:
         const circle = component as Circle
@@ -892,7 +917,7 @@ export class GraphicsRenderer {
     this.undoStack.push(JSON.stringify(this.logicDisplay?.components))
     this.cleanLog(this.undoStack)
     if (this.undoStack.length > this.maximumStack) {
-      this.undoStack.shift()
+      this.undoStack.splice(0, this.undoStack.length - this.maximumStack)
     }
     this.redoStack = []
     if (invalidateSpatialIndex) this._isQuadtreeDirty = true
@@ -2007,7 +2032,7 @@ export class GraphicsRenderer {
       localZoom = 0.5
       localDiff = 20
     }
-    const distanceText = distance.toFixed(2) + '' + this.unitMeasure
+    const distanceText = distance.toFixed(this.measurementPrecision) + ' ' + this.unitMeasure
 
     const targetFontSize = 2 * this.zoom
     const glyphs = this._getSpacedGlyphs(distanceText)

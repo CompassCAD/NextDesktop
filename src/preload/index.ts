@@ -6,6 +6,8 @@ import path from 'path'
 
 // Custom APIs for renderer
 const api = {
+  settingsStorage: (operation: string, entries?: Record<string, string>) =>
+    ipcRenderer.sendSync('settings:storage', operation, entries),
   readFile: (filePath: string, encoding?: BufferEncoding) => fs.readFileSync(filePath, encoding || 'utf-8'),
   writeFile: (filePath: string, data: string | Uint8Array | Buffer) => fs.writeFileSync(filePath, data, 'utf-8'),
   showOpenFileDialog: (options: OpenDialogSyncOptions) =>
@@ -28,18 +30,22 @@ const api = {
   joinPathToRelativeAppPath: (destination: string) => path.join(ipcRenderer.sendSync('app:getAppPath'), destination)
 }
 
+function subscribeUpdate(channel: string, callback: (...args: any[]) => void): () => void {
+  ipcRenderer.on(channel, callback)
+  return () => { ipcRenderer.removeListener(channel, callback) }
+}
 const updater = {
   check: () => ipcRenderer.invoke('update:check'),
   download: () => ipcRenderer.invoke('update:download'),
   previewDownload: () => ipcRenderer.invoke('update:preview-download'),
   install: () => ipcRenderer.invoke('update:install'),
 
-  onChecking: (cb: () => void) => ipcRenderer.on('update:checking', cb),
-  onAvailable: (cb: (e: any, info: any) => void) => ipcRenderer.on('update:available', cb),
-  onNotAvailable: (cb: (e: any, info: any) => void) => ipcRenderer.on('update:not-available', cb),
-  onError: (cb: (e: any, msg: string) => void) => ipcRenderer.on('update:error', cb),
-  onProgress: (cb: (e: any, progress: any) => void) => ipcRenderer.on('update:progress', cb),
-  onDownloaded: (cb: (e: any, info: any) => void) => ipcRenderer.on('update:downloaded', cb),
+  onChecking: (cb: () => void) => subscribeUpdate('update:checking', cb),
+  onAvailable: (cb: (e: any, info: any) => void) => subscribeUpdate('update:available', cb),
+  onNotAvailable: (cb: (e: any, info: any) => void) => subscribeUpdate('update:not-available', cb),
+  onError: (cb: (e: any, msg: string) => void) => subscribeUpdate('update:error', cb),
+  onProgress: (cb: (e: any, progress: any) => void) => subscribeUpdate('update:progress', cb),
+  onDownloaded: (cb: (e: any, info: any) => void) => subscribeUpdate('update:downloaded', cb),
 }
 
 // Use `contextBridge` APIs to expose Electron APIs to

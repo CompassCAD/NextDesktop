@@ -40,7 +40,8 @@
       "saveAs": "另存为",
       "exportToSvg": "导出为 SVG",
       "checkForUpdates": "检查更新",
-      "about": "关于 CompassCAD NEXT"
+      "about": "关于 CompassCAD NEXT",
+      "settings": "设置"
     },
     "updaterModal": {
       "checkingForUpdates": "正在检查更新...",
@@ -122,5 +123,46 @@
         "useURL": "或者使用图片 URL。"
       }
     }
+  },
+  "settings": {
+    "title": "设置",
+    "general": "常规",
+    "canvas": "画布",
+    "search": "搜索设置",
+    "fontFace": "默认字体",
+    "fontSize": "默认字号",
+    "preview": "字体预览",
+    "language": "语言",
+    "showBeta": "启动时显示测试版欢迎信息",
+    "showGrid": "显示网格",
+    "showOrigin": "显示原点",
+    "showRules": "显示光标辅助线",
+    "save": "保存",
+    "cancel": "取消",
+    "saving": "正在保存…",
+    "noResults": "没有与搜索匹配的设置。",
+    "local": "保存在此设备上",
+    "fontHelp": "字体应用于图纸文字。字号应用于新建标签。",
+    "error": "无法保存设置。您的更改尚未应用。",
+    "invalidSize": "字号必须在 1 到 256 之间。",
+    "measurements": "测量",
+    "snap": "吸附到网格",
+    "gridSpacing": "网格间距（cm）",
+    "gridHelp": "以图纸单位自定义间距：1 图纸单位 = 1 cm。也可在工具栏中选择。",
+    "snapTolerance": "选择容差（屏幕像素）",
+    "measurementUnit": "测量单位",
+    "unitsHelp": "更改尺寸标签和工具栏单位，不缩放几何图形。属性面板中的坐标仍使用图纸单位（cm）。",
+    "metricM": "公制 — 米（m）",
+    "metricCm": "公制 — 厘米（cm）",
+    "metricMm": "公制 — 毫米（mm）",
+    "imperialIn": "英制 — 英寸（in）",
+    "imperialFt": "英制 — 英尺（ft）",
+    "measurementPrecision": "测量小数位数",
+    "maximumStack": "撤销历史上限",
+    "undoHelp": "保存状态的最大数量（10–500）。降低上限将在下一次编辑时生效。",
+    "invalidNumbers": "请检查数值：网格间距 0.01–100000 cm，选择容差 1–50 px，小数位数 0–6，撤销历史 10–500。",
+    "previewError": "无法加载字体预览。",
+    "updates": "更新",
+    "about": "关于"
   }
 }

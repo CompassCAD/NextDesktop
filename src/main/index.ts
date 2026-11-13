@@ -1,3 +1,4 @@
+import { SettingsStore } from './SettingsStore'
 import { app, shell, BrowserWindow, ipcMain, dialog } from 'electron'
 import { join } from 'path'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
@@ -182,3 +183,14 @@ ipcMain.handle('update:install', () => autoUpdater.quitAndInstall());
 
 // In this file you can include the rest of your app's specific main process
 // code. You can also put them in separate files and require them here.
+
+const settingsStore = new SettingsStore(path.join(app.getPath('appData'), 'compasscad', '.compasscfg'))
+ipcMain.on('settings:storage', (event, operation: string, entries?: Record<string, string>) => {
+  try {
+    if (event.sender !== mainWindow?.webContents) throw new Error('Unknown settings sender.')
+    const values = operation === 'read' ? settingsStore.read() : settingsStore.update(operation, entries)
+    event.returnValue = { values }
+  } catch (error) {
+    event.returnValue = { error: error instanceof Error ? error.message : String(error) }
+  }
+})

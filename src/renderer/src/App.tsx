@@ -1,4 +1,6 @@
-import { useCallback, useEffect, useRef } from 'react'
+import { SETTINGS_CHANGED } from './utils/SettingsStorage'
+import { preference } from './utils/Preferences'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import WindowBar from './components/WindowBar'
 import style from './style/index.module.css'
 import { ModalProvider, openModal } from './components/ModalProvider'
@@ -15,6 +17,12 @@ import { DevModeProvider, useDevMode } from './exports'
 import GenericPrompt from './components/GenericPrompt'
 
 function AppContent(): React.JSX.Element {
+  const [, refreshSettings] = useState(0)
+  useEffect(() => {
+    const refresh = (): void => refreshSettings(v => v + 1)
+    window.addEventListener(SETTINGS_CHANGED, refresh)
+    return () => window.removeEventListener(SETTINGS_CHANGED, refresh)
+  }, [])
   const canvas = useRef<HTMLCanvasElement>(null)
   const { renderer, isReady, createRenderer } = useRenderer()
   const { isDevMode, enableDevMode } = useDevMode()
@@ -62,12 +70,11 @@ function AppContent(): React.JSX.Element {
     return () => window.removeEventListener('resize', handleResize)
   }, [resize])
 
-  if (
-    !localStorage.getItem('PUBLICBETA_DoNotShowThatShitEverAgain') ||
-    localStorage.getItem('PUBLICBETA_DoNotShowThatShitEverAgain') === 'false'
-  ) {
-    openModal(getLocaleKey('editor.publicBeta.welcome'), <PublicBetaModal />)
-  }
+  useEffect(() => {
+    if (preference('PUBLICBETA_DoNotShowThatShitEverAgain', 'false') !== 'true') {
+      openModal(getLocaleKey('editor.publicBeta.welcome'), <PublicBetaModal />)
+    }
+  }, [])
 
   return (
     <>

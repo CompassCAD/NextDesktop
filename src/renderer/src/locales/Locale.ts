@@ -1,3 +1,5 @@
+import { settingsStorage } from '../utils/SettingsStorage'
+import { preference } from '../utils/Preferences'
 import en from './en.json';
 import sv from './sv.json';
 import ja from './ja.json';
@@ -25,11 +27,11 @@ export type LocaleKey = PathsOf<typeof en>;
 
 export const SetLanguage = (lang: string): void => {
   const selectedLang = (supportedLanguages as string[]).includes(lang) ? lang : 'en';
-  localStorage.setItem('language', selectedLang);
+  settingsStorage.setItem('language', selectedLang);
 };
 
 export const GetLanguage = (): LocaleCode => {
-  const lang = localStorage.getItem('language') || navigator.language.split('-')[0];
+  const lang = preference('language', '') || navigator.language.split('-')[0];
   return (locales as Record<string, unknown>)[lang] ? (lang as LocaleCode) : 'en';
 };
 

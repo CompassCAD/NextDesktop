@@ -40,7 +40,8 @@
       "saveAs": "Save as",
       "exportToSvg": "Export to SVG",
       "checkForUpdates": "Check for Updates",
-      "about": "About CompassCAD NEXT"
+      "about": "About CompassCAD NEXT",
+      "settings": "Settings"
     },
     "updaterModal": {
       "checkingForUpdates": "Checking for updates...",
@@ -122,5 +123,46 @@
         "useURL": "or use an image URL."
       }
     }
+  },
+  "settings": {
+    "title": "Settings",
+    "general": "General",
+    "canvas": "Canvas",
+    "search": "Search settings",
+    "fontFace": "Default Font Face",
+    "fontSize": "Default Font Size",
+    "preview": "Font Face Preview",
+    "language": "Language",
+    "showBeta": "Show beta welcome on startup",
+    "showGrid": "Show grid",
+    "showOrigin": "Show origin",
+    "showRules": "Show cursor guides",
+    "save": "Save",
+    "cancel": "Cancel",
+    "saving": "Saving…",
+    "noResults": "No settings match your search.",
+    "local": "Stored on this device",
+    "fontHelp": "Font face applies to drawing text. Font size applies to new labels.",
+    "error": "Could not save settings. Your changes have not been applied.",
+    "invalidSize": "Font size must be between 1 and 256.",
+    "measurements": "Measurements",
+    "snap": "Snap to grid",
+    "gridSpacing": "Grid spacing (cm)",
+    "gridHelp": "Custom spacing in drawing units: 1 drawing unit = 1 cm. Also available in the toolbar.",
+    "snapTolerance": "Selection tolerance (screen pixels)",
+    "measurementUnit": "Measurement units",
+    "unitsHelp": "Changes measurement labels and toolbar units without scaling geometry. Inspector coordinates remain in drawing units (cm).",
+    "metricM": "Metric — metres (m)",
+    "metricCm": "Metric — centimetres (cm)",
+    "metricMm": "Metric — millimetres (mm)",
+    "imperialIn": "Imperial — inches (in)",
+    "imperialFt": "Imperial — feet (ft)",
+    "measurementPrecision": "Measurement decimal places",
+    "maximumStack": "Undo history limit",
+    "undoHelp": "Maximum saved states (10–500). Lower limits take effect on the next edit.",
+    "invalidNumbers": "Check the numeric settings: grid spacing 0.01–100000 cm, selection tolerance 1–50 px, decimal places 0–6, and undo history 10–500.",
+    "previewError": "Unable to load the font preview.",
+    "updates": "Updates",
+    "about": "About"
   }
 }

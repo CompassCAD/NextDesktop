@@ -1,0 +1,248 @@
+@keyframes popup {
+  0% {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+/* Match ModalProvider's surface, backdrop, spacing, and shared button styles. */
+.dialog {
+  padding: 20px;
+  width: min(960px, calc(100vw - 48px));
+  height: min(600px, calc(100dvh - 72px));
+  box-sizing: border-box;
+  max-width: none;
+  max-height: none;
+  margin: auto;
+  font-family: var(--font);
+  color: var(--text);
+  background-color: var(--primary);
+  backdrop-filter: blur(5px);
+  border: 0.5px solid var(--outline);
+  border-radius: 15px;
+  box-shadow: 0px 0px 13px 3px rgba(0, 0, 0, 0.5);
+  animation: popup 0.25s cubic-bezier(0.31, 1.02, 0.51, 1.17);
+  overflow: hidden;
+}
+.dialog::backdrop {
+  background-color: rgba(0, 0, 0, 0.25);
+}
+.dialog .layout {
+  display: flex;
+  height: 100%;
+  margin-top: 0;
+  gap: 20px;
+}
+.sidebar {
+  width: 25%;
+  min-width: 170px;
+  padding-right: 20px;
+  border-right: 0.5px solid var(--outline);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  box-sizing: border-box;
+}
+.sidebar h1 {
+  margin: 0 0 10px;
+  font-size: 24px;
+}
+.dialog input,
+.dialog select {
+  font-family: var(--font);
+  color: var(--text);
+}
+.dialog button {
+  cursor: pointer;
+}
+.search {
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+  background-color: var(--secondary);
+  border: none;
+  border-radius: 10px;
+  padding: 10px;
+}
+.search::placeholder {
+  color: var(--text);
+  opacity: 0.5;
+}
+.sidebar nav {
+  display: grid;
+  gap: 5px;
+}
+.sidebar nav button {
+  gap: 10px;
+  padding: 8px 10px;
+  background: transparent;
+  border-color: transparent;
+  text-align: left;
+}
+.sidebar nav button[aria-current],
+.sidebar nav button:hover {
+  background-color: var(--secondary);
+}
+.sidebar nav img {
+  width: 16px;
+  height: 16px;
+}
+.device {
+  margin-top: auto;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.device img {
+  width: 24px;
+  height: 24px;
+}
+.device strong {
+  font-size: 14px;
+}
+.device small {
+  display: block;
+  font-size: 12px;
+  opacity: 0.65;
+}
+.main {
+  flex: 1;
+  min-width: 0;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+}
+.content {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  padding-right: 2px;
+}
+.title {
+  flex-shrink: 0;
+  font-size: 24px;
+  margin: 0 36px 20px 0;
+}
+.content h3 {
+  margin: 16px 0;
+}
+.dialog .close {
+  position: absolute;
+  right: 0;
+  top: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 5px;
+  background: transparent;
+}
+.dialog .close:hover {
+  background-color: var(--secondary);
+}
+.close img {
+  display: block;
+}
+.row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin: 0 0 16px;
+  font-size: 14px;
+}
+.row select,
+.row input[type='number'] {
+  border: none;
+  border-radius: 10px;
+  padding: 10px;
+  background-color: var(--secondary);
+  max-width: 55%;
+}
+.row select option {
+  background-color: var(--primary-background);
+}
+.row input[type='number'] {
+  width: 72px;
+  box-sizing: border-box;
+  text-align: right;
+}
+.row input[type='checkbox'] {
+  flex-shrink: 0;
+}
+.previewGroup {
+  margin: 20px 0;
+}
+.previewGroup p {
+  margin: 0 0 10px;
+  font-size: 14px;
+}
+.previewGroup small {
+  display: block;
+  margin-top: 10px;
+  opacity: 0.65;
+  font-size: 12px;
+}
+.preview {
+  background-color: var(--primary-background);
+  background-image: radial-gradient(var(--outline) 0.6px, transparent 0.6px);
+  background-size: 32px 32px;
+  border: 0.5px solid var(--outline);
+  border-radius: 10px;
+  overflow: hidden;
+}
+.preview canvas {
+  display: block;
+  width: 100%;
+  height: auto;
+  aspect-ratio: 680 / 172;
+}
+.footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  padding-top: 20px;
+}
+.dialog button:disabled {
+  opacity: 0.5;
+  cursor: wait;
+}
+.dialog :focus-visible {
+  outline: 1.5px solid var(--theme);
+}
+.error {
+  color: var(--theme-error);
+  font-size: 13px;
+  margin: 10px 0 0;
+  max-height: 70px;
+  overflow: auto;
+}
+.empty {
+  opacity: 0.65;
+}
+@media (max-width: 800px) {
+  .sidebar {
+    min-width: 150px;
+    padding-right: 15px;
+  }
+  .dialog .layout {
+    gap: 15px;
+  }
+}
+
+.hint {
+  font-size: 12px;
+  opacity: 0.65;
+  margin: -6px 0 20px;
+}
+
+.sidebar nav {
+  min-height: 0;
+  overflow-y: auto;
+}
+.content textarea {
+  max-width: 100%;
+  box-sizing: border-box;
+}

@@ -40,7 +40,8 @@
       "saveAs": "Enregistrer sous",
       "exportToSvg": "Exporter en SVG",
       "checkForUpdates": "Rechercher des mises à jour",
-      "about": "À propos de CompassCAD NEXT"
+      "about": "À propos de CompassCAD NEXT",
+      "settings": "Paramètres"
     },
     "updaterModal": {
       "checkingForUpdates": "Recherche de mises à jour...",
@@ -122,5 +123,46 @@
         "useURL": "ou utiliser l'URL d'une image."
       }
     }
+  },
+  "settings": {
+    "title": "Paramètres",
+    "general": "Général",
+    "canvas": "Zone de dessin",
+    "search": "Rechercher un paramètre",
+    "fontFace": "Police par défaut",
+    "fontSize": "Taille de texte par défaut",
+    "preview": "Aperçu de la police",
+    "language": "Langue",
+    "showBeta": "Afficher le message de bienvenue bêta au démarrage",
+    "showGrid": "Afficher la grille",
+    "showOrigin": "Afficher l’origine",
+    "showRules": "Afficher les guides du curseur",
+    "save": "Enregistrer",
+    "cancel": "Annuler",
+    "saving": "Enregistrement…",
+    "noResults": "Aucun paramètre ne correspond à votre recherche.",
+    "local": "Stocké sur cet appareil",
+    "fontHelp": "La police s’applique au texte du dessin. La taille s’applique aux nouvelles étiquettes.",
+    "error": "Impossible d’enregistrer les paramètres. Vos modifications n’ont pas été appliquées.",
+    "invalidSize": "La taille du texte doit être comprise entre 1 et 256.",
+    "measurements": "Mesures",
+    "snap": "Aligner sur la grille",
+    "gridSpacing": "Espacement de la grille (cm)",
+    "gridHelp": "Espacement personnalisé en unités de dessin : 1 unité = 1 cm. Également disponible dans la barre d’outils.",
+    "snapTolerance": "Tolérance de sélection (pixels écran)",
+    "measurementUnit": "Unités de mesure",
+    "unitsHelp": "Modifie les étiquettes de mesure et les unités de la barre d’outils sans redimensionner la géométrie. Les coordonnées de l’inspecteur restent en unités de dessin (cm).",
+    "metricM": "Métrique — mètres (m)",
+    "metricCm": "Métrique — centimètres (cm)",
+    "metricMm": "Métrique — millimètres (mm)",
+    "imperialIn": "Impérial — pouces (in)",
+    "imperialFt": "Impérial — pieds (ft)",
+    "measurementPrecision": "Décimales des mesures",
+    "maximumStack": "Limite de l’historique d’annulation",
+    "undoHelp": "Nombre maximal d’états enregistrés (10–500). Une limite inférieure prend effet à la prochaine modification.",
+    "invalidNumbers": "Vérifiez les valeurs : espacement de 0,01 à 100000 cm, tolérance de 1 à 50 px, décimales de 0 à 6 et historique de 10 à 500.",
+    "previewError": "Impossible de charger l’aperçu de la police.",
+    "updates": "Mises à jour",
+    "about": "À propos"
   }
 }

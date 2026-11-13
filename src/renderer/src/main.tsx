@@ -1,3 +1,4 @@
+import { migrateSettings } from './utils/SettingsStorage'
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import App from './App'
@@ -60,6 +61,7 @@ console.log = (...args: any[]) => {
     originalLog('[forwardLog failed]', err);
   }
 };
+try { migrateSettings() } catch (error) { console.error('Settings migration failed:', error) }
 createRoot(document.getElementById('root')!).render(
   <App />
 )

@@ -1,17 +1,23 @@
 import CompassCADLogo from '../../assets/branding/logo-wordmark.svg'
-import { openModal } from '../ModalProvider'
-import OpenSourceLicensesLogo from '../../assets/icons/oss.svg'
 import OSLModal from './OSLModal'
 import { getLocaleKey } from '../../locales/Locale'
 import React, { useState, useEffect } from 'react'
 
 export default function AboutModal(): React.ReactElement {
-  const [version, setVersion] = useState('');
+  const [version, setVersion] = useState('')
 
   useEffect(() => {
-    const ver = window.api.getAppVersion();
-    setVersion(ver);
-  }, []);
+    let active = true
+    void window.api
+      .getAppVersion()
+      .then((ver) => {
+        if (active) setVersion(ver)
+      })
+      .catch(() => {})
+    return () => {
+      active = false
+    }
+  }, [])
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', marginTop: '16px' }}>
@@ -22,12 +28,12 @@ export default function AboutModal(): React.ReactElement {
         <p>Copyright &copy; 2024 - {new Date().getFullYear()} PT Trivi Buat Teknologi & zeankun.</p>
       </div>
       <br />
-      <div>
-        <button onClick={() => openModal(`${getLocaleKey('editor.about.openSourceLicenses')}      `, <OSLModal />)}>
-          <img src={OpenSourceLicensesLogo} height={24} />
+      <details>
+        <summary style={{ cursor: 'pointer', marginBottom: '10px' }}>
           {getLocaleKey('editor.about.openSourceLicenses')}
-        </button>
-      </div>
+        </summary>
+        <OSLModal />
+      </details>
     </div>
   )
 }

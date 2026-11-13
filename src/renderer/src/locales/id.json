@@ -40,7 +40,8 @@
       "saveAs": "Simpan Sebagai",
       "exportToSvg": "Ekspor ke SVG",
       "checkForUpdates": "Cek update",
-      "about": "Tentang CompassCAD NEXT"
+      "about": "Tentang CompassCAD NEXT",
+      "settings": "Pengaturan"
     },
     "updaterModal": {
       "checkingForUpdates": "Mengecek update...",
@@ -122,5 +123,46 @@
         "useURL": "atau gunakan URL gambar."
       }
     }
+  },
+  "settings": {
+    "title": "Pengaturan",
+    "general": "Umum",
+    "canvas": "Kanvas",
+    "search": "Cari pengaturan",
+    "fontFace": "Jenis Huruf Bawaan",
+    "fontSize": "Ukuran Huruf Bawaan",
+    "preview": "Pratinjau Jenis Huruf",
+    "language": "Bahasa",
+    "showBeta": "Tampilkan sambutan beta saat aplikasi dimulai",
+    "showGrid": "Tampilkan kisi",
+    "showOrigin": "Tampilkan titik asal",
+    "showRules": "Tampilkan garis bantu kursor",
+    "save": "Simpan",
+    "cancel": "Batal",
+    "saving": "Menyimpan…",
+    "noResults": "Tidak ada pengaturan yang cocok dengan pencarian.",
+    "local": "Disimpan di perangkat ini",
+    "fontHelp": "Jenis huruf berlaku untuk teks pada gambar. Ukuran huruf berlaku untuk label baru.",
+    "error": "Pengaturan gagal disimpan. Perubahan belum diterapkan.",
+    "invalidSize": "Ukuran huruf harus antara 1 dan 256.",
+    "measurements": "Pengukuran",
+    "snap": "Lekatkan ke kisi",
+    "gridSpacing": "Jarak kisi (cm)",
+    "gridHelp": "Jarak khusus dalam satuan gambar: 1 satuan gambar = 1 cm. Juga tersedia di bilah alat.",
+    "snapTolerance": "Toleransi pemilihan (piksel layar)",
+    "measurementUnit": "Satuan pengukuran",
+    "unitsHelp": "Mengubah label ukuran dan satuan bilah alat tanpa mengubah skala geometri. Koordinat inspektur tetap dalam satuan gambar (cm).",
+    "metricM": "Metrik — meter (m)",
+    "metricCm": "Metrik — sentimeter (cm)",
+    "metricMm": "Metrik — milimeter (mm)",
+    "imperialIn": "Imperial — inci (in)",
+    "imperialFt": "Imperial — kaki (ft)",
+    "measurementPrecision": "Jumlah desimal pengukuran",
+    "maximumStack": "Batas riwayat urungkan",
+    "undoHelp": "Jumlah maksimum keadaan tersimpan (10–500). Batas yang lebih rendah berlaku pada penyuntingan berikutnya.",
+    "invalidNumbers": "Periksa angka: jarak kisi 0,01–100000 cm, toleransi 1–50 px, desimal 0–6, dan riwayat urungkan 10–500.",
+    "previewError": "Pratinjau jenis huruf gagal dimuat.",
+    "updates": "Pembaruan",
+    "about": "Tentang"
   }
 }

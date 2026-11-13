@@ -5,12 +5,13 @@ declare global {
   interface Window {
     electron: ElectronAPI
     api: {
+      settingsStorage: (operation: string, entries?: Record<string, string>) => { values?: Record<string, string>; error?: string },
       readFile: (filePath: string, encoding?: BufferEncoding) => string,
       writeFile: (filePath: string, data: string | Uint8Array | Buffer) => void,
       showOpenFileDialog: (options?: OpenDialogSyncOptions) => Promise<string[] | undefined>,
       showSaveFileDialog: (options?: SaveDialogSyncOptions) => Promise<string[] | undefined>,
       forwardLog: (source: any, args: any) => void,
-      getAppVersion: () => string,
+      getAppVersion: () => Promise<string>,
       getExtensionLists: () => string[],
       openExternal: (url: string) => void,
       joinPathToRelativeAppPath: (destination: string) => string,
@@ -21,12 +22,12 @@ declare global {
       download: () => Promise<void>;
       previewDownload: () => Promise<void>;
       install: () => Promise<void>;
-      onChecking: (cb: () => void) => void;
-      onAvailable: (cb: (e: any, info: any) => void) => void;
-      onNotAvailable: (cb: (e: any, info: any) => void) => void;
-      onError: (cb: (e: any, msg: string) => void) => void;
-      onProgress: (cb: (e: any, progress: any) => void) => void;
-      onDownloaded: (cb: (e: any, info: any) => void) => void;
+      onChecking: (cb: () => void) => () => void;
+      onAvailable: (cb: (e: any, info: any) => void) => () => void;
+      onNotAvailable: (cb: (e: any, info: any) => void) => () => void;
+      onError: (cb: (e: any, msg: string) => void) => () => void;
+      onProgress: (cb: (e: any, progress: any) => void) => () => void;
+      onDownloaded: (cb: (e: any, info: any) => void) => () => void;
     }
   }
 }
