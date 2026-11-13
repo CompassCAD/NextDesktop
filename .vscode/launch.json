@@ -3,7 +3,7 @@
   "configurations": [
     {
       "type": "node",
-      "runtimeExecutable": "/home/zean/.bun/bin/bun",
+      "runtimeExecutable": "bun",
       "request": "launch",
       "name": "Debug Main Process",
       "cwd": "${workspaceFolder}",

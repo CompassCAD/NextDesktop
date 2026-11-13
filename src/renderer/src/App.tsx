@@ -12,6 +12,7 @@ import { usePluginHost } from './plugins/PluginRuntime' // <-- Import plugin hos
 import { ToastContainer } from './components/Toast'
 import { KonamiCode } from './components/KonamiCodeDetector'
 import { DevModeProvider, useDevMode } from './exports'
+import GenericPrompt from './components/GenericPrompt'
 
 function AppContent(): React.JSX.Element {
   const canvas = useRef<HTMLCanvasElement>(null)
@@ -72,6 +73,7 @@ function AppContent(): React.JSX.Element {
     <>
       <KonamiCode onSuccess={enableDevMode} />
       <ToastContainer />
+      <GenericPrompt />
       <TextPrompt />
       <ModalProvider />
       <WindowBar />

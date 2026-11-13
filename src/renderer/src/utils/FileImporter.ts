@@ -2,6 +2,7 @@ import { GraphicsRenderer } from '../engine/Engine'
 import { Component } from '../engine/Component'
 import { getLocaleKey } from '../locales/Locale'
 import { convertDxfToCompassCad } from './dxfparse'
+import { toast } from '../components/Toast'
 
 let currentFilePath: string | undefined
 
@@ -9,6 +10,13 @@ export const getDialogPath = (file: string | string[] | undefined): string | und
   if (!file) return undefined
   if (Array.isArray(file)) return file[0]
   return file
+}
+
+export const createNewFile = (renderer: GraphicsRenderer): void => {
+  renderer!.logicDisplay!.components = []
+  renderer?.cleanUpBeforeImport()
+  renderer?.postDoAfterComponentImport()
+  currentFilePath = ''
 }
 
 export const openFileAndParse = async (renderer: GraphicsRenderer): Promise<void> => {
@@ -75,5 +83,6 @@ export const saveFile = async (
     const fileContent = renderer!.logicDisplay!.exportJSON()
     window.api.writeFile(targetPath, fileContent)
     currentFilePath = targetPath
+    toast(`File on ${targetPath} is saved`)
   }
 }

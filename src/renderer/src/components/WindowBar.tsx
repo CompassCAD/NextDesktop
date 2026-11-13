@@ -5,7 +5,7 @@ import { openModal } from './ModalProvider'
 import AboutModal from './submodals/AboutModal'
 import { useRenderer } from './RendererContextProvider'
 import { InternalUtilities, RNGSpamGen } from '../utils/InternalStuffs'
-import { openFileAndParse, saveFile } from '../utils/FileImporter'
+import { createNewFile, openFileAndParse, saveFile } from '../utils/FileImporter'
 import { getLocaleKey } from '../locales/Locale'
 import UpdaterModal from './submodals/UpdaterModal'
 import Dropdown from './Dropdown'
@@ -34,6 +34,7 @@ import Maximize from '../assets/icons/maximize.svg'
 import Close from '../assets/icons/close.svg'
 import RestoreDown from '../assets/icons/restoredown.svg'
 import { Vector2 } from '@renderer/engine/Engine'
+import { callGenericPrompt } from './GenericPrompt'
 
 function MenuButton(props: {
   icon?: string
@@ -218,7 +219,10 @@ export default function WindowBar(): React.ReactElement {
     {
       icon: NewFileIcon,
       title: getLocaleKey('editor.menu.newDesign'),
-      keyCombinations: [controlKey, 'N']
+      keyCombinations: [controlKey, 'N'],
+      onAction: async () => {
+        if ((await callGenericPrompt('Wipe everything and create a new design?', { buttons: 'yesno' })) == 'yes') createNewFile(renderer!)
+      }
     },
     {
       icon: OpenFileIcon,

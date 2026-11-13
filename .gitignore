@@ -4,9 +4,6 @@ out
 .DS_Store
 .eslintcache
 *.log*
-
-.vs
-
-/.vs/slnx.sqlite
-/.vs/NextDesktop.slnx/v18/.wsuo
+.vs/
+obj/
 electron.vite.config.*.mjs
