@@ -7,3 +7,4 @@ out
 .vs/
 obj/
 electron.vite.config.*.mjs
+/NextDesktop.esproj.user
