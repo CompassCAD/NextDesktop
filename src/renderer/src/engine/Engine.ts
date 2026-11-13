@@ -161,17 +161,26 @@ export class GraphicsRenderer {
     const gesture = this.selectionGesture
     if (gesture) {
       gesture.current = point
+      if (gesture.kind === 'scale') {
+        const cursor = (gesture.start.x - gesture.anchor.x) * (gesture.start.y - gesture.anchor.y) >= 0 ? Nwse1 : Nwse2
+        this.displayRef!.style.cursor = `url("${cursor}") 16 16, default`
+      }
       if (action === this.mouseAction.Move && gesture.kind !== 'box') {
         const initial = Math.hypot(gesture.start.x-gesture.anchor.x, gesture.start.y-gesture.anchor.y)
         const k = gesture.kind === 'scale' ? Math.max(0.001, Math.hypot(point.x-gesture.anchor.x, point.y-gesture.anchor.y) / (initial || 1)) : 1
+        // Snap the translation, keeping every member's relative position intact.
+        const snapDelta = (value: number) => this.snap ? Math.round(value / this.gridSpacing) * this.gridSpacing : value
+        const dx = snapDelta(point.x - gesture.start.x)
+        const dy = snapDelta(point.y - gesture.start.y)
         gesture.indexes.forEach((i, n) => {
           const component = this.logicDisplay!.components[i]
           Object.assign(component, structuredClone(gesture.originals[n]))
-          transformComponent(component, k, gesture.kind === 'scale' ? gesture.anchor.x*(1-k) : point.x-gesture.start.x,
-            gesture.kind === 'scale' ? gesture.anchor.y*(1-k) : point.y-gesture.start.y)
+          transformComponent(component, k, gesture.kind === 'scale' ? gesture.anchor.x*(1-k) : dx,
+            gesture.kind === 'scale' ? gesture.anchor.y*(1-k) : dy)
         })
         this._isQuadtreeDirty = true
-        this.displayRef!.style.cursor = gesture.kind === 'scale' ? Nwse1 : NavigateDragCursor
+        const resizeCursor = (gesture.start.x - gesture.anchor.x) * (gesture.start.y - gesture.anchor.y) >= 0 ? Nwse1 : Nwse2
+        this.displayRef!.style.cursor = `url("${gesture.kind === 'scale' ? resizeCursor : MoveCursor}") 16 16, default`
       }
       if (action === this.mouseAction.Up) {
         if (gesture.kind === 'box') {
@@ -192,10 +201,18 @@ export class GraphicsRenderer {
     const indexes = this.getSelection()
     const hit = this.findIntersectionWith(point.x, point.y)
     if (action !== this.mouseAction.Down) {
-      if (indexes.length > 1 && action === this.mouseAction.Move) {
+      if (indexes.length && action === this.mouseAction.Move) {
         const b = this.selectionBounds(indexes)
-        const corner = [b.minX,b.maxX].some(x => [b.minY,b.maxY].some(y => Math.hypot(x-point.x,y-point.y) <= 8/this.zoom))
-        this.displayRef!.style.cursor = corner ? Nwse1 : hit !== null && indexes.includes(hit) ? NavigateDragCursor : DefaultCursor
+        const corner = [{x:b.minX,y:b.minY}, {x:b.maxX,y:b.minY}, {x:b.minX,y:b.maxY}, {x:b.maxX,y:b.maxY}]
+          .find(p => Math.hypot(p.x-point.x,p.y-point.y) <= 8/this.zoom)
+        if (corner && (indexes.length > 1 || e.shiftKey)) {
+          const cursor = (corner.x === b.minX) === (corner.y === b.minY) ? Nwse1 : Nwse2
+          this.displayRef!.style.cursor = `url("${cursor}") 16 16, default`
+          this.markDirty('Selection hover')
+          return true
+        }
+        if (indexes.length > 1) this.displayRef!.style.cursor = hit !== null && indexes.includes(hit)
+          ? `url("${MoveCursor}") 16 16, default` : `url("${DefaultCursor}") 6 6, default`
         this.markDirty('Selection hover')
       }
       return indexes.length > 1
@@ -203,10 +220,12 @@ export class GraphicsRenderer {
     const b = indexes.length ? this.selectionBounds(indexes) : null
     const corner = b && [{x:b.minX,y:b.minY}, {x:b.maxX,y:b.minY}, {x:b.minX,y:b.maxY}, {x:b.maxX,y:b.maxY}]
       .find(p => Math.hypot(p.x-point.x,p.y-point.y) <= 8/this.zoom)
-    if (corner && (e.shiftKey || indexes.length > 1)) {
+    if (corner && (indexes.length > 1 || e.shiftKey)) {
       this.selectionGesture = { kind:'scale', start:point, current:point,
         anchor:{x:corner.x === b!.minX ? b!.maxX : b!.minX, y:corner.y === b!.minY ? b!.maxY : b!.minY},
         originals:indexes.map(i => structuredClone(this.logicDisplay!.components[i])), indexes, additive:false }
+      const cursor = (corner.x === b!.minX) === (corner.y === b!.minY) ? Nwse1 : Nwse2
+      this.displayRef!.style.cursor = `url("${cursor}") 16 16, default`
       return true
     }
     if (e.shiftKey && hit !== null) {
@@ -746,13 +765,14 @@ export class GraphicsRenderer {
       const ctx = this.context
       ctx.save()
       ctx.strokeStyle = this.selectedColor
-      ctx.lineWidth = 1
-      ctx.setLineDash([4, 3])
+      ctx.lineWidth = 2
+      ctx.setLineDash([])
       ctx.strokeRect((bounds.minX+this.cOutX)*this.zoom, (bounds.minY+this.cOutY)*this.zoom, (bounds.maxX-bounds.minX)*this.zoom, (bounds.maxY-bounds.minY)*this.zoom)
       ctx.setLineDash([])
       if (!box) for (const x of [bounds.minX,bounds.maxX]) for (const y of [bounds.minY,bounds.maxY]) {
-        ctx.fillStyle = this.selectedColor
-        ctx.fillRect((x+this.cOutX)*this.zoom-3, (y+this.cOutY)*this.zoom-3, 6, 6)
+        ctx.fillStyle = '#ffffff'
+        ctx.fillRect((x+this.cOutX)*this.zoom-4, (y+this.cOutY)*this.zoom-4, 8, 8)
+        ctx.strokeRect((x+this.cOutX)*this.zoom-4, (y+this.cOutY)*this.zoom-4, 8, 8)
       }
       ctx.restore()
     }

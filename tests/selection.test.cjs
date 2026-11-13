@@ -9,7 +9,7 @@ function load(name) {
   if(cache.has(name)) return cache.get(name);
   const exports={}; cache.set(name,exports);
   const code=ts.transpileModule(fs.readFileSync(path.join('src/renderer/src/engine',name+'.ts'),'utf8'),{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022}}).outputText;
-  vm.runInNewContext(code,{exports,require:id=>['./Component','./Logic','./Selection'].includes(id)?load(id.slice(2)):{},performance,console,crypto:require('node:crypto').webcrypto,structuredClone},{filename:name});
+  vm.runInNewContext(code,{exports,require:id=>['./Component','./Logic','./Selection'].includes(id)?load(id.slice(2)):id.endsWith('.svg')?{default:id}:{},performance,console,crypto:require('node:crypto').webcrypto,structuredClone},{filename:name});
   return exports;
 }
 const C=load('Component');
@@ -73,4 +73,58 @@ test('cancel restores a drag and invalid scales cannot corrupt geometry',()=>{
   r.selectionGesture={kind:'move',indexes:[0],originals:structuredClone(r.logicDisplay.components)};
   r.logicDisplay.components[0].x1=100;
   r.cancelEditing(); assert.equal(r.logicDisplay.components[0].x1,0);
+});
+
+test('group dragging snaps the translation and preserves spacing, with free movement when disabled',()=>{
+  for (const snap of [true,false]) {
+    const r=renderer([new C.Line(3,3,103,3),new C.Line(3,103,103,103)]);
+    r.setSelection([0,1]); r.snap=snap; r.gridSpacing=10;
+    let x=50,y=3;
+    r.getCursorXRaw=()=>x; r.getCursorYRaw=()=>y; r.findIntersectionWith=()=>0;
+    r.selectionAction({shiftKey:false},1);
+    x+=16; y+=24; r.selectionAction({shiftKey:false},2);
+    assert.equal(r.logicDisplay.components[0].x1,snap?23:19);
+    assert.equal(r.logicDisplay.components[0].y1,snap?23:27);
+    assert.equal(r.logicDisplay.components[1].y1-r.logicDisplay.components[0].y1,100);
+    assert.match(r.displayRef.style.cursor,/^url\(".*move.svg"\) 16 16, default$/);
+    r.selectionAction({},3);
+    assert.equal(r.undoStack.length,2);
+    assert.equal(JSON.parse(r.undoStack[0])[0].x1,3);
+  }
+});
+
+test('all group corners resize without Shift and use the matching custom cursor',()=>{
+  for (const [cx,cy,asset] of [[0,0,'nwse-1'],[100,0,'nwse-2'],[0,100,'nwse-2'],[100,100,'nwse-1']]) {
+    const r=renderer([new C.Line(0,0,100,0),new C.Line(0,100,100,100)]);
+    r.setSelection([0,1]);
+    let x=cx,y=cy;
+    r.getCursorXRaw=()=>x; r.getCursorYRaw=()=>y; r.findIntersectionWith=()=>0;
+    r.selectionAction({shiftKey:false},2);
+    assert.ok(r.displayRef.style.cursor.includes(`${asset}.svg"`));
+    assert.ok(r.displayRef.style.cursor.startsWith('url('));
+    r.selectionAction({shiftKey:false},1);
+    assert.equal(r.selectionGesture.kind,'scale');
+    assert.ok(r.displayRef.style.cursor.includes(`${asset}.svg"`));
+    x+=cx===0?-100:100; y+=cy===0?-100:100;
+    r.selectionAction({shiftKey:false},2);
+    assert.equal(r.logicDisplay.components[0].x2-r.logicDisplay.components[0].x1,200);
+    assert.ok(r.displayRef.style.cursor.includes(`${asset}.svg"`));
+    r.selectionAction({shiftKey:true},2);
+    assert.equal(r.logicDisplay.components[0].x2-r.logicDisplay.components[0].x1,200);
+    assert.equal(r.logicDisplay.components[1].y1-r.logicDisplay.components[0].y1,200);
+    assert.ok(r.displayRef.style.cursor.includes(`${asset}.svg"`));
+  }
+});
+
+test('selection outlines are solid and handles match the white rectangles with blue borders',()=>{
+  const r=renderer([new C.Line(0,0,100,0),new C.Line(0,100,100,100)]);
+  r.setSelection([0,1]); r.cOutX=0; r.cOutY=0; r.selectedColor='#0088ff';
+  const fills=[],strokes=[];
+  r.context={save(){},restore(){},setLineDash(dash){assert.equal(dash.length,0)},
+    fillRect(...rect){fills.push({rect,color:this.fillStyle})},
+    strokeRect(...rect){strokes.push({rect,color:this.strokeStyle,width:this.lineWidth})}};
+  r.refreshSelectionTools();
+  assert.equal(fills.length,4); assert.equal(strokes.length,5);
+  for (const fill of fills) { assert.equal(fill.color,'#ffffff'); assert.deepEqual(fill.rect.slice(2),[8,8]); }
+  for (const stroke of strokes) { assert.equal(stroke.color,r.selectedColor); assert.equal(stroke.width,2); }
 });
