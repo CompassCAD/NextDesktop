@@ -21,7 +21,12 @@
     },
     "sysdialogs": {
       "openFile": "Öppna en CompassCAD-fil/importera en fil som inte är från CompassCAD",
-      "saveFile": "Spara en CompassCAD-fil"
+      "saveFile": "Spara en CompassCAD-fil",
+      "images": "Bilder",
+      "compassFiles": "CompassCAD-filer",
+      "qrocadFiles": "QroCAD-filer",
+      "defaultName": "Min ritning",
+      "saved": "Filen sparades till {path}"
     },
     "window": {
       "menu": "Meny",
@@ -30,7 +35,10 @@
       "zoomIn": "Zooma in",
       "zoomOut": "Zooma ut",
       "disableSnap": "Inaktivera Snap",
-      "enableSnap": "Aktivera Snap till Grid"
+      "enableSnap": "Aktivera Snap till Grid",
+      "minimize": "Minimera",
+      "maximize": "Maximera",
+      "restore": "Återställ"
     },
     "menu": {
       "newDesign": "Ny Design",
@@ -41,7 +49,8 @@
       "exportToSvg": "Exportera till SVG",
       "checkForUpdates": "Sök efter Uppdateringar",
       "about": "Om CompassCAD NEXT",
-      "settings": "Inställningar"
+      "settings": "Inställningar",
+      "newDesignWarning": "Rensa allt och skapa en ny ritning? Osparade ändringar går förlorade."
     },
     "updaterModal": {
       "checkingForUpdates": "Söker efter uppdateringar...",
@@ -100,7 +109,19 @@
         "rotation": "Rotation",
         "position": "Position",
         "size": "Storlek",
-        "coverage": "Täckt yta"
+        "coverage": "Täckt yta",
+        "group": "Grupp",
+        "selection": "Markering",
+        "scale": "Skalfaktor",
+        "applyScale": "Tillämpa skala",
+        "toggleGroup": "Visa eller dölj grupp",
+        "groupName": "Gruppnamn",
+        "renameGroup": "Dubbelklicka eller tryck på F2 för att byta gruppnamn",
+        "width": "Bredd",
+        "height": "Höjd",
+        "shapeGroup": "Formgrupp",
+        "children": "Underkomponenter",
+        "unselected": "Inget markerat"
       },
       "text": {
         "heading": "Egenskaper för etikett",
@@ -120,8 +141,20 @@
       "imagepicker": {
         "heading": "Välj en bild",
         "uploadFromFile": "Lägg till bild från datorn",
-        "useURL": "eller använd en bild-URL."
+        "useURL": "eller använd en bild-URL.",
+        "url": "Bild-URL",
+        "selected": "Vald bild",
+        "upload": "Ladda upp bild"
       }
+    },
+    "drawing": {
+      "addText": "Lägg till text…",
+      "imageUrl": "Ange en giltig bild-URL",
+      "cancelHint": "Tryck på Esc för att avbryta",
+      "addShape": "Lägg till form",
+      "moveHint": "Flytta (klicka på en nod för att välja, Esc för att avbryta)",
+      "deleteHint": "Ta bort (klicka på en nod för att ta bort, Esc för att avbryta)",
+      "selectHint": "Markera (klicka för att markera eller avmarkera)"
     }
   },
   "settings": {
@@ -164,5 +197,31 @@
     "previewError": "Det gick inte att läsa in typsnittets förhandsvisning.",
     "updates": "Uppdateringar",
     "about": "Om"
+  },
+  "common": {
+    "yes": "Ja",
+    "no": "Nej",
+    "ok": "OK",
+    "cancel": "Avbryt",
+    "close": "Stäng",
+    "enterText": "Ange text…"
+  },
+  "contextMenu": {
+    "title": "Ritytans åtgärder",
+    "hierarchyTitle": "Hierarkins åtgärder",
+    "rename": "Byt gruppnamn",
+    "cancel": "Avbryt aktuell redigering",
+    "selectAll": "Markera allt",
+    "clear": "Avmarkera allt",
+    "group": "Gruppera",
+    "ungroup": "Dela upp grupp",
+    "scale": "Skala med k…",
+    "delete": "Ta bort markering",
+    "undo": "Ångra",
+    "redo": "Gör om",
+    "select": "Markeringsverktyg",
+    "navigate": "Panoreringsverktyg",
+    "factor": "Skalfaktor k (till exempel fördubblar 2 storleken)",
+    "invalid": "Ange en ändlig skalfaktor större än noll."
   }
 }

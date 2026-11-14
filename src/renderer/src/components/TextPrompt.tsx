@@ -1,3 +1,4 @@
+import { getLocaleKey } from '../locales/Locale'
 import React, { useState, useEffect, useRef } from 'react'
 import styles from '../style/index.module.css'
 
@@ -103,7 +104,7 @@ export const TextPrompt: React.FC = () => {
         <input
           ref={inputRef}
           type="text"
-          placeholder="Enter text..."
+          placeholder={getLocaleKey('common.enterText')}
           value={inputValue}
           onChange={(e: React.ChangeEvent<HTMLInputElement>) => setInputValue(e.target.value)}
           onKeyDown={handleInputKeyDown}
@@ -114,13 +115,13 @@ export const TextPrompt: React.FC = () => {
             onClick={handleCancel}
             className={`${styles['prompt-button']} ${styles['prompt-button-cancel']}`}
           >
-            Cancel
+            {getLocaleKey('common.cancel')}
           </button>
           <button
             onClick={handleConfirm}
             className={`${styles['prompt-button']} ${styles['prompt-button-confirm']}`}
           >
-            OK
+            {getLocaleKey('common.ok')}
           </button>
         </div>
       </div>

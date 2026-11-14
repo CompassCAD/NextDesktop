@@ -21,7 +21,12 @@
     },
     "sysdialogs": {
       "openFile": "CompassCADファイルを開く／CompassCAD以外のファイルをインポートする",
-      "saveFile": "CompassCADファイルを保存する"
+      "saveFile": "CompassCADファイルを保存する",
+      "images": "画像",
+      "compassFiles": "CompassCAD ファイル",
+      "qrocadFiles": "QroCAD ファイル",
+      "defaultName": "新しい図面",
+      "saved": "{path} に保存しました"
     },
     "window": {
       "menu": "メニュー",
@@ -30,7 +35,10 @@
       "zoomIn": "ズームイン",
       "zoomOut": "ズームアウト",
       "disableSnap": "スナップを無効化",
-      "enableSnap": "Gridにスナップ"
+      "enableSnap": "Gridにスナップ",
+      "minimize": "最小化",
+      "maximize": "最大化",
+      "restore": "元のサイズに戻す"
     },
     "menu": {
       "newDesign": "新規デザイン",
@@ -41,7 +49,8 @@
       "exportToSvg": "SVG形式でエクスポート",
       "checkForUpdates": "アップデートを確認",
       "about": "CompassCAD NEXT について",
-      "settings": "設定"
+      "settings": "設定",
+      "newDesignWarning": "すべて消去して新しい図面を作成しますか？未保存の変更は失われます。"
     },
     "updaterModal": {
       "checkingForUpdates": "アップデートを確認中…",
@@ -100,7 +109,19 @@
         "rotation": "回転",
         "position": "位置",
         "size": "サイズ",
-        "coverage": "カバレッジ"
+        "coverage": "カバレッジ",
+        "group": "グループ",
+        "selection": "選択",
+        "scale": "倍率",
+        "applyScale": "倍率を適用",
+        "toggleGroup": "グループを展開または折りたたむ",
+        "groupName": "グループ名",
+        "renameGroup": "ダブルクリックまたは F2 キーでグループ名を変更",
+        "width": "幅",
+        "height": "高さ",
+        "shapeGroup": "図形グループ",
+        "children": "子コンポーネント",
+        "unselected": "選択なし"
       },
       "text": {
         "heading": "ラベルのプロパティ",
@@ -120,8 +141,20 @@
       "imagepicker": {
         "heading": "画像を選択",
         "uploadFromFile": "コンピューターから画像を追加",
-        "useURL": "または画像のURLを使用"
+        "useURL": "または画像のURLを使用",
+        "url": "画像の URL",
+        "selected": "選択した画像",
+        "upload": "画像をアップロード"
       }
+    },
+    "drawing": {
+      "addText": "テキストを追加…",
+      "imageUrl": "有効な画像 URL を入力",
+      "cancelHint": "Esc キーでキャンセル",
+      "addShape": "図形を追加",
+      "moveHint": "移動（節点をクリックして選択、Esc キーでキャンセル）",
+      "deleteHint": "削除（節点をクリックして削除、Esc キーでキャンセル）",
+      "selectHint": "選択（クリックで選択・選択解除）"
     }
   },
   "settings": {
@@ -164,5 +197,31 @@
     "previewError": "フォントのプレビューを読み込めませんでした。",
     "updates": "アップデート",
     "about": "このアプリについて"
+  },
+  "common": {
+    "yes": "はい",
+    "no": "いいえ",
+    "ok": "OK",
+    "cancel": "キャンセル",
+    "close": "閉じる",
+    "enterText": "テキストを入力…"
+  },
+  "contextMenu": {
+    "title": "キャンバス操作",
+    "hierarchyTitle": "階層の操作",
+    "rename": "グループ名を変更",
+    "cancel": "現在の編集をキャンセル",
+    "selectAll": "すべて選択",
+    "clear": "選択を解除",
+    "group": "グループ化",
+    "ungroup": "グループ解除",
+    "scale": "倍率 k で拡大・縮小…",
+    "delete": "選択を削除",
+    "undo": "元に戻す",
+    "redo": "やり直す",
+    "select": "選択ツール",
+    "navigate": "パンツール",
+    "factor": "倍率 k（例：2 でサイズが 2 倍になります）",
+    "invalid": "0 より大きい有限の倍率を入力してください。"
   }
 }

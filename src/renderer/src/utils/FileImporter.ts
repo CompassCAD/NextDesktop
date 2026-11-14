@@ -24,8 +24,8 @@ export const openFileAndParse = async (renderer: GraphicsRenderer): Promise<void
     title: getLocaleKey('editor.sysdialogs.openFile'),
     filters: [
       // { name: 'CompassCAD NEXT Files', extensions: ['cnext'] }, <- Still haven't planned on .cnext (could be an SQLite file ig)
-      { name: 'CompassCAD Files', extensions: ['ccad'] },
-      { name: 'QroCAD Files', extensions: ['qrocad', 'qrocad2'] },
+      { name: getLocaleKey('editor.sysdialogs.compassFiles'), extensions: ['ccad'] },
+      { name: getLocaleKey('editor.sysdialogs.qrocadFiles'), extensions: ['qrocad', 'qrocad2'] },
       { name: 'AutoCAD DXF', extensions: ['dxf'] }
     ]
   })
@@ -72,8 +72,8 @@ export const saveFile = async (
   if (!targetPath) {
     const file = await window.api.showSaveFileDialog({
       title: getLocaleKey('editor.sysdialogs.saveFile'),
-      filters: [{ name: 'CompassCAD Files', extensions: ['ccad'] }],
-      defaultPath: currentFilePath ?? 'My Design.ccad'
+      filters: [{ name: getLocaleKey('editor.sysdialogs.compassFiles'), extensions: ['ccad'] }],
+      defaultPath: currentFilePath || `${getLocaleKey('editor.sysdialogs.defaultName')}.ccad`
     })
     targetPath = getDialogPath(file)
   }
@@ -83,6 +83,6 @@ export const saveFile = async (
     const fileContent = renderer!.logicDisplay!.exportJSON()
     window.api.writeFile(targetPath, fileContent)
     currentFilePath = targetPath
-    toast(`File on ${targetPath} is saved`)
+    toast(getLocaleKey('editor.sysdialogs.saved').replace('{path}', () => targetPath!))
   }
 }

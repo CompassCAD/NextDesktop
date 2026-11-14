@@ -1,9 +1,14 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { useRenderer } from './RendererContextProvider'
 import { getLocaleKey } from '../locales/Locale'
-import { callTextPrompt } from './TextPrompt'
-import { alertPrompt } from './GenericPrompt'
 import styles from '../style/index.module.css'
+import CancelIcon from '../assets/icons/back.svg'
+import UndoIcon from '../assets/icons/undo.svg'
+import RedoIcon from '../assets/icons/redo.svg'
+import SelectAllIcon from '../assets/icons/boundbox.svg'
+import ClearIcon from '../assets/icons/close.svg'
+import GroupIcon from '../assets/icons/hierarchy.svg'
+import UngroupIcon from '../assets/icons/restoredown.svg'
 
 export default function CanvasContextMenu(): React.JSX.Element | null {
   const { renderer } = useRenderer()
@@ -54,13 +59,13 @@ export default function CanvasContextMenu(): React.JSX.Element | null {
   const editable = !renderer.readonly
   const t = (key: 'title' | 'cancel' | 'selectAll' | 'clear' | 'group' | 'ungroup' | 'scale' | 'delete' | 'undo' | 'redo' | 'select' | 'navigate' | 'factor' | 'invalid') => getLocaleKey(`contextMenu.${key}`)
   const actions = [
-    ...(editing ? [{ label:t('cancel'), run:() => renderer.cancelEditing(), enabled:true }] : []),
-    { label:t('undo'), run:() => renderer.undo(), enabled:!editing && editable && renderer.undoStack.length > 1 },
-    { label:t('redo'), run:() => renderer.redo(), enabled:!editing && editable && renderer.redoStack.length > 0 },
-    { label:t('selectAll'), run:() => renderer.selectAll(), enabled:!editing && !!renderer.logicDisplay?.components.length },
-    { label:t('clear'), run:() => renderer.setSelection([]), enabled:!!selection.length },
-    { label:t('group'), run:() => renderer.groupSelection(false, getLocaleKey('editor.inspector.general.group')), enabled:!editing && editable && selection.length > 1 },
-    { label:t('ungroup'), run:() => renderer.groupSelection(true), enabled:editable && selection.some(i => renderer.logicDisplay?.components[i].groupId) },
+    ...(editing ? [{ label:t('cancel'), icon:CancelIcon, run:() => renderer.cancelEditing(), enabled:true }] : []),
+    { label:t('undo'), icon:UndoIcon, run:() => renderer.undo(), enabled:!editing && editable && renderer.undoStack.length > 1 },
+    { label:t('redo'), icon:RedoIcon, run:() => renderer.redo(), enabled:!editing && editable && renderer.redoStack.length > 0 },
+    { label:t('selectAll'), icon:SelectAllIcon, run:() => renderer.selectAll(), enabled:!editing && !!renderer.logicDisplay?.components.length },
+    { label:t('clear'), icon:ClearIcon, run:() => renderer.setSelection([]), enabled:!!selection.length },
+    { label:t('group'), icon:GroupIcon, run:() => renderer.groupSelection(false, getLocaleKey('editor.inspector.general.group')), enabled:!editing && editable && selection.length > 1 },
+    { label:t('ungroup'), icon:UngroupIcon, run:() => renderer.groupSelection(true), enabled:editable && selection.some(i => renderer.logicDisplay?.components[i].groupId) },
   ]
   return <div ref={menu} role="menu" aria-label={t('title')}
     className={`${styles['menu-provider']} ${styles['canvas-context-menu']}`}
@@ -79,6 +84,6 @@ export default function CanvasContextMenu(): React.JSX.Element | null {
       }
     }}>
     {actions.map(action => <button type="button" role="menuitem" key={action.label}
-      disabled={!action.enabled} onClick={() => { close(); void action.run() }}>{action.label}</button>)}
+      disabled={!action.enabled} onClick={() => { close(); void action.run() }}><img src={action.icon} alt="" aria-hidden="true" /><span>{action.label}</span></button>)}
   </div>
 }

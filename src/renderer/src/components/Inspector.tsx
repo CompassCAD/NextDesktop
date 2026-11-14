@@ -97,7 +97,7 @@ export default function Inspector(): React.ReactElement {
   const cancelRename = useRef(false)
   const selectionAnchor = useRef<string | null>(null)
   const [hierarchyMenu, setHierarchyMenu] = useState<{ x: number; y: number; groupId?: string } | null>(null)
-  const hierarchy = useMemo(() => {
+  const hierarchyRows = useMemo(() => {
     const rows: { groupId?: string; name?: string; members: { comp: Component; originalIndex: number }[] }[] = []
     const groups = new Map<string, (typeof rows)[number]>()
     componentArray.forEach((comp, originalIndex) => {
@@ -124,11 +124,15 @@ export default function Inspector(): React.ReactElement {
         usedNames.add(row.name)
       }
     }
-    const query = hierarchySearch.toLowerCase()
-    return rows.filter(row => row.members.some(({ comp }) => comp.name.toLowerCase().includes(query)) ||
-      (row.groupId && (row.name ?? '').toLowerCase().includes(query)))
-  }, [componentArray, hierarchySearch])
-  const groupedSelection = selection.length > 1 && selection.some(index => componentArray[index]?.groupId)
+    return rows
+  }, [componentArray])
+  const query = hierarchySearch.toLowerCase()
+  const hierarchy = hierarchyRows.filter(row => row.members.some(({ comp }) => comp.name.toLowerCase().includes(query)) ||
+    (row.groupId && (row.name ?? '').toLowerCase().includes(query)))
+  const selectedGroupId = componentArray[selection[0]]?.groupId
+  const selectedGroup = selectedGroupId && selection.every(index => componentArray[index]?.groupId === selectedGroupId)
+    ? hierarchyRows.find(row => row.groupId === selectedGroupId)
+    : undefined
   const selectionBounds = selection.length ? renderer?.getSelectionBounds() : null
 
   const visibleRows = hierarchy.flatMap(row => {
@@ -329,9 +333,9 @@ export default function Inspector(): React.ReactElement {
 
       <div className={styles['inspector-content']}>
         {inspectorState === InspectorState.Properties &&
-          (selection.length > 1 || groupedSelection ? (
+          (selection.length > 1 ? (
             <div className={styles['inspector-dynamic-form']}>
-              <h3>{getLocaleKey(groupedSelection ? 'editor.inspector.general.group' : 'editor.inspector.general.selection')} · {selection.length}</h3>
+              <h3>{selectedGroup?.name ?? `${getLocaleKey('editor.inspector.general.selection')} · ${selection.length}`}</h3>
               {selectionBounds && <div className={styles['input-group-row']}>
                 <label>{getLocaleKey('editor.inspector.general.position')}</label>
                 <div>
@@ -372,7 +376,7 @@ export default function Inspector(): React.ReactElement {
             </div>
           ) : component == null ? (
             <div className={styles['properties-nothing']}>
-              <img src={NoPropertiesIcon} width={56} alt="Unselected" />
+              <img src={NoPropertiesIcon} width={56} alt={getLocaleKey('editor.inspector.general.unselected')} />
               <p>{getLocaleKey('editor.inspector.properties.nothingOnSelected')}</p>
             </div>
           ) : (
@@ -501,7 +505,7 @@ export default function Inspector(): React.ReactElement {
                             : ''
                         }
                         onChange={(e) => handleSizeChange('width', e.target.value)}
-                        placeholder="Width"
+                        placeholder={getLocaleKey('editor.inspector.general.width')}
                       />
                       <input
                         type="number"
@@ -512,7 +516,7 @@ export default function Inspector(): React.ReactElement {
                             : ''
                         }
                         onChange={(e) => handleSizeChange('height', e.target.value)}
-                        placeholder="Height"
+                        placeholder={getLocaleKey('editor.inspector.general.height')}
                       />
                     </div>
                   </div>
@@ -549,7 +553,7 @@ export default function Inspector(): React.ReactElement {
                             : ''
                         }
                         onChange={(e) => handleSizeChange('width', e.target.value)}
-                        placeholder="Width"
+                        placeholder={getLocaleKey('editor.inspector.general.width')}
                       />
                       <input
                         type="number"
@@ -560,7 +564,7 @@ export default function Inspector(): React.ReactElement {
                             : ''
                         }
                         onChange={(e) => handleSizeChange('height', e.target.value)}
-                        placeholder="Height"
+                        placeholder={getLocaleKey('editor.inspector.general.height')}
                       />
                     </div>
                   </div>
@@ -655,9 +659,9 @@ export default function Inspector(): React.ReactElement {
               {/* Shape Properties */}
               {component instanceof Shape && (
                 <>
-                  <h3>Shape Group</h3>
+                  <h3>{getLocaleKey('editor.inspector.general.shapeGroup')}</h3>
                   <div className={styles['input-container']}>
-                    <label>Child Components</label>
+                    <label>{getLocaleKey('editor.inspector.general.children')}</label>
                     <span>{component.components.length}</span>
                   </div>
                 </>
@@ -746,7 +750,7 @@ export default function Inspector(): React.ReactElement {
               </div>
             ) : (
               <div className={styles['properties-nothing']}>
-                <img src={NoHierarchyIcon} width={56} alt="Unselected" />
+                <img src={NoHierarchyIcon} width={56} alt={getLocaleKey('editor.inspector.general.unselected')} />
                 <p>{getLocaleKey('editor.inspector.properties.nothingOnHierarchy')}</p>
               </div>
             )}

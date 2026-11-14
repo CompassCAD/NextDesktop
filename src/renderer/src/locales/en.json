@@ -21,7 +21,12 @@
     },
     "sysdialogs": {
       "openFile": "Open a CompassCAD file/import a non-CompassCAD file",
-      "saveFile": "Save a CompassCAD file"
+      "saveFile": "Save a CompassCAD file",
+      "images": "Images",
+      "compassFiles": "CompassCAD Files",
+      "qrocadFiles": "QroCAD Files",
+      "defaultName": "My Design",
+      "saved": "File saved to {path}"
     },
     "window": {
       "menu": "Menu",
@@ -30,7 +35,10 @@
       "zoomIn": "Zoom In",
       "zoomOut": "Zoom Out",
       "disableSnap": "Disable Snap",
-      "enableSnap": "Snap to Grid"
+      "enableSnap": "Snap to Grid",
+      "minimize": "Minimize",
+      "maximize": "Maximize",
+      "restore": "Restore Down"
     },
     "menu": {
       "newDesign": "New Design",
@@ -41,7 +49,8 @@
       "exportToSvg": "Export to SVG",
       "checkForUpdates": "Check for Updates",
       "about": "About CompassCAD NEXT",
-      "settings": "Settings"
+      "settings": "Settings",
+      "newDesignWarning": "Clear everything and create a new design? Unsaved changes will be lost."
     },
     "updaterModal": {
       "checkingForUpdates": "Checking for updates...",
@@ -107,7 +116,12 @@
         "applyScale": "Apply scale",
         "toggleGroup": "Expand or collapse group",
         "groupName": "Group name",
-        "renameGroup": "Double-click or press F2 to rename group"
+        "renameGroup": "Double-click or press F2 to rename group",
+        "width": "Width",
+        "height": "Height",
+        "shapeGroup": "Shape Group",
+        "children": "Child Components",
+        "unselected": "Nothing selected"
       },
       "text": {
         "heading": "Label Properties",
@@ -127,8 +141,20 @@
       "imagepicker": {
         "heading": "Pick an image",
         "uploadFromFile": "Add Image from Computer",
-        "useURL": "or use an image URL."
+        "useURL": "or use an image URL.",
+        "url": "Image URL",
+        "selected": "Selected image",
+        "upload": "Upload image"
       }
+    },
+    "drawing": {
+      "addText": "Add text...",
+      "imageUrl": "Enter a valid image URL",
+      "cancelHint": "Press Esc to cancel",
+      "addShape": "Add Shape",
+      "moveHint": "Move (click a node point to select, Esc to cancel)",
+      "deleteHint": "Delete (click a node point to delete, Esc to cancel)",
+      "selectHint": "Select (click to select/deselect)"
     }
   },
   "settings": {
@@ -189,5 +215,13 @@
     "navigate": "Pan tool",
     "factor": "Scale factor k (for example, 2 doubles the size)",
     "invalid": "Enter a finite scale factor greater than zero."
+  },
+  "common": {
+    "yes": "Yes",
+    "no": "No",
+    "ok": "OK",
+    "cancel": "Cancel",
+    "close": "Close",
+    "enterText": "Enter text..."
   }
 }

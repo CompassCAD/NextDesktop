@@ -21,7 +21,12 @@
     },
     "sysdialogs": {
       "openFile": "Ouvrir un fichier CompassCAD / importer un fichier non-CompassCAD",
-      "saveFile": "Enregistrer un fichier CompassCAD"
+      "saveFile": "Enregistrer un fichier CompassCAD",
+      "images": "Images",
+      "compassFiles": "Fichiers CompassCAD",
+      "qrocadFiles": "Fichiers QroCAD",
+      "defaultName": "Mon projet",
+      "saved": "Fichier enregistré dans {path}"
     },
     "window": {
       "menu": "Menu",
@@ -30,7 +35,10 @@
       "zoomIn": "Zoom avant",
       "zoomOut": "Zoom arrière",
       "disableSnap": "Désactiver l'alignement",
-      "enableSnap": "Aligner sur la grille"
+      "enableSnap": "Aligner sur la grille",
+      "minimize": "Réduire",
+      "maximize": "Agrandir",
+      "restore": "Restaurer"
     },
     "menu": {
       "newDesign": "Nouveau projet",
@@ -41,7 +49,8 @@
       "exportToSvg": "Exporter en SVG",
       "checkForUpdates": "Rechercher des mises à jour",
       "about": "À propos de CompassCAD NEXT",
-      "settings": "Paramètres"
+      "settings": "Paramètres",
+      "newDesignWarning": "Tout effacer et créer un nouveau projet ? Les modifications non enregistrées seront perdues."
     },
     "updaterModal": {
       "checkingForUpdates": "Recherche de mises à jour...",
@@ -100,7 +109,19 @@
         "rotation": "Rotation",
         "position": "Position",
         "size": "Taille",
-        "coverage": "Couverture"
+        "coverage": "Couverture",
+        "group": "Groupe",
+        "selection": "Sélection",
+        "scale": "Facteur d’échelle",
+        "applyScale": "Appliquer l’échelle",
+        "toggleGroup": "Développer ou réduire le groupe",
+        "groupName": "Nom du groupe",
+        "renameGroup": "Double-cliquez ou appuyez sur F2 pour renommer le groupe",
+        "width": "Largeur",
+        "height": "Hauteur",
+        "shapeGroup": "Groupe de formes",
+        "children": "Composants enfants",
+        "unselected": "Aucune sélection"
       },
       "text": {
         "heading": "Propriétés du texte",
@@ -120,8 +141,20 @@
       "imagepicker": {
         "heading": "Choisir une image",
         "uploadFromFile": "Ajouter une image depuis l'ordinateur",
-        "useURL": "ou utiliser l'URL d'une image."
+        "useURL": "ou utiliser l'URL d'une image.",
+        "url": "URL de l’image",
+        "selected": "Image sélectionnée",
+        "upload": "Importer une image"
       }
+    },
+    "drawing": {
+      "addText": "Ajouter du texte…",
+      "imageUrl": "Saisissez une URL d’image valide",
+      "cancelHint": "Appuyez sur Échap pour annuler",
+      "addShape": "Ajouter une forme",
+      "moveHint": "Déplacer (cliquez sur un nœud pour le sélectionner, Échap pour annuler)",
+      "deleteHint": "Supprimer (cliquez sur un nœud pour le supprimer, Échap pour annuler)",
+      "selectHint": "Sélectionner (cliquez pour sélectionner ou désélectionner)"
     }
   },
   "settings": {
@@ -164,5 +197,31 @@
     "previewError": "Impossible de charger l’aperçu de la police.",
     "updates": "Mises à jour",
     "about": "À propos"
+  },
+  "common": {
+    "yes": "Oui",
+    "no": "Non",
+    "ok": "OK",
+    "cancel": "Annuler",
+    "close": "Fermer",
+    "enterText": "Saisissez du texte…"
+  },
+  "contextMenu": {
+    "title": "Actions de la zone de dessin",
+    "hierarchyTitle": "Actions de la hiérarchie",
+    "rename": "Renommer le groupe",
+    "cancel": "Annuler la modification en cours",
+    "selectAll": "Tout sélectionner",
+    "clear": "Désélectionner tout",
+    "group": "Grouper",
+    "ungroup": "Dégrouper",
+    "scale": "Redimensionner par k…",
+    "delete": "Supprimer la sélection",
+    "undo": "Annuler",
+    "redo": "Rétablir",
+    "select": "Outil de sélection",
+    "navigate": "Outil de déplacement de la vue",
+    "factor": "Facteur d’échelle k (par exemple, 2 double la taille)",
+    "invalid": "Saisissez un facteur d’échelle fini supérieur à zéro."
   }
 }

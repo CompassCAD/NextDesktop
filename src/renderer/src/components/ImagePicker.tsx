@@ -25,7 +25,7 @@ export default function ImagePicker(props: ImagePickerProps): React.ReactElement
   const openImagePicker = async (): Promise<void> => {
     const file = await window.api.showOpenFileDialog({
       title: getLocaleKey('editor.inspector.imagepicker.heading'),
-      filters: [{ name: 'Images', extensions: ['jpg', 'jpeg', 'png', 'gif', 'webp'] }]
+      filters: [{ name: getLocaleKey('editor.sysdialogs.images'), extensions: ['jpg', 'jpeg', 'png', 'gif', 'webp'] }]
     })
     const filePath = getDialogPath(file)
     console.log('Selected file path:', filePath)
@@ -66,7 +66,7 @@ export default function ImagePicker(props: ImagePickerProps): React.ReactElement
             <h3>{getLocaleKey('editor.inspector.imagepicker.heading')}</h3>
             <img
               src={CloseIcon}
-              alt="Close"
+              alt={getLocaleKey('common.close')}
               height={16}
               onClick={() => setImagePickerModalOpen(false)}
             />
@@ -75,12 +75,12 @@ export default function ImagePicker(props: ImagePickerProps): React.ReactElement
             <div className={styles['image-picker-modal-image-hover']}>
               <span>{getLocaleKey('editor.inspector.imagepicker.uploadFromFile')}</span>
             </div>
-            <img src={imageSrc} alt="Selected" height={200} />
+            <img src={imageSrc} alt={getLocaleKey('editor.inspector.imagepicker.selected')} height={200} />
           </div>
           <span>{getLocaleKey('editor.inspector.imagepicker.useURL')}</span>
           <input
             type="text"
-            placeholder="Image URL"
+            placeholder={getLocaleKey('editor.inspector.imagepicker.url')}
             value={imageSrc}
             onChange={(e) => handleChange(e.target.value)}
           />
@@ -90,14 +90,14 @@ export default function ImagePicker(props: ImagePickerProps): React.ReactElement
         <img
           src={imageSrc}
           className={styles['image-picker-image']}
-          alt="Selected image"
+          alt={getLocaleKey('editor.inspector.imagepicker.selected')}
           height={26}
         />
         <button
           className={styles['image-picker-button']}
           onClick={() => setImagePickerModalOpen(true)}
         >
-          <img src={UploadImageIcon} alt="Upload" height={24} />
+          <img src={UploadImageIcon} alt={getLocaleKey('editor.inspector.imagepicker.upload')} height={24} />
         </button>
       </div>
     </>

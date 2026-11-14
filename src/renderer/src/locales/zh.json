@@ -21,7 +21,12 @@
     },
     "sysdialogs": {
       "openFile": "打开 CompassCAD 文件/导入非 CompassCAD 文件",
-      "saveFile": "保存 CompassCAD 文件"
+      "saveFile": "保存 CompassCAD 文件",
+      "images": "图片",
+      "compassFiles": "CompassCAD 文件",
+      "qrocadFiles": "QroCAD 文件",
+      "defaultName": "我的图纸",
+      "saved": "文件已保存至 {path}"
     },
     "window": {
       "menu": "菜单",
@@ -30,7 +35,10 @@
       "zoomIn": "放大",
       "zoomOut": "缩小",
       "disableSnap": "禁用吸附",
-      "enableSnap": "吸附到网格"
+      "enableSnap": "吸附到网格",
+      "minimize": "最小化",
+      "maximize": "最大化",
+      "restore": "向下还原"
     },
     "menu": {
       "newDesign": "新建设计",
@@ -41,7 +49,8 @@
       "exportToSvg": "导出为 SVG",
       "checkForUpdates": "检查更新",
       "about": "关于 CompassCAD NEXT",
-      "settings": "设置"
+      "settings": "设置",
+      "newDesignWarning": "清空所有内容并新建图纸？未保存的更改将丢失。"
     },
     "updaterModal": {
       "checkingForUpdates": "正在检查更新...",
@@ -100,7 +109,19 @@
         "rotation": "旋转",
         "position": "位置",
         "size": "大小",
-        "coverage": "覆盖范围"
+        "coverage": "覆盖范围",
+        "group": "组",
+        "selection": "选区",
+        "scale": "缩放因子",
+        "applyScale": "应用缩放",
+        "toggleGroup": "展开或折叠组",
+        "groupName": "组名",
+        "renameGroup": "双击或按 F2 重命名组",
+        "width": "宽度",
+        "height": "高度",
+        "shapeGroup": "形状组",
+        "children": "子组件",
+        "unselected": "未选择任何内容"
       },
       "text": {
         "heading": "标签属性",
@@ -120,8 +141,20 @@
       "imagepicker": {
         "heading": "选择一张图片",
         "uploadFromFile": "从电脑添加图片",
-        "useURL": "或者使用图片 URL。"
+        "useURL": "或者使用图片 URL。",
+        "url": "图片 URL",
+        "selected": "所选图片",
+        "upload": "上传图片"
       }
+    },
+    "drawing": {
+      "addText": "添加文本…",
+      "imageUrl": "输入有效的图片 URL",
+      "cancelHint": "按 Esc 取消",
+      "addShape": "添加形状",
+      "moveHint": "移动（点击节点选择，按 Esc 取消）",
+      "deleteHint": "删除（点击节点删除，按 Esc 取消）",
+      "selectHint": "选择（点击以选择或取消选择）"
     }
   },
   "settings": {
@@ -164,5 +197,31 @@
     "previewError": "无法加载字体预览。",
     "updates": "更新",
     "about": "关于"
+  },
+  "common": {
+    "yes": "是",
+    "no": "否",
+    "ok": "确定",
+    "cancel": "取消",
+    "close": "关闭",
+    "enterText": "输入文本…"
+  },
+  "contextMenu": {
+    "title": "画布操作",
+    "hierarchyTitle": "层级操作",
+    "rename": "重命名组",
+    "cancel": "取消当前编辑",
+    "selectAll": "全选",
+    "clear": "清除选择",
+    "group": "编组",
+    "ungroup": "取消编组",
+    "scale": "按 k 倍缩放…",
+    "delete": "删除所选内容",
+    "undo": "撤销",
+    "redo": "重做",
+    "select": "选择工具",
+    "navigate": "平移工具",
+    "factor": "缩放因子 k（例如，2 表示放大至两倍）",
+    "invalid": "请输入大于零的有限缩放因子。"
   }
 }

@@ -21,7 +21,12 @@
     },
     "sysdialogs": {
       "openFile": "Buka file CompassCAD/impor file non-CompassCAD",
-      "saveFile": "Simpan file CompassCAD"
+      "saveFile": "Simpan file CompassCAD",
+      "images": "Gambar",
+      "compassFiles": "Berkas CompassCAD",
+      "qrocadFiles": "Berkas QroCAD",
+      "defaultName": "Desain Saya",
+      "saved": "Berkas disimpan di {path}"
     },
     "window": {
       "menu": "Menu",
@@ -30,7 +35,10 @@
       "zoomIn": "Zoom In",
       "zoomOut": "Zoom Out",
       "disableSnap": "Matikan Snap",
-      "enableSnap": "Snap ke Grid"
+      "enableSnap": "Snap ke Grid",
+      "minimize": "Minimalkan",
+      "maximize": "Maksimalkan",
+      "restore": "Pulihkan"
     },
     "menu": {
       "newDesign": "Desain Baru",
@@ -41,7 +49,8 @@
       "exportToSvg": "Ekspor ke SVG",
       "checkForUpdates": "Cek update",
       "about": "Tentang CompassCAD NEXT",
-      "settings": "Pengaturan"
+      "settings": "Pengaturan",
+      "newDesignWarning": "Hapus semuanya dan buat desain baru? Perubahan yang belum disimpan akan hilang."
     },
     "updaterModal": {
       "checkingForUpdates": "Mengecek update...",
@@ -100,7 +109,19 @@
         "rotation": "Rotasi",
         "position": "Posisi",
         "size": "Ukuran",
-        "coverage": "Cakupan"
+        "coverage": "Cakupan",
+        "group": "Grup",
+        "selection": "Pilihan",
+        "scale": "Faktor skala",
+        "applyScale": "Terapkan skala",
+        "toggleGroup": "Perluas atau ciutkan grup",
+        "groupName": "Nama grup",
+        "renameGroup": "Klik dua kali atau tekan F2 untuk mengganti nama grup",
+        "width": "Lebar",
+        "height": "Tinggi",
+        "shapeGroup": "Grup Bentuk",
+        "children": "Komponen Anak",
+        "unselected": "Tidak ada yang dipilih"
       },
       "text": {
         "heading": "Properti Label",
@@ -120,8 +141,20 @@
       "imagepicker": {
         "heading": "Pilih Gambar",
         "uploadFromFile": "Tambahkan Gambar dari Komputer",
-        "useURL": "atau gunakan URL gambar."
+        "useURL": "atau gunakan URL gambar.",
+        "url": "URL Gambar",
+        "selected": "Gambar terpilih",
+        "upload": "Unggah gambar"
       }
+    },
+    "drawing": {
+      "addText": "Tambahkan teks...",
+      "imageUrl": "Masukkan URL gambar yang valid",
+      "cancelHint": "Tekan Esc untuk membatalkan",
+      "addShape": "Tambahkan Bentuk",
+      "moveHint": "Pindahkan (klik titik simpul untuk memilih, Esc untuk membatalkan)",
+      "deleteHint": "Hapus (klik titik simpul untuk menghapus, Esc untuk membatalkan)",
+      "selectHint": "Pilih (klik untuk memilih/membatalkan pilihan)"
     }
   },
   "settings": {
@@ -164,5 +197,31 @@
     "previewError": "Pratinjau jenis huruf gagal dimuat.",
     "updates": "Pembaruan",
     "about": "Tentang"
+  },
+  "common": {
+    "yes": "Ya",
+    "no": "Tidak",
+    "ok": "OK",
+    "cancel": "Batal",
+    "close": "Tutup",
+    "enterText": "Masukkan teks..."
+  },
+  "contextMenu": {
+    "title": "Tindakan kanvas",
+    "hierarchyTitle": "Tindakan hierarki",
+    "rename": "Ganti nama grup",
+    "cancel": "Batalkan pengeditan saat ini",
+    "selectAll": "Pilih semua",
+    "clear": "Batalkan pilihan",
+    "group": "Kelompokkan",
+    "ungroup": "Pisahkan grup",
+    "scale": "Skalakan sebesar k…",
+    "delete": "Hapus pilihan",
+    "undo": "Urungkan",
+    "redo": "Ulangi",
+    "select": "Alat pilih",
+    "navigate": "Alat geser tampilan",
+    "factor": "Faktor skala k (misalnya, 2 menggandakan ukuran)",
+    "invalid": "Masukkan faktor skala terhingga yang lebih besar dari nol."
   }
 }

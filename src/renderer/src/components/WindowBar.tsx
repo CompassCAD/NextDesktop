@@ -237,7 +237,7 @@ export default function WindowBar(): React.ReactElement {
       title: getLocaleKey('editor.menu.newDesign'),
       keyCombinations: [controlKey, 'N'],
       onAction: async () => {
-        if ((await callGenericPrompt('Wipe everything and create a new design?', { buttons: 'yesno' })) == 'yes') createNewFile(renderer!)
+        if ((await callGenericPrompt(getLocaleKey('editor.menu.newDesignWarning'), { buttons: 'yesno' })) == 'yes') createNewFile(renderer!)
       }
     },
     {
@@ -378,30 +378,30 @@ export default function WindowBar(): React.ReactElement {
           <div className={styles['window-bar-right']}>
             <button
               className={styles['window-bar-button']}
-              title="Minimize"
+              title={getLocaleKey('editor.window.minimize')}
               onClick={() => {
                 window.electron.ipcRenderer.send('minimize')
               }}
             >
-              <img src={Minimize} alt="Minimize" />
+              <img src={Minimize} alt={getLocaleKey('editor.window.minimize')} />
             </button>
             <button
               className={styles['window-bar-button']}
-              title={isMaximized ? 'Restore Down' : 'Maximze'}
+              title={isMaximized ? getLocaleKey('editor.window.restore') : getLocaleKey('editor.window.maximize')}
               onClick={() => {
                 window.electron.ipcRenderer.send('maximize')
               }}
             >
-              <img src={isMaximized ? RestoreDown : Maximize} alt="Maximize" />
+              <img src={isMaximized ? RestoreDown : Maximize} alt={isMaximized ? getLocaleKey('editor.window.restore') : getLocaleKey('editor.window.maximize')} />
             </button>
             <button
               className={styles['window-bar-button'] + ' ' + styles['window-close']}
-              title="Close"
+              title={getLocaleKey('common.close')}
               onClick={() => {
                 window.electron.ipcRenderer.send('close')
               }}
             >
-              <img src={Close} alt="Close" />
+              <img src={Close} alt={getLocaleKey('common.close')} />
             </button>
           </div>
         )}

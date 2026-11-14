@@ -1,3 +1,4 @@
+import { getLocaleKey } from '../locales/Locale'
 import { measurementUnits, resolveUnit } from '../utils/SettingsOptions'
 import { expandGroups, transformComponent } from './Selection'
 import { numericPreference } from '../utils/Preferences'
@@ -3176,7 +3177,7 @@ export class GraphicsRenderer {
           )
           this.saveState()
         }
-        this.tooltip = 'Add point (press esc to cancel)'
+        this.tooltip = getLocaleKey('editor.toolbox.addPoint') + ' (' + getLocaleKey('editor.drawing.cancelHint') + ')'
         break
 
       case this.modes.AddLine:
@@ -3210,7 +3211,7 @@ export class GraphicsRenderer {
             this.saveState()
           }
         }
-        this.tooltip = 'Add line (press esc to cancel)'
+        this.tooltip = getLocaleKey('editor.toolbox.addLine') + ' (' + getLocaleKey('editor.drawing.cancelHint') + ')'
         break
 
       case this.modes.AddCircle:
@@ -3242,7 +3243,7 @@ export class GraphicsRenderer {
             this.saveState()
           }
         }
-        this.tooltip = 'Add circle (press esc to cancel)'
+        this.tooltip = getLocaleKey('editor.toolbox.addCircle') + ' (' + getLocaleKey('editor.drawing.cancelHint') + ')'
         break
 
       case this.modes.AddArc:
@@ -3284,7 +3285,7 @@ export class GraphicsRenderer {
             this.saveState()
           }
         }
-        this.tooltip = 'Add arc (press esc to cancel)'
+        this.tooltip = getLocaleKey('editor.toolbox.addArc') + ' (' + getLocaleKey('editor.drawing.cancelHint') + ')'
         break
 
       case this.modes.AddRectangle:
@@ -3316,7 +3317,7 @@ export class GraphicsRenderer {
             this.saveState()
           }
         }
-        this.tooltip = 'Add rectangle (press esc to cancel)'
+        this.tooltip = getLocaleKey('editor.toolbox.addRectangle') + ' (' + getLocaleKey('editor.drawing.cancelHint') + ')'
         break
       case this.modes.AddBoundbox:
         this.displayRef!.style.cursor = `url("${CrosshairCursor}") 16 16, crosshair`
@@ -3376,7 +3377,7 @@ export class GraphicsRenderer {
             this.saveState()
           }
         }
-        this.tooltip = 'Measure (press esc to cancel)'
+        this.tooltip = getLocaleKey('editor.toolbox.addMeasure') + ' (' + getLocaleKey('editor.drawing.cancelHint') + ')'
         break
 
       case this.modes.AddLabel:
@@ -3389,7 +3390,7 @@ export class GraphicsRenderer {
             this.temporaryPoints[1] = this.getCursorYLocal()
           }
         } else if (action === this.mouseAction.Down) {
-          const text = await callTextPrompt('Add text...')
+          const text = await callTextPrompt(getLocaleKey('editor.drawing.addText'))
           if (text && text.length > 0) {
             this.logicDisplay?.addComponent(
               new Label(this.temporaryPoints[0]!, this.temporaryPoints[1]!, text, this.fontSize)
@@ -3398,7 +3399,7 @@ export class GraphicsRenderer {
             this.setMode(this.modes.Select)
           }
         }
-        this.tooltip = 'Add label (press esc to cancel)'
+        this.tooltip = getLocaleKey('editor.toolbox.addLabel') + ' (' + getLocaleKey('editor.drawing.cancelHint') + ')'
         break
 
       case this.modes.AddShape:
@@ -3416,7 +3417,7 @@ export class GraphicsRenderer {
             this.saveState()
           }
         }
-        this.tooltip = 'Add shape (press esc to cancel)'
+        this.tooltip = getLocaleKey('editor.drawing.addShape') + ' (' + getLocaleKey('editor.drawing.cancelHint') + ')'
         break
 
       case this.modes.AddPicture:
@@ -3429,7 +3430,7 @@ export class GraphicsRenderer {
             this.temporaryPoints[1] = this.getCursorYLocal()
           }
         } else if (action === this.mouseAction.Down) {
-          const url = await callTextPrompt('Enter a valid Image URL')
+          const url = await callTextPrompt(getLocaleKey('editor.drawing.imageUrl'))
           if (url && url.length > 0) {
             this.logicDisplay?.addComponent(
               new Picture(this.temporaryPoints[0]!, this.temporaryPoints[1]!, url)
@@ -3438,11 +3439,11 @@ export class GraphicsRenderer {
             this.setMode(this.modes.Select)
           }
         }
-        this.tooltip = 'Add Picture (press esc to cancel)'
+        this.tooltip = getLocaleKey('editor.toolbox.addImage') + ' (' + getLocaleKey('editor.drawing.cancelHint') + ')'
         break
       case this.modes.AddPolygon:
         this.displayRef!.style.cursor = `url("${CrosshairCursor}") 16 16, crosshair`
-        this.tooltip = 'Add Polygon'
+        this.tooltip = getLocaleKey('editor.toolbox.addPolygon')
         let firstVec: Vector2 = {
           x: 0,
           y: 0
@@ -3521,7 +3522,7 @@ export class GraphicsRenderer {
             this.displayRef!.style.cursor = `url("${NavigateDragCursor}") 16 16, default`
           else this.displayRef!.style.cursor = `url("${NavigateIdleCursor}") 16 16, default`
         }
-        this.tooltip = 'Navigate'
+        this.tooltip = getLocaleKey('editor.toolbox.navigate')
         break
 
       case this.modes.Move:
@@ -3553,7 +3554,7 @@ export class GraphicsRenderer {
             }
           }
         }
-        this.tooltip = 'Move (click a node point to select, esc to cancel)'
+        this.tooltip = getLocaleKey('editor.drawing.moveHint')
         break
 
       case this.modes.Delete:
@@ -3572,7 +3573,7 @@ export class GraphicsRenderer {
             this.saveState()
           }
         }
-        this.tooltip = 'Delete (click a node point to delete, esc to cancel)'
+        this.tooltip = getLocaleKey('editor.drawing.deleteHint')
         break
       case this.modes.Select:
         this.displayRef!.style.cursor = `url("${DefaultCursor}") 6 6, default`
@@ -3893,7 +3894,7 @@ export class GraphicsRenderer {
           }
         }
 
-        this.tooltip = 'Select (click to select/deselect)'
+        this.tooltip = getLocaleKey('editor.drawing.selectHint')
         break
     }
     this.markDirty('Action performed: ' + action + ' in mode: ' + this.mode)

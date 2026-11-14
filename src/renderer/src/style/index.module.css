@@ -956,17 +956,20 @@ input[type="checkbox"] {
   overflow-y: auto;
 }
 .canvas-context-menu button {
+  display: flex;
+  align-items: center;
+  gap: 10px;
   color: var(--text, #eee);
   background: transparent;
   border: 0;
   border-radius: 5px;
+  font-size: 12pt;
   text-align: left;
   padding: 7px 12px;
-  cursor: pointer;
+  font-family: var(--font);
 }
 .canvas-context-menu button:hover:not(:disabled), .canvas-context-menu button:focus-visible {
   background: var(--secondary);
-  outline: 1px solid var(--outline);
 }
 .canvas-context-menu button:disabled { opacity: .35; cursor: default; }
 
@@ -1018,7 +1021,6 @@ button.componentlist-selector {
   color: inherit;
   font: inherit;
   text-align: left;
-  cursor: pointer;
   border: 0;
 }
 .componentlist-selector img {
@@ -1045,4 +1047,10 @@ button.componentlist-selector {
   background: var(--secondary);
   color: var(--text);
   font: inherit;
+}
+
+.canvas-context-menu button img {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
 }

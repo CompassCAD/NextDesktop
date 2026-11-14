@@ -1,3 +1,4 @@
+import { getLocaleKey } from '../locales/Locale'
 import React, { useState, useEffect, useRef } from 'react'
 import styles from '../style/index.module.css'
 
@@ -16,20 +17,20 @@ export interface GenericPromptOptions {
   buttons?: PromptPreset | PromptButton[]
 }
 
-const PRESETS: Record<PromptPreset, PromptButton[]> = {
+const getPresets = (): Record<PromptPreset, PromptButton[]> => ({
   yesno: [
-    { label: 'No', value: 'no', role: 'cancel' },
-    { label: 'Yes', value: 'yes', role: 'confirm' }
+    { label: getLocaleKey('common.no'), value: 'no', role: 'cancel' },
+    { label: getLocaleKey('common.yes'), value: 'yes', role: 'confirm' }
   ],
-  ok: [{ label: 'OK', value: 'ok', role: 'confirm' }],
+  ok: [{ label: getLocaleKey('common.ok'), value: 'ok', role: 'confirm' }],
   okcancel: [
-    { label: 'Cancel', value: 'cancel', role: 'cancel' },
-    { label: 'OK', value: 'ok', role: 'confirm' }
+    { label: getLocaleKey('common.cancel'), value: 'cancel', role: 'cancel' },
+    { label: getLocaleKey('common.ok'), value: 'ok', role: 'confirm' }
   ]
-}
+})
 
 const resolveButtons = (buttons: GenericPromptOptions['buttons'] = 'ok'): PromptButton[] =>
-  typeof buttons === 'string' ? PRESETS[buttons] : buttons.slice(0, 2)
+  typeof buttons === 'string' ? getPresets()[buttons] : buttons.slice(0, 2)
 
 type ShowFn = (
   message: string,
@@ -69,7 +70,7 @@ export const alertPrompt = async (message: string): Promise<void> => {
 export const GenericPrompt: React.FC = () => {
   const [isOpen, setIsOpen] = useState<boolean>(false)
   const [message, setMessage] = useState<string>('')
-  const [buttons, setButtons] = useState<PromptButton[]>(PRESETS.ok)
+  const [buttons, setButtons] = useState<PromptButton[]>(() => getPresets().ok)
   const onResolveRef = useRef<((value: string | null) => void) | null>(null)
   const confirmRef = useRef<HTMLButtonElement | null>(null)
 
