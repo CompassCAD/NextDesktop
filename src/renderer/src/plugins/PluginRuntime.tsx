@@ -1,3 +1,5 @@
+import { SETTINGS_CHANGED } from '../utils/SettingsStorage'
+import { extensionBlacklist, loadAllExtensions } from './ExtensionLoader'
 import { useEffect, useState } from 'react'
 import { LuaPluginHost } from './LuaBridge'
 import { renderLuaNode } from './LuaToReact'
@@ -11,7 +13,16 @@ let sharedHost: LuaPluginHost | null = null
 
 export function usePluginHost(): LuaPluginHost {
   const [host] = useState(() => {
-    if (!sharedHost) sharedHost = new LuaPluginHost()
+    if (!sharedHost) {
+      sharedHost = new LuaPluginHost()
+      const runtime = sharedHost
+      window.addEventListener(SETTINGS_CHANGED, () => {
+        try {
+          extensionBlacklist().forEach((id) => runtime.removeExtension(id))
+          void loadAllExtensions(runtime).catch(console.error)
+        } catch (error) { console.error(error) }
+      })
+    }
     return sharedHost
   })
   // Do not dispose the shared host on unmount — it is intentionally

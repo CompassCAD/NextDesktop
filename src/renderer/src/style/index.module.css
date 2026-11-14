@@ -1054,3 +1054,8 @@ button.componentlist-selector {
   height: 18px;
   flex-shrink: 0;
 }
+
+/* Native dialog supplies focus containment and stacks above Settings. */
+dialog.modal-hitbox { position: fixed; margin: 0; padding: 0; border: 0; max-width: none; max-height: none; color: var(--text); }
+dialog.modal-hitbox .modal-itself { max-height: calc(100dvh - 48px); overflow-y: auto; box-sizing: border-box; }
+.modal-close { display: grid; place-items: center; padding: 4px; border: 0; background: transparent; cursor: pointer; }

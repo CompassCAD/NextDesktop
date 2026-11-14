@@ -1,4 +1,6 @@
-import React, { ReactNode, useCallback, useEffect, useState } from 'react'
+import ExtensionPermissionsModal from './submodals/ExtensionPermissionsModal'
+import { getLocaleKey } from '../locales/Locale'
+import React, { ReactNode, useCallback, useEffect, useState, useRef } from 'react'
 import style from '../style/index.module.css'
 import CloseIcon from '../assets/icons/close.svg'
 
@@ -38,20 +40,11 @@ interface ModalProps {
 }
 
 const ModalComponent: React.FC<ModalProps> = ({ isOpen, onClose, title, content }) => {
-  // Move useEffect BEFORE the conditional return
+  const dialog = useRef<HTMLDialogElement>(null)
   useEffect(() => {
-    if (!isOpen) return // Only add listener when modal is open
-
-    const handleKeyDown = (e: KeyboardEvent): void => {
-      if (e.key === 'Escape') {
-        onClose()
-      }
-    }
-    document.addEventListener('keydown', handleKeyDown)
-    return () => {
-      document.removeEventListener('keydown', handleKeyDown)
-    }
-  }, [isOpen, onClose])
+    if (isOpen) dialog.current?.showModal()
+    return () => dialog.current?.close()
+  }, [isOpen])
 
   const handleModalClick = (e: React.MouseEvent): void => {
     e.stopPropagation()
@@ -62,17 +55,33 @@ const ModalComponent: React.FC<ModalProps> = ({ isOpen, onClose, title, content 
     return null
   }
   return (
-    <div className={style['modal-hitbox']} onClick={onClose} aria-modal="true">
+    <dialog
+      ref={dialog}
+      className={style['modal-hitbox']}
+      aria-labelledby="provider-modal-title"
+      onClick={onClose}
+      onCancel={(event) => {
+        event.preventDefault()
+        onClose()
+      }}
+      onKeyDown={(event) => event.stopPropagation()}
+      onKeyUp={(event) => event.stopPropagation()}
+    >
       <div className={style['modal-itself']} onClick={handleModalClick}>
         <div className={style['modal-header']}>
-          <h2>{title}</h2>
-          <div onClick={onClose}>
-            <img src={CloseIcon} height={24 } />
-          </div>
+          <h2 id="provider-modal-title">{title}</h2>
+          <button
+            type="button"
+            className={style['modal-close']}
+            onClick={onClose}
+            aria-label={getLocaleKey('settings.cancel')}
+          >
+            <img src={CloseIcon} height={24} alt="" />
+          </button>
         </div>
         <div className={style['modal-content']}>{content}</div>
       </div>
-    </div>
+    </dialog>
   )
 }
 
@@ -87,17 +96,52 @@ export const ModalProvider: React.FC = () => {
     content: null
   })
 
+  const dismissPermission = useRef<(() => void) | null>(null)
   const closeModal = useCallback(() => {
+    dismissPermission.current?.()
+    dismissPermission.current = null
     setModalState((prev) => ({ ...prev, isOpen: false }))
   }, [])
 
   useEffect(() => {
     const handleOpen = (payload: ModalPayload): void => {
+      dismissPermission.current?.()
+      dismissPermission.current = null
       setModalState({ ...payload, isOpen: true })
     }
     const unsubscribe = modalEmitter.on(handleOpen)
-    return unsubscribe
-  }, [])
+    const unsubscribePermissions = window.api.onExtensionPermissionRequest((request) => {
+      dismissPermission.current?.()
+      let settled = false
+      const decide = (approved: boolean): void => {
+        if (settled) return
+        settled = true
+        void window.api.respondExtensionPermission(request.requestId, approved).catch(console.error)
+      }
+      dismissPermission.current = () => decide(false)
+      setModalState({
+        isOpen: true,
+        title: getLocaleKey('extensions.consentTitle'),
+        content: (
+          <ExtensionPermissionsModal
+            key={request.requestId}
+            request={request}
+            onDecision={(approved) => {
+              decide(approved)
+              dismissPermission.current = null
+              closeModal()
+            }}
+          />
+        )
+      })
+    })
+    return () => {
+      unsubscribe()
+      unsubscribePermissions()
+      dismissPermission.current?.()
+      dismissPermission.current = null
+    }
+  }, [closeModal])
 
   return (
     <ModalComponent

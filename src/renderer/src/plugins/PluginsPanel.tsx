@@ -1,3 +1,4 @@
+import { SETTINGS_CHANGED } from '../utils/SettingsStorage'
 import { useEffect, useState } from 'react'
 import { usePluginHost, PluginTabView } from './PluginRuntime'
 import { loadAllExtensions } from './ExtensionLoader'
@@ -39,11 +40,14 @@ export default function PluginsPanel(): React.ReactElement {
       })
     })
 
-    loadAllExtensions(host)
-      .then(setLoadErrors)
-      .finally(() => setLoaded(true))
-
-    return unsub
+    const reload = (): void => {
+      void loadAllExtensions(host).then(setLoadErrors)
+        .catch((error) => setLoadErrors([{ path: 'Extensions', error: String(error) }]))
+        .finally(() => setLoaded(true))
+    }
+    reload()
+    window.addEventListener(SETTINGS_CHANGED, reload)
+    return () => { unsub(); window.removeEventListener(SETTINGS_CHANGED, reload) }
   }, [host, isReady]) // <-- Re-run when renderer isReady changes
 
   if (!isReady || !loaded)
@@ -90,7 +94,7 @@ export default function PluginsPanel(): React.ReactElement {
                     onClick={() => setActiveTabByGroup((prev) => ({ ...prev, [g.group]: name }))}
                     style={{ fontWeight: activeTabByGroup[g.group] === name ? 'bold' : 'normal' }}
                   >
-                    {name}
+                    {JSON.parse(name)[1]}
                   </button>
                 ))}
               </div>

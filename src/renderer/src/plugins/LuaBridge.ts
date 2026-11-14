@@ -1,5 +1,4 @@
 import { lua, lauxlib, lualib, to_luastring } from 'fengari'
-import * as interop from 'fengari-interop'
 import type { LuaNode } from './types'
 // Adjust this import path if GraphicsRenderer lives somewhere else relative
 // to this file — it's the class defined in Engine.ts.
@@ -334,23 +333,7 @@ interface RegisteredTab {
   renderFn: () => LuaNode | undefined
 }
 
-// One Lua state shared by every loaded extension. Extensions are trusted
-// plugin code (same trust level as any other CompassCAD extension), so no
-// sandboxing beyond what stock Lua stdlib gives you — add your own
-// restrictions here (e.g. stripping io/os) if that's not the desired model.
-// Each extension DOES get its own global table (see loadIsolated()) so two
-// extensions defining e.g. `function Render()` don't clobber each other.
-//
-// IMPORTANT: this class never calls a fengari-interop-converted Lua
-// function directly (i.e. never trusts that a value handed back by
-// interop.tojs() is itself invokable as fn()). In practice that value can
-// come back as a non-callable proxy object ("func 0x34" is its toString())
-// rather than a real JS Function, which throws "X is not a function" the
-// moment you try to call it. Instead, any Lua function we need to call
-// later (a tab's Render, an onClick/onChange) is captured with luaL_ref
-// while it's still on the raw Lua stack, and invoked with our own
-// callRef() helper using plain lua_pcall — core Lua C API, not interop, so
-// there's nothing left to be ambiguous about.
+// Each extension has a separate Lua state and a private, revocable OS capability.
 export class LuaPluginHost {
   readonly L: any
   private tabs = new Map<string, RegisteredTab>()
@@ -362,22 +345,27 @@ export class LuaPluginHost {
   // has to tolerate that.
   private renderer: GraphicsRenderer | null = null
 
-  constructor() {
+  private children = new Map<string, LuaPluginHost>()
+  private disposed = false
+
+  constructor(private token?: string) {
     this.L = lauxlib.luaL_newstate()
     lualib.luaL_openlibs(this.L)
-
-    // Registers fengari-interop's Lua-side support (the `js` global, its
-    // proxy metatables, etc.) into this state. Extension authors can still
-    // reach `js.global` etc. directly from Lua if they want to — this
-    // host's own bridge below just doesn't depend on interop.push/tojs for
-    // anything that needs to be called back into.
-    lauxlib.luaL_requiref(this.L, 'js', interop.luaopen_js, 1)
-    lua.lua_pop(this.L, 1)
 
     this.installBridge()
     this.installEngineBridge()
     this.runSource(UI_LUA_SOURCE, '<ui-module>')
     this.runSource(ENGINE_LUA_SOURCE, '<engine-module>')
+    this.installSystemBridge()
+    this.runSource(`
+      local modules = { ui = package.loaded.ui, engine = package.loaded.engine, system = { call = __native_system_call } }
+      function require(name)
+        if modules[name] then return modules[name] end
+        error("Module is not available: " .. tostring(name))
+      end
+      package = nil; js = nil; io = nil; os = nil; debug = nil
+      dofile = nil; loadfile = nil; load = nil; collectgarbage = nil
+    `, '<sandbox>')
   }
 
   /**
@@ -390,8 +378,51 @@ export class LuaPluginHost {
    */
   public setRenderer(renderer: GraphicsRenderer): void {
     this.renderer = renderer
+    this.children.forEach((child) => child.setRenderer(renderer))
     console.log('renderer connected')
     this.emitUpdate()
+  }
+
+  hasExtension(id: string): boolean { return this.children.has(id) }
+
+  addExtension(id: string, source: string, token: string): void {
+    this.removeExtension(id)
+    const child = new LuaPluginHost(token)
+    child.currentGroup = id
+    if (this.renderer) child.setRenderer(this.renderer)
+    this.children.set(id, child)
+    child.onUpdate(() => this.emitUpdate())
+    try { child.runExtension(source, id) }
+    catch (error) { this.removeExtension(id); throw error }
+    this.emitUpdate()
+  }
+
+  removeExtension(id: string): void {
+    this.children.get(id)?.dispose()
+    this.children.delete(id)
+    this.emitUpdate()
+  }
+
+  extensionIds(): string[] { return [...this.children.keys()] }
+
+  private installSystemBridge(): void {
+    lua.lua_pushcfunction(this.L, (L: any): number => {
+      const operation = lauxlib.luaL_checkstring(L, 1)
+      const args = this.luaToJs(2) as Record<string, unknown>
+      lauxlib.luaL_checktype(L, 3, lua.LUA_TFUNCTION)
+      lua.lua_pushvalue(L, 3)
+      const ref = lauxlib.luaL_ref(L, lua.LUA_REGISTRYINDEX)
+      const complete = (result: unknown, error?: string): void => {
+        if (this.disposed) return
+        try { this.callRef(ref, [result, error]) }
+        catch (error) { console.error(error) }
+        finally { lauxlib.luaL_unref(this.L, lua.LUA_REGISTRYINDEX, ref); this.emitUpdate() }
+      }
+      void window.api.extensionCall(this.token || '', new TextDecoder().decode(operation), args)
+        .then((result) => complete(result), (error) => complete(undefined, String(error)))
+      return 0
+    })
+    lua.lua_setglobal(this.L, '__native_system_call')
   }
 
   private installBridge(): void {
@@ -800,6 +831,10 @@ export class LuaPluginHost {
           num(props.rotation)
         )
       case componentTypes.picture:
+        // Image URLs would otherwise bypass the OS broker through the renderer.
+        if (!/^data:image\/(png|jpeg|gif|webp);base64,[A-Za-z0-9+/=\s]*$/.test(String(props.pictureSource))) {
+          throw new Error('Extension pictures require embedded raster image data; retrieve external data through the permission API.')
+        }
         return new Picture(
           num(props.x, 0),
           num(props.y, 0),
@@ -949,16 +984,24 @@ export class LuaPluginHost {
       }
       byGroup.get(tab.group)!.push(tab.name)
     }
-    return order.map((group) => ({ group, tabNames: byGroup.get(group)! }))
+    return [...order.map((group) => ({ group, tabNames: byGroup.get(group)! })),
+      ...[...this.children].flatMap(([id, child]) => child.listGroups().map((group) => ({
+        group: id, tabNames: group.tabNames.map((name) => JSON.stringify([id, name]))
+      })))]
   }
 
   /** Calls the extension's Render() and returns whatever tree it produced. */
   renderTab(name: string): LuaNode | null {
+    for (const [id, child] of this.children) {
+      for (const group of child.listGroups()) for (const tabName of group.tabNames) {
+        if (JSON.stringify([id, tabName]) === name) return child.renderTab(tabName)
+      }
+    }
     const tab = this.tabs.get(name)
     if (!tab) return null
     try {
       // Set the active component context before rendering
-      this.runSource(`require("ui")._beginRender("${name}")`, '<render-hook>')
+      this.runSource(`require("ui")._beginRender(${JSON.stringify(name)})`, '<render-hook>')
 
       const node = tab.renderFn() ?? null
 
@@ -977,8 +1020,9 @@ export class LuaPluginHost {
 
   /** Calls the Lua function referenced by `ref` (from luaL_ref) with `args`, returns its single result as a plain JS value. */
   private callRef(ref: number, args: unknown[] = []): unknown {
+    if (this.disposed) return undefined
     lua.lua_rawgeti(this.L, lua.LUA_REGISTRYINDEX, ref)
-    for (const a of args) this.pushJsPrimitive(a)
+    for (const a of args) this.pushJsValue(a)
     const status = lua.lua_pcall(this.L, args.length, 1, 0)
     if (status !== lua.LUA_OK) {
       const err = lua.lua_tojsstring(this.L, -1)
@@ -1080,6 +1124,10 @@ export class LuaPluginHost {
   }
 
   dispose(): void {
+    if (this.disposed) return
+    this.disposed = true
+    this.children.forEach((child) => child.dispose())
+    this.children.clear()
     this.listeners.clear()
     this.tabs.clear()
     this.renderer = null

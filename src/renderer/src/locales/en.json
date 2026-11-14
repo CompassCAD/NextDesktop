@@ -223,5 +223,28 @@
     "cancel": "Cancel",
     "close": "Close",
     "enterText": "Enter text..."
+  },
+  "extensions": {
+    "title": "Extensions",
+    "empty": "No extensions installed.",
+    "help": "Uncheck an extension to deactivate it when you save. Enabling an extension requests consent before its code runs. Permissions apply to this activation only.",
+    "canvas": "Canvas access is always available. OS access is limited to the permissions listed above.",
+    "none": "No OS permissions requested.",
+    "consentTitle": "Extension permissions",
+    "consent": "Before activating {name}, {name} would like to request some permissions from you:",
+    "deny": "Deny",
+    "allow": "Allow and activate",
+    "permissions": {
+      "web_request": "Web requests: send and receive HTTP(S) data, including Internet and local network addresses.",
+      "server_listen": "Local server: host up to four HTTP servers on 127.0.0.1. Other programs on this computer can connect.",
+      "filesystem_read": "Read files: read text files and list folders anywhere your account can access.",
+      "filesystem_write": "Write files: create or overwrite text files, create folders, and delete files anywhere your account can access."
+    },
+    "permissionNames": {
+      "web_request": "Web requests",
+      "server_listen": "Local server",
+      "filesystem_read": "Read files and folders",
+      "filesystem_write": "Write and delete files"
+    }
   }
 }

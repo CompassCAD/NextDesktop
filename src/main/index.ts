@@ -1,3 +1,5 @@
+import { ExtensionService } from './ExtensionService'
+import { randomUUID } from 'node:crypto'
 import { SettingsStore } from './SettingsStore'
 import { app, shell, BrowserWindow, ipcMain, dialog } from 'electron'
 import { join } from 'path'
@@ -81,6 +83,8 @@ function createWindow(): void {
     }
   })
 
+  mainWindow.webContents.on('did-start-loading', () => extensionService.dispose())
+  mainWindow.on('closed', () => extensionService.dispose())
   mainWindow.on('ready-to-show', () => {
     mainWindow?.show()
   })
@@ -188,9 +192,57 @@ const settingsStore = new SettingsStore(path.join(app.getPath('appData'), 'compa
 ipcMain.on('settings:storage', (event, operation: string, entries?: Record<string, string>) => {
   try {
     if (event.sender !== mainWindow?.webContents) throw new Error('Unknown settings sender.')
+    if (operation !== 'read') {
+      const hasBlacklist = entries && Object.prototype.hasOwnProperty.call(entries, 'extensionBlacklist')
+      const nextBlacklist = operation === 'clear' || (operation === 'remove' && hasBlacklist)
+        ? '[]' : operation === 'set' && hasBlacklist
+          ? entries!.extensionBlacklist : settingsStore.read().extensionBlacklist || '[]'
+      const blacklist = JSON.parse(nextBlacklist)
+      if (!Array.isArray(blacklist) || !blacklist.every((id) => typeof id === 'string')) throw new Error('Invalid extension blacklist.')
+    }
     const values = operation === 'read' ? settingsStore.read() : settingsStore.update(operation, entries)
+    if (operation !== 'read') extensionService.reconcile()
     event.returnValue = { values }
   } catch (error) {
     event.returnValue = { error: error instanceof Error ? error.message : String(error) }
   }
 })
+
+const extensionService = new ExtensionService(path.join(app.getPath('userData'), 'extensions'), () => {
+  const value = JSON.parse(settingsStore.read().extensionBlacklist || '[]')
+  if (!Array.isArray(value) || !value.every((id) => typeof id === 'string')) throw new Error('Invalid extension blacklist.')
+  return value
+})
+function checkExtensionSender(event: Electron.IpcMainInvokeEvent): void {
+  if (event.sender !== mainWindow?.webContents || event.senderFrame !== event.sender.mainFrame) throw new Error('Unknown extension sender.')
+}
+ipcMain.handle('extensions:list', (event) => { checkExtensionSender(event); return extensionService.list() })
+const permissionRequests = new Map<string, (approved: boolean) => void>()
+ipcMain.handle('extensions:permission-response', (event, requestId: string, approved: boolean) => {
+  checkExtensionSender(event)
+  permissionRequests.get(requestId)?.(approved === true)
+})
+ipcMain.handle('extensions:activate', async (event, id: string) => {
+  checkExtensionSender(event)
+  return extensionService.activate(id, (info) => new Promise<boolean>((resolve) => {
+    const requestId = randomUUID()
+    const sender = event.sender
+    const cancel = (): void => finish(false)
+    const finish = (approved: boolean): void => {
+      permissionRequests.delete(requestId)
+      sender.removeListener('destroyed', cancel)
+      sender.removeListener('did-start-loading', cancel)
+      resolve(approved)
+    }
+    permissionRequests.set(requestId, finish)
+    sender.once('destroyed', cancel)
+    sender.once('did-start-loading', cancel)
+    sender.send('extensions:permission-request', { requestId, ...info })
+  }))
+})
+ipcMain.handle('extensions:deactivate', (event, id: string) => { checkExtensionSender(event); extensionService.deactivate(id) })
+ipcMain.handle('extensions:call', (event, token: string, operation: string, args: Record<string, unknown>) => {
+  checkExtensionSender(event)
+  return extensionService.call(token, operation, args)
+})
+app.on('before-quit', () => extensionService.dispose())

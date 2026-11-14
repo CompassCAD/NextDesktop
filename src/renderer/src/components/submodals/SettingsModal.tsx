@@ -1,3 +1,4 @@
+import { extensionBlacklist } from '../../plugins/ExtensionLoader'
 import AboutModal from './AboutModal'
 import UpdaterModal from './UpdaterModal'
 import updateIcon from '../../assets/icons/update.svg'
@@ -24,7 +25,7 @@ import grid from '../../assets/icons/blueprint.svg'
 import logo from '../../assets/icons/newlogo.svg'
 
 const t = (key: keyof typeof en.settings): string => getLocaleKey(`settings.${key}`)
-type Section = 'general' | 'canvas' | 'measurements' | 'updates' | 'about'
+type Section = 'general' | 'canvas' | 'measurements' | 'updates' | 'about' | 'extensions'
 
 function FontPreview({
   face,
@@ -116,6 +117,16 @@ export default function SettingsModal({ onClose }: { onClose: () => void }): Rea
     showOrigin: preference('showOrigin', 'false') === 'true',
     showRules: preference('showRules', 'true') === 'true'
   })
+  const [extensions, setExtensions] = useState<
+    Awaited<ReturnType<typeof window.api.listExtensions>>
+  >([])
+  const [blacklist, setBlacklist] = useState(extensionBlacklist)
+  useEffect(() => {
+    void window.api
+      .listExtensions()
+      .then(setExtensions)
+      .catch((error) => setError(String(error)))
+  }, [])
   const [error, setError] = useState('')
   const [saving, setSaving] = useState(false)
   const savingRef = useRef(false)
@@ -151,6 +162,11 @@ export default function SettingsModal({ onClose }: { onClose: () => void }): Rea
       matches(key as keyof typeof en.settings)
     )
   const showUpdates = searching ? matches('updates') : section === 'updates'
+  const showExtensions = searching
+    ? getLocaleKey('extensions.title').toLowerCase().includes(search.toLowerCase().trim())
+    : section === 'extensions'
+  const sectionTitle = (key: Section): string =>
+    key === 'extensions' ? getLocaleKey('extensions.title') : t(key)
   const showAbout = searching ? matches('about') : section === 'about'
   useEffect(() => {
     if (showUpdates) setUpdatesVisited(true)
@@ -193,6 +209,7 @@ export default function SettingsModal({ onClose }: { onClose: () => void }): Rea
       const font = new DerakumaParser(fonts[face].source)
       await font.ready()
       settingsStorage.setItems({
+        extensionBlacklist: JSON.stringify(blacklist),
         fontFace: face,
         fontSize: String(fontSize),
         language,
@@ -236,31 +253,33 @@ export default function SettingsModal({ onClose }: { onClose: () => void }): Rea
             autoFocus
           />
           <nav aria-label={t('title')}>
-            {(['general', 'canvas', 'measurements', 'updates', 'about'] as const).map((item) => (
-              <button
-                key={item}
-                type="button"
-                aria-current={!searching && section === item ? 'page' : undefined}
-                onClick={() => {
-                  setSection(item)
-                  setSearch('')
-                }}
-              >
-                <img
-                  src={
-                    item === 'general'
-                      ? gear
-                      : item === 'updates'
-                        ? updateIcon
-                        : item === 'about'
-                          ? logo
-                          : grid
-                  }
-                  alt=""
-                />
-                {t(item)}
-              </button>
-            ))}
+            {(['general', 'canvas', 'measurements', 'extensions', 'updates', 'about'] as const).map(
+              (item) => (
+                <button
+                  key={item}
+                  type="button"
+                  aria-current={!searching && section === item ? 'page' : undefined}
+                  onClick={() => {
+                    setSection(item)
+                    setSearch('')
+                  }}
+                >
+                  <img
+                    src={
+                      item === 'general'
+                        ? gear
+                        : item === 'updates'
+                          ? updateIcon
+                          : item === 'about'
+                            ? logo
+                            : grid
+                    }
+                    alt=""
+                  />
+                  {sectionTitle(item)}
+                </button>
+              )
+            )}
           </nav>
           <div className={style.device}>
             <img src={logo} alt="" />
@@ -280,8 +299,60 @@ export default function SettingsModal({ onClose }: { onClose: () => void }): Rea
           >
             <img src={CloseIcon} width={24} height={24} alt="" />
           </button>
-          <h2 className={style.title}>{searching ? t('search') : t(section)}</h2>
+          <h2 className={style.title}>{searching ? t('search') : sectionTitle(section)}</h2>
           <div className={style.content}>
+            {showExtensions && (
+              <section aria-label={getLocaleKey('extensions.title')}>
+                {extensions.length === 0 && <p>{getLocaleKey('extensions.empty')}</p>}
+                {extensions.map((entry) => (
+                  <article className={style.extension} key={entry.id}>
+                    <label className={style.row}>
+                      <span>
+                        {entry.name}
+                        <small className={style.extensionId}>{entry.id}</small>
+                      </span>
+                      <input
+                        type="checkbox"
+                        checked={!blacklist.includes(entry.id)}
+                        disabled={saving}
+                        onChange={(event) =>
+                          setBlacklist(
+                            event.target.checked
+                              ? blacklist.filter((id) => id !== entry.id)
+                              : [...blacklist, entry.id]
+                          )
+                        }
+                      />
+                    </label>
+                    {entry.error && (
+                      <p role="alert" className={style.error}>
+                        {entry.error}
+                      </p>
+                    )}
+                    {entry.permissions.length ? (
+                      <ul>
+                        {entry.permissions.map((permission) => (
+                          <li key={permission}>
+                            {Object.prototype.hasOwnProperty.call(
+                              en.extensions.permissions,
+                              permission.replaceAll('.', '_')
+                            )
+                              ? getLocaleKey(
+                                  `extensions.permissions.${permission.replaceAll('.', '_')}` as Parameters<
+                                    typeof getLocaleKey
+                                  >[0]
+                                )
+                              : permission}
+                          </li>
+                        ))}
+                      </ul>
+                    ) : (
+                      <p>{getLocaleKey('extensions.none')}</p>
+                    )}
+                  </article>
+                ))}
+              </section>
+            )}
             {showGeneral && (
               <section aria-label={t('general')}>
                 {searching && <h3>{t('general')}</h3>}
@@ -401,9 +472,12 @@ export default function SettingsModal({ onClose }: { onClose: () => void }): Rea
                 <AboutModal />
               </section>
             )}
-            {!showGeneral && !showCanvas && !showMeasurements && !showUpdates && !showAbout && (
-              <p className={style.empty}>{t('noResults')}</p>
-            )}
+            {!showExtensions &&
+              !showGeneral &&
+              !showCanvas &&
+              !showMeasurements &&
+              !showUpdates &&
+              !showAbout && <p className={style.empty}>{t('noResults')}</p>}
           </div>
           {error && (
             <p className={style.error} role="alert">

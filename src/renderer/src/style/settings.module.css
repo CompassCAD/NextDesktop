@@ -246,3 +246,12 @@
   max-width: 100%;
   box-sizing: border-box;
 }
+
+.extension {
+    padding: 15px;
+    font-size: 13px;
+    border-radius: 10px;
+    background-color: var(--secondary);
+}
+.extension li { margin-bottom: 8px; }
+.extensionId { display: block; opacity: 0.65; margin-top: 4px; }
