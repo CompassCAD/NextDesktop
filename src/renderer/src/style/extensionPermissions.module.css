@@ -38,7 +38,7 @@
   background: var(--primary);
 }
 .permissions strong {
-  font-size: 14px;
+  font-size: 12pt;
   font-weight: 600;
 }
 .permissions p {

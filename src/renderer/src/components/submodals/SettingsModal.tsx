@@ -23,6 +23,7 @@ import CloseIcon from '../../assets/icons/close.svg'
 import gear from '../../assets/icons/settings.svg'
 import grid from '../../assets/icons/blueprint.svg'
 import logo from '../../assets/icons/newlogo.svg'
+import jigsaw from '../../assets/icons/stroke-white-jigsaw.svg'
 
 const t = (key: keyof typeof en.settings): string => getLocaleKey(`settings.${key}`)
 type Section = 'general' | 'canvas' | 'measurements' | 'updates' | 'about' | 'extensions'
@@ -228,6 +229,14 @@ export default function SettingsModal({ onClose }: { onClose: () => void }): Rea
       setSaving(false)
     }
   }
+  const sectionIcons: Record<Section, string> = {
+    general: gear,
+    canvas: grid,
+    measurements: grid,
+    extensions: jigsaw,
+    updates: updateIcon,
+    about: logo
+  }
   return (
     <dialog
       ref={dialog}
@@ -264,18 +273,7 @@ export default function SettingsModal({ onClose }: { onClose: () => void }): Rea
                     setSearch('')
                   }}
                 >
-                  <img
-                    src={
-                      item === 'general'
-                        ? gear
-                        : item === 'updates'
-                          ? updateIcon
-                          : item === 'about'
-                            ? logo
-                            : grid
-                    }
-                    alt=""
-                  />
+                  <img src={sectionIcons[item]} alt="" />
                   {sectionTitle(item)}
                 </button>
               )

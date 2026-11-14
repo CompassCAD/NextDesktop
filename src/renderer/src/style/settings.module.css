@@ -82,6 +82,7 @@
   background: transparent;
   border-color: transparent;
   text-align: left;
+  font-size: 12pt;
 }
 .sidebar nav button[aria-current],
 .sidebar nav button:hover {
@@ -151,7 +152,7 @@
   justify-content: space-between;
   gap: 10px;
   margin: 0 0 16px;
-  font-size: 14px;
+  font-size: 12pt;
 }
 .row select,
 .row input[type='number'] {

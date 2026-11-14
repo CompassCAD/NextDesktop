@@ -4063,7 +4063,7 @@ export class GraphicsRenderer {
       ]
 
       warningLines.forEach((text, i) => {
-        drawDebugLine(this.displayHeight / 2 - (100 - i * 20), text)
+        drawDebugLine(this.displayHeight / 2 - (60 - i * 20), text)
       })
     }
     if (this.recordingMode) {
