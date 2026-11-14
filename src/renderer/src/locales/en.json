@@ -100,7 +100,14 @@
         "rotation": "Rotation",
         "position": "Position",
         "size": "Size",
-        "coverage": "Coverage"
+        "coverage": "Coverage",
+        "group": "Group",
+        "selection": "Selection",
+        "scale": "Scale factor",
+        "applyScale": "Apply scale",
+        "toggleGroup": "Expand or collapse group",
+        "groupName": "Group name",
+        "renameGroup": "Double-click or press F2 to rename group"
       },
       "text": {
         "heading": "Label Properties",
@@ -167,6 +174,8 @@
   },
   "contextMenu": {
     "title": "Canvas actions",
+    "hierarchyTitle": "Hierarchy actions",
+    "rename": "Rename group",
     "cancel": "Cancel current edit",
     "selectAll": "Select all",
     "clear": "Clear selection",

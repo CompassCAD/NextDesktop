@@ -969,3 +969,80 @@ input[type="checkbox"] {
   outline: 1px solid var(--outline);
 }
 .canvas-context-menu button:disabled { opacity: .35; cursor: default; }
+
+.hierarchy-group, .hierarchy-group-children {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.hierarchy-group-header {
+  display: flex;
+  align-items: stretch;
+  background-color: var(--secondary);
+  border-radius: 10px;
+}
+.hierarchy-group-header.hierarchy-group-selected {
+  background-color: var(--theme);
+}
+.hierarchy-group-header .componentlist-selector {
+  flex: 1;
+  min-width: 0;
+  background: transparent;
+}
+.hierarchy-group-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 12px;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+}
+.hierarchy-group-toggle img {
+  width: 16px;
+  height: 16px;
+  transition: transform 150ms ease;
+}
+.hierarchy-group-header button:focus-visible {
+  outline: 2px solid currentColor;
+  outline-offset: -3px;
+}
+.hierarchy-group-children {
+  margin-left: 18px;
+  padding-left: 8px;
+  animation: slidedown 0.25s ease;
+}
+button.componentlist-selector {
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  border: 0;
+}
+.componentlist-selector img {
+  width: 20px;
+  height: 20px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hierarchy-group-children {
+    animation: none;
+  }
+  .hierarchy-group-toggle img {
+    transition: none;
+  }
+}
+
+.hierarchy-group-name {
+  flex: 1;
+  min-width: 0;
+  margin: 6px;
+  padding: 4px;
+  border: 1px solid var(--text);
+  border-radius: 6px;
+  background: var(--secondary);
+  color: var(--text);
+  font: inherit;
+}

@@ -32,3 +32,21 @@ export function expandGroups(components: Component[], indexes: number[]): number
     component.active && (selected.has(i) || (component.groupId && groups.has(component.groupId))) ? [i] : []
   )
 }
+
+/** Resolve hierarchy modifiers against the displayed (expanded and filtered) row order. */
+export function selectHierarchyIndexes(
+  rows: { key: string; indexes: number[] }[], key: string, anchorKey: string | null,
+  current: number[], shift: boolean, additive: boolean
+): number[] {
+  const index = rows.findIndex(row => row.key === key)
+  if (index < 0) return current
+  const row = rows[index]
+  const anchor = rows.findIndex(item => item.key === anchorKey)
+  if (shift && anchor >= 0) {
+    const range = rows.slice(Math.min(anchor, index), Math.max(anchor, index) + 1).flatMap(item => item.indexes)
+    return [...new Set(additive ? [...current, ...range] : range)]
+  }
+  if (!additive) return row.indexes
+  return row.indexes.every(i => current.includes(i))
+    ? current.filter(i => !row.indexes.includes(i)) : [...new Set([...current, ...row.indexes])]
+}

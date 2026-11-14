@@ -72,6 +72,7 @@ export class GraphicsRenderer {
   temporarySelectedComponent: number | null
   selectedComponent: number | null
   selectedComponents: number[] = []
+  selectionExpandsGroups = true
   contextMenuOpen = false
 
   get isEditing(): boolean {
@@ -85,11 +86,16 @@ export class GraphicsRenderer {
   getSelection(): number[] {
     const indexes = this.selectedComponents.length ? this.selectedComponents :
       this.selectedComponent === null ? [] : [this.selectedComponent]
-    return expandGroups(this.logicDisplay?.components ?? [], indexes)
+    const components = this.logicDisplay?.components ?? []
+    return this.selectionExpandsGroups === false
+      ? indexes.filter(i => components[i]?.active)
+      : expandGroups(components, indexes)
   }
 
-  setSelection(indexes: number[]): void {
-    this.selectedComponents = expandGroups(this.logicDisplay?.components ?? [], indexes)
+  setSelection(indexes: number[], expand = true): void {
+    this.selectionExpandsGroups = expand
+    const components = this.logicDisplay?.components ?? []
+    this.selectedComponents = expand ? expandGroups(components, indexes) : [...new Set(indexes)].filter(i => components[i]?.active)
     this.selectedComponent = this.selectedComponents.length === 1 ? this.selectedComponents[0] : null
     this.temporarySelectedComponent = this.selectedComponent
     this.notifyComponentChange()
@@ -100,17 +106,32 @@ export class GraphicsRenderer {
     this.setSelection(this.logicDisplay?.components.map((_, i) => i) ?? [])
   }
 
-  groupSelection(ungroup = false): void {
+  groupSelection(ungroup = false, baseName = 'Group'): void {
     const indexes = this.getSelection()
     if (this.readonly || (!ungroup && indexes.length < 2)) return
     const id = crypto.randomUUID()
+    const names = new Set(this.logicDisplay?.components.map(component => component.groupName))
+    let number = 1
+    while (names.has(baseName + ' ' + number)) number++
+    const name = baseName + ' ' + number
     for (const i of indexes) {
       const component = this.logicDisplay!.components[i]
+      delete component.groupName
       if (ungroup) delete component.groupId
-      else component.groupId = id
+      else { component.groupId = id; component.groupName = name }
     }
     this.saveState()
     this.setSelection(indexes)
+  }
+
+  renameGroup(groupId: string, name: string): void {
+    const trimmed = name.trim()
+    if (this.readonly || !trimmed) return
+    const members = this.logicDisplay?.components.filter(component => component.groupId === groupId) ?? []
+    if (!members.length || members.every(component => component.groupName === trimmed)) return
+    for (const component of members) component.groupName = trimmed
+    this.saveState()
+    this.notifyComponentChange()
   }
 
   deleteSelection(): void {
@@ -126,6 +147,19 @@ export class GraphicsRenderer {
     const bounds = indexes.map(i => this.getComponentBoundaryBox(this.logicDisplay!.components[i]))
     return { minX: Math.min(...bounds.map(b => b.minX)), minY: Math.min(...bounds.map(b => b.minY)),
       maxX: Math.max(...bounds.map(b => b.maxX)), maxY: Math.max(...bounds.map(b => b.maxY)) }
+  }
+
+  getSelectionBounds() {
+    return this.getSelection().length ? this.selectionBounds() : null
+  }
+
+  moveSelection(dx: number, dy: number): void {
+    if (this.readonly || !Number.isFinite(dx) || !Number.isFinite(dy) || (!dx && !dy)) return
+    const indexes = this.getSelection()
+    if (!indexes.length) return
+    for (const i of indexes) transformComponent(this.logicDisplay!.components[i], 1, dx, dy)
+    this.saveState()
+    this.notifyComponentChange()
   }
 
   scaleSelection(k: number): void {

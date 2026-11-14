@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import styles from '../style/index.module.css'
-import { useEffect, useState, useMemo, useCallback } from 'react'
+import { useEffect, useState, useMemo, useCallback, useRef } from 'react'
 import { useRenderer } from './RendererContextProvider'
 import CollapseToRight from '../assets/icons/collapse-right.svg'
 import NoPropertiesIcon from '../assets/icons/unselected-state.svg'
@@ -22,6 +22,7 @@ import HierarchyIcon from '../assets/icons/hierarchy.svg'
 import PluginsIcon from '../assets/icons/plugin.svg'
 import PluginsPanel from '../plugins/PluginsPanel'
 import SearchIcon from '../assets/icons/search.svg'
+import DropDownIcon from '../assets/icons/dropdown.svg'
 import {
   Component,
   Point,
@@ -42,6 +43,8 @@ import { getLocaleKey } from '../locales/Locale'
 import Types from '@renderer/engine/Types'
 import { Vector2 } from '@renderer/engine/Engine'
 import ImagePicker from './ImagePicker'
+import HierarchyContextMenu from './HierarchyContextMenu'
+import { selectHierarchyIndexes } from '../engine/Selection'
 
 enum InspectorState {
   Properties,
@@ -85,15 +88,86 @@ export default function Inspector(): React.ReactElement {
   const [hierarchySearch, setHierarchySearch] = useState<string>('')
   const [componentArray, setComponentArray] = useState<Component[]>([])
 
-  const filteredComponents = useMemo(() => {
-    return componentArray
-      .map((comp, i) => ({ comp, originalIndex: i }))
-      .filter((item) => item.comp.name.toLowerCase().includes(hierarchySearch.toLowerCase()))
+  const [selection, setSelection] = useState<number[]>([])
+  const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(new Set())
+  const [scaleFactor, setScaleFactor] = useState('1')
+  const appliedScale = useRef(1)
+  const [renamingGroup, setRenamingGroup] = useState<string | null>(null)
+  const [groupNameDraft, setGroupNameDraft] = useState('')
+  const cancelRename = useRef(false)
+  const selectionAnchor = useRef<string | null>(null)
+  const [hierarchyMenu, setHierarchyMenu] = useState<{ x: number; y: number; groupId?: string } | null>(null)
+  const hierarchy = useMemo(() => {
+    const rows: { groupId?: string; name?: string; members: { comp: Component; originalIndex: number }[] }[] = []
+    const groups = new Map<string, (typeof rows)[number]>()
+    componentArray.forEach((comp, originalIndex) => {
+      const member = { comp, originalIndex }
+      if (!comp.groupId) rows.push({ members: [member] })
+      else {
+        let row = groups.get(comp.groupId)
+        if (!row) {
+          row = { groupId: comp.groupId, members: [] }
+          groups.set(comp.groupId, row)
+          rows.push(row)
+        }
+        row.members.push(member)
+      }
+    })
+    const usedNames = new Set(rows.map(row => row.members[0].comp.groupName).filter(Boolean))
+    let number = 1
+    for (const row of rows) {
+      if (!row.groupId) continue
+      row.name = row.members[0].comp.groupName
+      if (!row.name) {
+        while (usedNames.has(getLocaleKey('editor.inspector.general.group') + ' ' + number)) number++
+        row.name = getLocaleKey('editor.inspector.general.group') + ' ' + number++
+        usedNames.add(row.name)
+      }
+    }
+    const query = hierarchySearch.toLowerCase()
+    return rows.filter(row => row.members.some(({ comp }) => comp.name.toLowerCase().includes(query)) ||
+      (row.groupId && (row.name ?? '').toLowerCase().includes(query)))
   }, [componentArray, hierarchySearch])
+  const groupedSelection = selection.length > 1 && selection.some(index => componentArray[index]?.groupId)
+  const selectionBounds = selection.length ? renderer?.getSelectionBounds() : null
+
+  const visibleRows = hierarchy.flatMap(row => {
+    const children = row.members.map(item => ({ key: 'component:' + item.originalIndex, indexes: [item.originalIndex] }))
+    return row.groupId ? [{ key: 'group:' + row.groupId, indexes: row.members.map(item => item.originalIndex) },
+      ...(hierarchySearch || !collapsedGroups.has(row.groupId) ? children : [])] : children
+  })
+  const selectHierarchyRow = (key: string, event: { shiftKey: boolean; ctrlKey: boolean; metaKey: boolean }): void => {
+    if (!renderer) return
+    const index = visibleRows.findIndex(row => row.key === key)
+    if (index < 0) return
+    const next = selectHierarchyIndexes(visibleRows, key, selectionAnchor.current,
+      renderer.getSelection(), event.shiftKey, event.ctrlKey || event.metaKey)
+    if (!event.shiftKey || !visibleRows.some(row => row.key === selectionAnchor.current)) selectionAnchor.current = key
+    renderer.setMode(Types.NavigationTypes.Select)
+    renderer.setSelection(next, false)
+  }
+  const openHierarchyMenu = (event: React.MouseEvent, key?: string, groupId?: string): void => {
+    event.preventDefault()
+    event.stopPropagation()
+    const row = visibleRows.find(item => item.key === key)
+    if (row && !row.indexes.every(i => renderer?.getSelection().includes(i))) {
+      selectHierarchyRow(row.key, { shiftKey: false, ctrlKey: false, metaKey: false })
+    }
+    setHierarchyMenu({ x: event.clientX, y: event.clientY, groupId })
+  }
+  const startGroupRename = (id: string): void => {
+    if (renderer?.readonly) return
+    const row = hierarchy.find(item => item.groupId === id)
+    if (!row) return
+    cancelRename.current = false
+    setGroupNameDraft(row.name ?? '')
+    setRenamingGroup(id)
+  }
 
   // Helper to sync selection and force React to see a new reference
   const syncSelectedComponent = useCallback(() => {
     if (!renderer) return
+    setSelection(renderer.getSelection())
     if (renderer.selectedComponent !== null && renderer.logicDisplay) {
       const selected = renderer.logicDisplay.components[renderer.selectedComponent]
       if (selected) {
@@ -255,7 +329,48 @@ export default function Inspector(): React.ReactElement {
 
       <div className={styles['inspector-content']}>
         {inspectorState === InspectorState.Properties &&
-          (component == null ? (
+          (selection.length > 1 || groupedSelection ? (
+            <div className={styles['inspector-dynamic-form']}>
+              <h3>{getLocaleKey(groupedSelection ? 'editor.inspector.general.group' : 'editor.inspector.general.selection')} · {selection.length}</h3>
+              {selectionBounds && <div className={styles['input-group-row']}>
+                <label>{getLocaleKey('editor.inspector.general.position')}</label>
+                <div>
+                  {(['x', 'y'] as const).map(axis => (
+                    <input key={axis} type="number" aria-label={getLocaleKey('editor.inspector.general.position') + ' ' + axis.toUpperCase()}
+                      disabled={renderer?.readonly} value={axis === 'x' ? selectionBounds.minX : selectionBounds.minY}
+                      onChange={event => {
+                        if (!event.target.value) return
+                        const value = Number(event.target.value)
+                        renderer?.moveSelection(axis === 'x' ? value - selectionBounds.minX : 0,
+                          axis === 'y' ? value - selectionBounds.minY : 0)
+                      }} />
+                  ))}
+                </div>
+              </div>}
+              <div className={styles['input-container']}>
+                <label htmlFor="selection-scale">{getLocaleKey('editor.inspector.general.scale')}</label>
+                <input id="selection-scale" type="number" min="0.001" step="any"
+                  disabled={renderer?.readonly} value={scaleFactor}
+                  onFocus={() => {
+                    appliedScale.current = 1
+                    setScaleFactor('1')
+                  }}
+                  onChange={event => {
+                    const rawValue = event.target.value
+                    setScaleFactor(rawValue)
+                    const nextScale = Number(rawValue)
+                    if (!renderer || renderer.readonly || !Number.isFinite(nextScale) || nextScale < 0.001) return
+                    // Each value is relative to the size when editing began, not the last keystroke.
+                    renderer.scaleSelection(nextScale / appliedScale.current)
+                    appliedScale.current = nextScale
+                  }}
+                  onBlur={() => {
+                    appliedScale.current = 1
+                    setScaleFactor('1')
+                  }} />
+              </div>
+            </div>
+          ) : component == null ? (
             <div className={styles['properties-nothing']}>
               <img src={NoPropertiesIcon} width={56} alt="Unselected" />
               <p>{getLocaleKey('editor.inspector.properties.nothingOnSelected')}</p>
@@ -551,7 +666,7 @@ export default function Inspector(): React.ReactElement {
           ))}
 
         {inspectorState === InspectorState.Hierarchy && (
-          <div className={styles['hierarchy-column']}>
+          <div className={styles['hierarchy-column']} onContextMenu={event => openHierarchyMenu(event)}>
             <div className={styles['searchfield-flexbox']}>
               <img src={SearchIcon} width={24} />
               <input
@@ -562,26 +677,72 @@ export default function Inspector(): React.ReactElement {
                 placeholder={getLocaleKey('editor.inspector.properties.searchInHierarchy')}
               />
             </div>
-            {filteredComponents.length > 0 ? (
+            {hierarchy.length > 0 ? (
               <div className={styles['hierarchy-componentlist']}>
-                {filteredComponents.map((item) => (
-                  <div
-                    key={item.originalIndex}
-                    className={`${styles['componentlist-selector']}${
-                      component === componentArray[item.originalIndex]
-                        ? ` ${styles['componentlist-selector-selected']}`
-                        : ''
-                    }`}
-                    onClick={() => {
-                      renderer?.setMode(Types.NavigationTypes.Select)
-                      renderer?.selectComponent(item.originalIndex)
-                      setComponent(item.comp as AnyComponent)
-                    }}
-                    onDoubleClick={() => animateToComponentOrigin(item.originalIndex)}
-                  >
-                    <img src={componentImages[item.comp.type]} alt="" /> {item.comp.name}
+                {hierarchy.map(row => {
+                  const members = row.members.map(item => (
+                    <button type="button" key={item.originalIndex}
+                      className={[styles['componentlist-selector'], selection.includes(item.originalIndex) ? styles['componentlist-selector-selected'] : ''].join(' ')}
+                      aria-pressed={selection.includes(item.originalIndex)}
+                      onClick={event => selectHierarchyRow('component:' + item.originalIndex, event)}
+                      onContextMenu={event => openHierarchyMenu(event, 'component:' + item.originalIndex)}
+                      onDoubleClick={() => animateToComponentOrigin(item.originalIndex)}>
+                      <img src={componentImages[item.comp.type]} alt="" /> {item.comp.name}
+                    </button>
+                  ))
+                  if (!row.groupId) return members[0]
+                  const id = row.groupId
+                  const expanded = !!hierarchySearch || !collapsedGroups.has(id)
+                  const selected = row.members.filter(item => item.comp.active).length > 0 && row.members.filter(item => item.comp.active).every(item => selection.includes(item.originalIndex))
+                  const groupName = row.name
+                  const startRename = (): void => startGroupRename(id)
+                  return <div key={id} className={styles['hierarchy-group']}>
+                    <div className={[styles['hierarchy-group-header'], selected ? styles['hierarchy-group-selected'] : ''].join(' ')}>
+                      {renamingGroup === id ? <input
+                        className={styles['hierarchy-group-name']}
+                        aria-label={getLocaleKey('editor.inspector.general.groupName')}
+                        autoFocus value={groupNameDraft}
+                        onFocus={event => event.target.select()}
+                        onChange={event => setGroupNameDraft(event.target.value)}
+                        onBlur={() => {
+                          if (!cancelRename.current) renderer?.renameGroup(id, groupNameDraft)
+                          setRenamingGroup(null)
+                        }}
+                        onKeyDown={event => {
+                          event.stopPropagation()
+                          if (event.key === 'Enter') { event.preventDefault(); event.currentTarget.blur() }
+                          if (event.key === 'Escape') {
+                            event.preventDefault()
+                            cancelRename.current = true
+                            event.currentTarget.blur()
+                          }
+                        }} /> : <button type="button" aria-pressed={selected}
+                        title={getLocaleKey('editor.inspector.general.renameGroup')}
+                        onDoubleClick={startRename}
+                        onKeyDown={event => {
+                          if (event.key === 'F2') { event.preventDefault(); event.stopPropagation(); startRename() }
+                        }}
+                        className={styles['componentlist-selector']}
+                        onClick={event => selectHierarchyRow('group:' + id, event)}
+                        onContextMenu={event => openHierarchyMenu(event, 'group:' + id, id)}>
+                        <img src={HierarchyIcon} alt="" />
+                        {groupName}
+                      </button>}
+                      <button type="button" aria-expanded={expanded}
+                        className={styles['hierarchy-group-toggle']}
+                        aria-label={getLocaleKey('editor.inspector.general.toggleGroup')}
+                        onClick={() => setCollapsedGroups(previous => {
+                          const next = new Set(previous)
+                          if (next.has(id)) next.delete(id)
+                          else next.add(id)
+                          return next
+                        })}>
+                        <img src={DropDownIcon} alt="" style={{ transform: expanded ? 'rotate(180deg)' : 'rotate(0deg)' }} />
+                      </button>
+                    </div>
+                    {expanded && <div className={styles['hierarchy-group-children']}>{members}</div>}
                   </div>
-                ))}
+                })}
               </div>
             ) : (
               <div className={styles['properties-nothing']}>
@@ -592,6 +753,9 @@ export default function Inspector(): React.ReactElement {
           </div>
         )}
 
+        {hierarchyMenu && inspectorState === InspectorState.Hierarchy && renderer && <HierarchyContextMenu
+          position={hierarchyMenu} renderer={renderer} onClose={() => setHierarchyMenu(null)}
+          onRename={hierarchyMenu.groupId ? () => startGroupRename(hierarchyMenu.groupId!) : undefined} />}
         {inspectorState === InspectorState.Plugins && <PluginsPanel />}
       </div>
 

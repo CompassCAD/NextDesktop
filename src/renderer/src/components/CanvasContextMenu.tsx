@@ -59,7 +59,7 @@ export default function CanvasContextMenu(): React.JSX.Element | null {
     { label:t('redo'), run:() => renderer.redo(), enabled:!editing && editable && renderer.redoStack.length > 0 },
     { label:t('selectAll'), run:() => renderer.selectAll(), enabled:!editing && !!renderer.logicDisplay?.components.length },
     { label:t('clear'), run:() => renderer.setSelection([]), enabled:!!selection.length },
-    { label:t('group'), run:() => renderer.groupSelection(), enabled:!editing && editable && selection.length > 1 },
+    { label:t('group'), run:() => renderer.groupSelection(false, getLocaleKey('editor.inspector.general.group')), enabled:!editing && editable && selection.length > 1 },
     { label:t('ungroup'), run:() => renderer.groupSelection(true), enabled:editable && selection.some(i => renderer.logicDisplay?.components[i].groupId) },
   ]
   return <div ref={menu} role="menu" aria-label={t('title')}

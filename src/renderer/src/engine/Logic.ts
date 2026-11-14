@@ -192,7 +192,7 @@ export class LogicDisplay {
             }
             if (parent.length > previousLength) {
                 const added = parent[parent.length - 1];
-                for (const key of ['groupId', 'imageScale', 'rotation', 'color', 'radius', 'name'] as const) {
+                for (const key of ['groupId', 'groupName', 'imageScale', 'rotation', 'color', 'radius', 'name'] as const) {
                     if (arrJSON[i][key] !== undefined) Object.assign(added, { [key]: arrJSON[i][key] });
                 }
             }

@@ -8,7 +8,7 @@ const cache=new Map();
 function load(name) {
   if(cache.has(name)) return cache.get(name);
   const exports={}; cache.set(name,exports);
-  const code=ts.transpileModule(fs.readFileSync(path.join('src/renderer/src/engine',name+'.ts'),'utf8'),{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022}}).outputText;
+  const code=ts.transpileModule(fs.readFileSync(path.join('src/renderer/src/engine',name+'.ts'),'utf8').replace(/(undo|redo) = \(\): void => \{/g, '$1(): void {'),{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022}}).outputText;
   vm.runInNewContext(code,{exports,require:id=>['./Component','./Logic','./Selection'].includes(id)?load(id.slice(2)):id.endsWith('.svg')?{default:id}:{},performance,console,crypto:require('node:crypto').webcrypto,structuredClone},{filename:name});
   return exports;
 }
@@ -127,4 +127,101 @@ test('selection outlines are solid and handles match the white rectangles with b
   assert.equal(fills.length,4); assert.equal(strokes.length,5);
   for (const fill of fills) { assert.equal(fill.color,'#ffffff'); assert.deepEqual(fill.rect.slice(2),[8,8]); }
   for (const stroke of strokes) { assert.equal(stroke.color,r.selectedColor); assert.equal(stroke.width,2); }
+});
+
+test('shared position edits move every group member and support undo/redo',()=>{
+  const r=renderer([new C.Line(0,0,10,0),new C.Line(0,10,10,10)]);
+  r.setSelection([0,1]); r.groupSelection();
+  let changes=0; r.onComponentChangeCallback=()=>changes++;
+  r.moveSelection(20,-5);
+  assert.equal(r.logicDisplay.components[0].x1,20);
+  assert.equal(r.logicDisplay.components[1].y1,5);
+  assert.equal(r.getSelectionBounds().minX,20);
+  assert.equal(changes,1);
+  r.undo(); assert.equal(r.logicDisplay.components[0].x1,0);
+  r.redo(); assert.equal(r.logicDisplay.components[0].x1,20);
+  r.setSelection([0]);
+  const before=JSON.stringify(r.logicDisplay.components);
+  r.moveSelection(NaN,1); r.moveSelection(1,Infinity);
+  r.readonly=true; r.moveSelection(10,10);
+  assert.equal(JSON.stringify(r.logicDisplay.components),before);
+});
+
+test('grouping and ungrouping notify hierarchy and selection subscribers',()=>{
+  const r=renderer([new C.Line(0,0,10,0),new C.Line(0,10,10,10)]);
+  r.setSelection([0,1]);
+  const memberships=[]; const selections=[];
+  r.onComponentArrayChanged=()=>memberships.push(r.logicDisplay.components.map(c=>c.groupId));
+  r.onComponentChangeCallback=()=>selections.push(Array.from(r.getSelection()));
+  r.groupSelection(); r.groupSelection(true);
+  assert.ok(memberships[0][0]); assert.equal(memberships[0][0],memberships[0][1]);
+  assert.deepEqual(memberships[1],[undefined,undefined]);
+  assert.deepEqual(selections,[[0,1],[0,1]]);
+});
+
+test('individual child selection transforms and deletes only that child',()=>{
+  const r=renderer([new C.Line(0,0,10,0),new C.Line(0,10,10,10)]);
+  r.setSelection([0,1]); r.groupSelection();
+  const id=r.logicDisplay.components[0].groupId;
+  r.setSelection([0],false);
+  assert.deepEqual(Array.from(r.getSelection()),[0]);
+  assert.equal(r.selectedComponent,0);
+  r.moveSelection(5,5);
+  r.scaleSelection(2);
+  assert.equal(r.logicDisplay.components[1].x1,0);
+  assert.equal(r.logicDisplay.components[1].y1,10);
+  assert.equal(r.logicDisplay.components[0].groupId,id);
+  r.setSelection([0]);
+  assert.deepEqual(Array.from(r.getSelection()),[0,1]);
+  assert.equal(r.selectedComponent,null);
+  r.setSelection([1],false); r.deleteSelection();
+  assert.equal(r.logicDisplay.components.length,1);
+  assert.equal(r.logicDisplay.components[0].groupId,id);
+  r.undo(); assert.equal(r.logicDisplay.components.length,2);
+});
+
+test('group names persist, undo and redo, and reject blank or readonly edits',()=>{
+  const r=renderer([new C.Line(0,0,10,0),new C.Line(0,10,10,10)]);
+  r.setSelection([0,1]); r.groupSelection();
+  const id=r.logicDisplay.components[0].groupId;
+  r.renameGroup(id,'  Assembly  ');
+  assert.ok(r.logicDisplay.components.every(c=>c.groupName==='Assembly'));
+  const logic=new LogicDisplay();
+  logic.importJSON(JSON.parse(JSON.stringify(r.logicDisplay.components)),logic.components);
+  assert.ok(logic.components.every(c=>c.groupName==='Assembly'));
+  r.undo(); assert.equal(r.logicDisplay.components[0].groupName,'Group 1');
+  r.redo(); assert.equal(r.logicDisplay.components[0].groupName,'Assembly');
+  const depth=r.undoStack.length;
+  r.renameGroup(id,'   '); r.renameGroup(id,'Assembly');
+  r.readonly=true; r.renameGroup(id,'Changed');
+  assert.equal(r.undoStack.length,depth);
+  assert.equal(r.logicDisplay.components[0].groupName,'Assembly');
+  r.readonly=false; r.setSelection([0]); r.groupSelection(true);
+  assert.ok(r.logicDisplay.components.every(c=>c.groupName===undefined && c.groupId===undefined));
+});
+
+test('new groups get numbered names and custom names replace the complete label',()=>{
+  const r=renderer(Array.from({length:6},(_,i)=>new C.Line(i,0,i,10)));
+  r.setSelection([0,1]); r.groupSelection();
+  r.setSelection([2,3]); r.groupSelection();
+  assert.equal(r.logicDisplay.components[0].groupName,'Group 1');
+  assert.equal(r.logicDisplay.components[2].groupName,'Group 2');
+  r.renameGroup(r.logicDisplay.components[2].groupId,'Walls · east');
+  assert.equal(r.logicDisplay.components[2].groupName,'Walls · east');
+  r.setSelection([4,5]); r.groupSelection();
+  assert.equal(r.logicDisplay.components[4].groupName,'Group 2');
+});
+
+test('hierarchy ranges follow visible rows and Ctrl toggles only the target',()=>{
+  const {selectHierarchyIndexes:select}=load('Selection');
+  const rows=[{key:'group',indexes:[0,1]},{key:'a',indexes:[0]},{key:'b',indexes:[1]},{key:'c',indexes:[2]},{key:'d',indexes:[3]}];
+  const result=(...args)=>Array.from(select(rows,...args));
+  assert.deepEqual(result('c','a',[0],true,false),[0,1,2]);
+  assert.deepEqual(result('a','c',[2],true,false),[0,1,2]);
+  assert.deepEqual(result('c','a',[0],false,true),[0,2]);
+  assert.deepEqual(result('a','c',[0,2],false,true),[2]);
+  assert.deepEqual(result('b','a',[3],true,true),[3,0,1]);
+  assert.deepEqual(result('group',null,[],false,false),[0,1]);
+  assert.deepEqual(result('a','group',[0,1],false,false),[0]);
+  assert.deepEqual(result('c','hidden',[0],true,false),[2]);
 });
