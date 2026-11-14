@@ -1,4 +1,7 @@
 import { preference, numericPreference } from '../utils/Preferences'
+import type { AgentCursor } from '../../../shared/Mcp'
+import { AgentAvatar } from './AgentAvatar'
+import presenceStyle from '../style/agentPresence.module.css'
 import { settingsStorage, SETTINGS_CHANGED } from '../utils/SettingsStorage'
 import { resolveUnit, formatMeasurement } from '../utils/SettingsOptions'
 import { toast } from './Toast'
@@ -84,6 +87,37 @@ function MenuButton(props: {
       )}
     </>
   )
+}
+
+function ConnectedAgentAvatars(): React.ReactElement | null {
+  const [agents, setAgents] = useState<AgentCursor[]>([])
+  useEffect(() => {
+    let active = true
+    let receivedUpdate = false
+    const sync = (next: AgentCursor[]): void => {
+      if (!active) return
+      const visible = next.slice(0, 3)
+      setAgents(current => current.length === visible.length && current.every((agent, i) =>
+        agent.id === visible[i].id && agent.name === visible[i].name &&
+        agent.color === visible[i].color && agent.profile === visible[i].profile
+      ) ? current : visible)
+    }
+    const unsubscribe = window.api.onMcpAgents(next => {
+      receivedUpdate = true
+      sync(next)
+    })
+    void window.api.mcpStatus().then(status => {
+      if (!receivedUpdate) sync(status.agents)
+    }).catch(console.error)
+    return () => { active = false; unsubscribe() }
+  }, [])
+  if (!agents.length) return null
+  return <div className={presenceStyle.windowAvatars} role="group" aria-label={getLocaleKey('agentPresence.connected')}>
+    {agents.map(agent => <span className={presenceStyle.windowAvatar} key={agent.id}
+      title={agent.name} role="img" aria-label={agent.name}>
+      <AgentAvatar agent={agent} />
+    </span>)}
+  </div>
 }
 
 export default function WindowBar(): React.ReactElement {
@@ -377,6 +411,7 @@ export default function WindowBar(): React.ReactElement {
           />
         </div>
         <div className={styles['window-bar-dragger']}></div>
+        <ConnectedAgentAvatars />
         {window.process.platform != 'darwin' && (
           <div className={styles['window-bar-right']}>
             <button

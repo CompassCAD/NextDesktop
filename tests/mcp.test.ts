@@ -57,11 +57,21 @@ test('SDK client creates and edits a design, isolates cursors, rejects stale rev
     await client.connect(transport)
     return { client, transport }
   }
-  const first = await connect('Agent A')
-  const second = await connect('Agent B')
+  const first = await connect('claude-ai')
+  const second = await connect('ChatGPT')
   try {
     expect((await first.client.listTools()).tools).toHaveLength(6)
     expect(server.status().agents).toHaveLength(2)
+    expect(server.status().agents[0]).toMatchObject({
+      name: 'Claude',
+      color: '#D97757',
+      profile: 'claude'
+    })
+    expect(server.status().agents[1]).toMatchObject({
+      name: 'ChatGPT',
+      color: '#10A37F',
+      profile: 'chatgpt'
+    })
     expect(server.status().agents[0].color).not.toBe(server.status().agents[1].color)
     const call = (name: string, args = {}) => first.client.callTool({ name, arguments: args })
     const screenshot = await call('get_canvas_screenshot')
@@ -475,4 +485,51 @@ test('screenshot waits for queued edits and remains available on a read-only can
     if (previous) Object.defineProperty(globalThis, 'document', previous)
     else Reflect.deleteProperty(globalThis, 'document')
   }
+})
+
+test('agent profiles normalize known names without mislabeling unknown clients', async () => {
+  const { resolveAgentIdentity } = await import('../src/shared/AgentIdentity')
+  for (const name of [
+    'Claude',
+    'claude-ai',
+    'CLAUDE DESKTOP',
+    'claude-code',
+    '@anthropic/claude-code'
+  ]) {
+    expect(resolveAgentIdentity(name, '#ffffff')).toMatchObject({
+      name: 'Claude',
+      color: '#D97757',
+      profile: 'claude'
+    })
+  }
+  expect(resolveAgentIdentity('chat-gpt', '#ffffff')).toMatchObject({
+    name: 'ChatGPT',
+    profile: 'chatgpt'
+  })
+  expect(resolveAgentIdentity('codex-cli', '#ffffff')).toMatchObject({
+    name: 'Codex',
+    profile: 'codex'
+  })
+  expect(resolveAgentIdentity('Gemini CLI', '#ffffff')).toMatchObject({
+    name: 'Gemini',
+    profile: 'gemini'
+  })
+  expect(resolveAgentIdentity('GitHub Copilot', '#ffffff')).toMatchObject({
+    name: 'Copilot',
+    profile: 'copilot'
+  })
+  expect(resolveAgentIdentity('Cursor', '#ffffff')).toMatchObject({
+    name: 'Cursor',
+    profile: 'cursor'
+  })
+  expect(resolveAgentIdentity('Claudette', '#123456')).toEqual({
+    name: 'Claudette',
+    color: '#123456'
+  })
+  expect(resolveAgentIdentity('  Zean  ', '#123456')).toEqual({ name: 'Zean', color: '#123456' })
+  expect(resolveAgentIdentity('mcp-remote', '#123456')).toEqual({
+    name: 'mcp-remote',
+    color: '#123456'
+  })
+  expect(resolveAgentIdentity('   ', '#123456')).toEqual({ name: 'Guest', color: '#123456' })
 })

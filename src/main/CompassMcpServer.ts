@@ -1,3 +1,4 @@
+import { resolveAgentIdentity } from '../shared/AgentIdentity'
 import {
   createServer,
   type Server as HttpServer,
@@ -185,11 +186,12 @@ export class CompassMcpServer {
         x: 0,
         y: 0
       }
+      Object.assign(agent, resolveAgentIdentity(agent.name, agent.color))
       const server = new McpServer(
         { name: 'CompassCAD', version: '1.0.0' },
         {
           instructions:
-            'Design step by step. Read the design first, choose a cursor color, and explain each next action to the user. Use small batches and await each tool result before continuing. Edits animate in CompassCAD. Call get_canvas_screenshot after drawing to visually verify the result; inspect the returned image before claiming success. On interruption, read the design before retrying because completed steps remain applied and undoable.'
+            'Design step by step. Read the design first, keep your assigned profile name and color unless the user requests another color, and explain each next action to the user. Use small batches and await each tool result before continuing. Edits animate in CompassCAD. Call get_canvas_screenshot after drawing to visually verify the result; inspect the returned image before claiming success. On interruption, read the design before retrying because completed steps remain applied and undoable.'
         }
       )
       const transport = new StreamableHTTPServerTransport({

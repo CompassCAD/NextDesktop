@@ -1,4 +1,5 @@
 import { readMcpSettings, type McpStatus } from '../../../../shared/Mcp'
+import { AgentTag } from '../AgentAvatar'
 import { extensionBlacklist } from '../../plugins/ExtensionLoader'
 import AboutModal from './AboutModal'
 import UpdaterModal from './UpdaterModal'
@@ -425,7 +426,7 @@ export default function SettingsModal({ onClose }: { onClose: () => void }): Rea
                 {mcpStatus?.agents.length ? (
                   mcpStatus.agents.map((agent) => (
                     <p key={agent.id}>
-                      <span style={{ color: agent.color }}>●</span> {agent.name} ·{' '}
+                      <AgentTag agent={agent} /> ·{' '}
                       {agent.id.slice(0, 4)}
                     </p>
                   ))

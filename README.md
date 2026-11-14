@@ -72,3 +72,13 @@ shown in Settings without claiming that the server started.
 Validation: `bun test tests/mcp.test.ts tests/settings.test.cjs`. These tests use
 loopback connections and temporary configuration directories, never your actual
 CompassCAD preferences.
+
+Known MCP client names receive default profiles: Claude (terracotta), ChatGPT
+(green), Codex (slate), Gemini (blue), Copilot (purple), and Cursor (cyan).
+Recognition uses the client's advertised name, including aliases such as
+`claude-ai` and `claude-code`. Generic bridge names are left unchanged; profiles
+are presentation hints, not verified identities. Explicit `set_cursor` colors
+still override defaults. Settings tags use the same color and a local monogram
+avatar. Connected sessions show up to three profile pictures in the window bar, with a
+pop-in animation when they appear. They remain visible until disconnect. Unknown
+clients also get avatars. Reduced-motion preferences disable animation.

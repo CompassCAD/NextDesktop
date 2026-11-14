@@ -72,6 +72,7 @@ export const canvasScreenshotSchema = z.object({
   })
 })
 export interface AgentCursor {
+  profile?: import('./AgentIdentity').AgentProfile
   id: string
   name: string
   color: string

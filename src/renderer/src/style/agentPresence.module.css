@@ -1,0 +1,74 @@
+.avatar {
+  width: 44px;
+  height: 44px;
+  flex: 0 0 auto;
+  font-family: 'Radio Canada Big', 'Murecho', sans-serif;
+  animation: 0.2s popup-scale ease
+}
+.tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  max-width: 100%;
+  padding: 4px 10px 4px 4px;
+  border-radius: 12px;
+  border: 1px solid color-mix(in srgb, var(--agent-color) 55%, transparent);
+  background: color-mix(in srgb, var(--agent-color) 18%, #202124);
+  color: #fff;
+  font-weight: 600;
+}
+.tag .avatar {
+  width: 28px;
+  height: 28px;
+}
+.tag > span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.windowAvatars {
+  display: flex;
+  align-items: center;
+  flex: 0 0 auto;
+  padding: 0 10px;
+  -webkit-app-region: no-drag;
+}
+.windowAvatar {
+  display: flex;
+  width: 24px;
+  height: 24px;
+  border: 2px solid var(--primary-background, #202124);
+  border-radius: 50%;
+  overflow: hidden;
+  animation: profilePop 450ms cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+  .windowAvatar::after {
+    content: "";
+    width: 28px;
+    height: 28px;
+    background-color: #fff;
+    border-radius: 50%;
+    animation: profilePop 450ms cubic-bezier(0.34, 1.56, 0.64, 1) both;
+  }
+.windowAvatar + .windowAvatar {
+  margin-left: -6px;
+}
+.windowAvatar .avatar {
+  width: 28px;
+  height: 28px;
+}
+@keyframes profilePop {
+  from {
+    opacity: 0;
+    transform: scale(0.5);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .windowAvatar {
+    animation: none;
+  }
+}

@@ -159,6 +159,7 @@
       "selectHint": "Select (click to select/deselect)"
     }
   },
+  "agentPresence": { "connected": "Connected agents" },
   "settings": {
     "mcp": "MCP / AI agents",
     "mcpHelp": "Connect local AI agents to this drawing. Each session has a labeled colored cursor. Changes use the normal undo history. Settings take effect after Save; connection changes disconnect existing agents.",
