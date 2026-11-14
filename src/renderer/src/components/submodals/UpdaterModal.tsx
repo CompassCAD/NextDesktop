@@ -52,7 +52,7 @@ export default function UpdaterModal(): React.ReactElement {
           </button>
           {isDevMode && (
             <button type="button" style={actionStyle} onClick={previewDownload}>
-              Preview slow download
+              {getLocaleKey('editor.updaterModal.previewDownload')}
             </button>
           )}
         </>
@@ -63,7 +63,7 @@ export default function UpdaterModal(): React.ReactElement {
         <>
           <p role="status">
             {getLocaleKey('editor.updaterModal.updateAvailable')}
-            {availableVersion ? `: version ${availableVersion}.` : '.'}
+            {availableVersion ? ` ${getLocaleKey('common.version').replace('{version}', () => availableVersion)}` : ''}
           </p>
           <p>{getLocaleKey('editor.updaterModal.updateMessage')}</p>
           <button type="button" style={actionStyle} onClick={downloadUpdate}>
@@ -105,7 +105,7 @@ export default function UpdaterModal(): React.ReactElement {
           </button>
           {isDevMode && (
             <button type="button" style={actionStyle} onClick={previewDownload}>
-              Preview slow download
+              {getLocaleKey('editor.updaterModal.previewDownload')}
             </button>
           )}
         </>

@@ -1,3 +1,4 @@
+import { getLocaleKey } from '../locales/Locale'
 import styles from '../style/index.module.css'
 import { useEffect, useState, useRef, useCallback } from 'react'
 import DropDownIcon from '../assets/icons/dropdown.svg'
@@ -22,7 +23,7 @@ export default function Dropdown({
   options,
   value,
   defaultIndex,
-  placeholder = 'Select',
+  placeholder = getLocaleKey('common.select'),
   disabled = false,
   onChange
 }: DropdownProps): React.ReactElement {
@@ -128,7 +129,7 @@ export default function Dropdown({
         </span>
         <img
           src={DropDownIcon}
-          alt="Dropdown"
+          alt={getLocaleKey('common.dropdown')}
           style={{ transform: `rotate(${isOpen ? '180' : '0'}deg)` }}
         />
       </button>
@@ -154,7 +155,7 @@ export default function Dropdown({
               {selected?.value === option.value && (
                 <img
                   src={CheckIcon}
-                  alt="Selected"
+                  alt={getLocaleKey('common.selected')}
                   width={16}
                   className={styles['dropdown-list-item-check']}
                 />

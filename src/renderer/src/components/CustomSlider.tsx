@@ -1,3 +1,4 @@
+import { getLocaleKey } from '../locales/Locale'
 import React, {
   useCallback,
   useEffect,
@@ -50,7 +51,7 @@ export const Slider: React.FC<SliderProps> = ({
   disabled = false,
   onChange,
   onChangeCommitted,
-  ariaLabel = "Slider",
+  ariaLabel = getLocaleKey('common.slider'),
   className,
   id,
 }) => {

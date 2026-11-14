@@ -2,6 +2,7 @@ import { createContext, useCallback, useContext, useRef, useState } from 'react'
 import type { ReactNode } from 'react'
 import { GraphicsRenderer, InitializeInstance } from '../engine/Engine'
 import { setRendererInstance } from '../exports'
+import McpBridge from './McpBridge'
 
 interface RendererContextValue {
   /** The active renderer instance, or null before it has been created. */
@@ -50,6 +51,7 @@ export function RendererProvider({ children }: { children: ReactNode }): React.J
 
   return (
     <RendererContext.Provider value={{ renderer, isReady, createRenderer }}>
+      <McpBridge />
       {children}
     </RendererContext.Provider>
   )

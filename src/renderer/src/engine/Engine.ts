@@ -1,3 +1,4 @@
+import { drawMcpCursors } from './McpCursors'
 import { getLocaleKey } from '../locales/Locale'
 import { measurementUnits, resolveUnit } from '../utils/SettingsOptions'
 import { expandGroups, transformComponent } from './Selection'
@@ -75,6 +76,8 @@ export class GraphicsRenderer {
   selectedComponents: number[] = []
   selectionExpandsGroups = true
   contextMenuOpen = false
+
+  mcpAgents: import('../../../shared/Mcp').AgentCursor[] = []
 
   get isEditing(): boolean {
     return !!this.selectionGesture || !!this.dragHandle || (this.mode !== this.modes.Select && this.mode !== this.modes.Navigate)
@@ -4013,6 +4016,7 @@ export class GraphicsRenderer {
     this.flushBatchedPaths()
     this.drawRules()
     this.refreshSelectionTools()
+    if (this.context) drawMcpCursors(this.context, this.mcpAgents, this.cOutX, this.cOutY, this.zoom)
     if (this._debugMode) {
       this._copiableDebugStrings = ''
       this.drawDebugToast()

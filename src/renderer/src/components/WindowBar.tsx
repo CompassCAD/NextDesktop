@@ -290,18 +290,21 @@ export default function WindowBar(): React.ReactElement {
             <div className={styles['window-bar-mac-buttons']}>
               <button
                 className={styles['window-bar-button-mac']}
+                aria-label={getLocaleKey('common.close')}
                 onClick={() => window.electron.ipcRenderer.send('close')}
               >
                 <div className={`${styles['mac-roundy']} ${styles['close']}`}></div>
               </button>
               <button
                 className={styles['window-bar-button-mac']}
+                aria-label={getLocaleKey('editor.window.minimize')}
                 onClick={() => window.electron.ipcRenderer.send('minimize')}
               >
                 <div className={`${styles['mac-roundy']} ${styles['minimize']}`}></div>
               </button>
               <button
                 className={styles['window-bar-button-mac']}
+                aria-label={getLocaleKey('editor.window.fullscreen')}
                 onClick={() => window.electron.ipcRenderer.send('fullscreen')}
               >
                 <div className={`${styles['mac-roundy']} ${styles['full']}`}></div>
@@ -361,7 +364,7 @@ export default function WindowBar(): React.ReactElement {
               savePreference('snap', String(!isSnapped))
             }}
           />
-          <MenuButton id="menu-opener" icon={MeasureIcon} />
+          <MenuButton id="menu-opener" icon={MeasureIcon} title={getLocaleKey('settings.gridSpacing')} />
           <Dropdown
             options={defaultMeasure.map((measure) => ({
               value: String(measure),

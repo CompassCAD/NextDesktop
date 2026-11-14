@@ -38,7 +38,8 @@
       "enableSnap": "Aktivera Snap till Grid",
       "minimize": "Minimera",
       "maximize": "Maximera",
-      "restore": "Återställ"
+      "restore": "Återställ",
+      "fullscreen": "Växla helskärm"
     },
     "menu": {
       "newDesign": "Ny Design",
@@ -64,7 +65,8 @@
       "updateFinished": "Starta om CompassCAD NEXT för att avsluta installationen.",
       "restartNow": "Starta om nu",
       "couldntCheckForUpdates": "Kunde inte söka efter uppdateringar. Kontrollera din internetanslutning och försök igen.",
-      "tryAgain": "Försök igen"
+      "tryAgain": "Försök igen",
+      "previewDownload": "Förhandsvisa långsam nedladdning"
     },
     "about": {
       "openSourceLicenses": "Licens för öppen-källkod"
@@ -196,7 +198,21 @@
     "invalidNumbers": "Kontrollera talvärdena: rutnätsavstånd 0,01–100000 cm, markeringstolerans 1–50 px, decimaler 0–6 och ångrahistorik 10–500.",
     "previewError": "Det gick inte att läsa in typsnittets förhandsvisning.",
     "updates": "Uppdateringar",
-    "about": "Om"
+    "about": "Om",
+    "mcp": "MCP / AI-agenter",
+    "mcpEnabled": "Aktivera lokal MCP-server",
+    "mcpPort": "Lokal port",
+    "mcpToken": "Åtkomsttoken (32–256 tecken)",
+    "mcpGenerate": "Generera ny token",
+    "mcpAllowEdits": "Tillåt agenter att redigera ritningar",
+    "mcpRunning": "Körs",
+    "mcpStopped": "Stoppad",
+    "mcpSavedError": "Inställningarna sparades, men MCP-servern kunde inte starta:",
+    "mcpCopy": "Kopiera klientkonfiguration",
+    "mcpAgents": "Anslutna agenter",
+    "mcpNoAgents": "Inga agenter anslutna",
+    "mcpHelp": "Anslut lokala AI-agenter till ritningen. Varje session har en färgad markör med namn. Ändringar använder den vanliga ångrahistoriken. Inställningarna gäller efter att du sparat; ändrade anslutningsinställningar kopplar från befintliga agenter.",
+    "mcpClientHelp": "Kopiera denna preliminära konfiguration till en MCP-klient som stöder Streamable HTTP och auktoriseringshuvuden och spara sedan. Håll token hemlig. Appen måste vara öppen. Agenter som är inaktiva i 30 minuter kopplas från."
   },
   "common": {
     "yes": "Ja",
@@ -204,7 +220,12 @@
     "ok": "OK",
     "cancel": "Avbryt",
     "close": "Stäng",
-    "enterText": "Ange text…"
+    "enterText": "Ange text…",
+    "select": "Välj",
+    "selected": "Vald",
+    "dropdown": "Visa alternativ",
+    "slider": "Skjutreglage",
+    "version": "Version {version}"
   },
   "contextMenu": {
     "title": "Ritytans åtgärder",
@@ -223,5 +244,29 @@
     "navigate": "Panoreringsverktyg",
     "factor": "Skalfaktor k (till exempel fördubblar 2 storleken)",
     "invalid": "Ange en ändlig skalfaktor större än noll."
+  },
+  "extensions": {
+    "title": "Tillägg",
+    "empty": "Inga tillägg installerade.",
+    "help": "Beslut att tillåta eller neka sparas mellan omstarter. Ändrad tilläggskod kräver nytt samtycke. Återställ behörigheter och spara för att välja igen. Avmarkera och spara för att inaktivera ett tillägg.",
+    "canvas": "Åtkomst till ritytan är alltid tillgänglig. Åtkomst till operativsystemet begränsas till behörigheterna ovan.",
+    "none": "Inga systembehörigheter begärs.",
+    "consentTitle": "Tilläggets behörigheter",
+    "consent": "Innan {name} aktiveras vill {name} be om några behörigheter:",
+    "deny": "Neka",
+    "allow": "Tillåt och aktivera",
+    "permissions": {
+      "web_request": "Webbförfrågningar: skicka och ta emot HTTP(S)-data, inklusive Internetadresser och lokala nätverksadresser.",
+      "server_listen": "Lokal server: kör upp till fyra HTTP-servrar på 127.0.0.1. Andra program på datorn kan ansluta.",
+      "filesystem_read": "Läsa filer: läs textfiler och lista mappar överallt där ditt konto har åtkomst.",
+      "filesystem_write": "Skriva filer: skapa eller skriva över textfiler, skapa mappar och ta bort filer överallt där ditt konto har åtkomst."
+    },
+    "permissionNames": {
+      "web_request": "Webbförfrågningar",
+      "server_listen": "Lokal server",
+      "filesystem_read": "Läsa filer och mappar",
+      "filesystem_write": "Skriva och ta bort filer"
+    },
+    "resetPermissions": "Återställ behörigheter vid sparande"
   }
 }

@@ -38,7 +38,8 @@
       "enableSnap": "Aligner sur la grille",
       "minimize": "Réduire",
       "maximize": "Agrandir",
-      "restore": "Restaurer"
+      "restore": "Restaurer",
+      "fullscreen": "Basculer en plein écran"
     },
     "menu": {
       "newDesign": "Nouveau projet",
@@ -64,7 +65,8 @@
       "updateFinished": "Redémarrez CompassCAD NEXT pour terminer l'installation.",
       "restartNow": "Redémarrer maintenant",
       "couldntCheckForUpdates": "Impossible de vérifier les mises à jour. Veuillez vérifier votre connexion Internet et réessayer.",
-      "tryAgain": "Réessayer"
+      "tryAgain": "Réessayer",
+      "previewDownload": "Simuler un téléchargement lent"
     },
     "about": {
       "openSourceLicenses": "Licences Open Source"
@@ -196,7 +198,21 @@
     "invalidNumbers": "Vérifiez les valeurs : espacement de 0,01 à 100000 cm, tolérance de 1 à 50 px, décimales de 0 à 6 et historique de 10 à 500.",
     "previewError": "Impossible de charger l’aperçu de la police.",
     "updates": "Mises à jour",
-    "about": "À propos"
+    "about": "À propos",
+    "mcp": "MCP / Agents IA",
+    "mcpEnabled": "Activer le serveur MCP local",
+    "mcpPort": "Port local",
+    "mcpToken": "Jeton d’accès (32–256 caractères)",
+    "mcpGenerate": "Générer un nouveau jeton",
+    "mcpAllowEdits": "Autoriser les agents à modifier les projets",
+    "mcpRunning": "En cours d’exécution",
+    "mcpStopped": "Arrêté",
+    "mcpSavedError": "Préférences enregistrées, mais le serveur MCP n’a pas pu démarrer :",
+    "mcpCopy": "Copier la configuration du client",
+    "mcpAgents": "Agents connectés",
+    "mcpNoAgents": "Aucun agent connecté",
+    "mcpHelp": "Connectez des agents IA locaux à ce dessin. Chaque session dispose d’un curseur coloré avec un nom. Les modifications utilisent l’historique d’annulation habituel. Les paramètres prennent effet après enregistrement ; modifier la connexion déconnecte les agents existants.",
+    "mcpClientHelp": "Copiez cette configuration provisoire dans un client MCP prenant en charge Streamable HTTP et les en-têtes d’autorisation, puis enregistrez. Gardez le jeton secret. L’application doit rester ouverte. Les agents inactifs pendant 30 minutes sont déconnectés."
   },
   "common": {
     "yes": "Oui",
@@ -204,7 +220,12 @@
     "ok": "OK",
     "cancel": "Annuler",
     "close": "Fermer",
-    "enterText": "Saisissez du texte…"
+    "enterText": "Saisissez du texte…",
+    "select": "Sélectionner",
+    "selected": "Sélectionné",
+    "dropdown": "Afficher les options",
+    "slider": "Curseur",
+    "version": "Version {version}"
   },
   "contextMenu": {
     "title": "Actions de la zone de dessin",
@@ -223,5 +244,29 @@
     "navigate": "Outil de déplacement de la vue",
     "factor": "Facteur d’échelle k (par exemple, 2 double la taille)",
     "invalid": "Saisissez un facteur d’échelle fini supérieur à zéro."
+  },
+  "extensions": {
+    "title": "Extensions",
+    "empty": "Aucune extension installée.",
+    "help": "Les autorisations et les refus sont conservés après redémarrage. Toute modification du code d’une extension entraîne une nouvelle demande de consentement. Réinitialisez les autorisations et enregistrez pour choisir à nouveau. Décochez et enregistrez pour désactiver une extension.",
+    "canvas": "L’accès à la zone de dessin est toujours disponible. L’accès au système est limité aux autorisations ci-dessus.",
+    "none": "Aucune autorisation système demandée.",
+    "consentTitle": "Autorisations de l’extension",
+    "consent": "Avant l’activation de {name}, {name} souhaite vous demander certaines autorisations :",
+    "deny": "Refuser",
+    "allow": "Autoriser et activer",
+    "permissions": {
+      "web_request": "Requêtes web : envoyer et recevoir des données HTTP(S), y compris vers des adresses Internet et du réseau local.",
+      "server_listen": "Serveur local : héberger jusqu’à quatre serveurs HTTP sur 127.0.0.1. Les autres programmes de cet ordinateur peuvent s’y connecter.",
+      "filesystem_read": "Lire les fichiers : lire des fichiers texte et lister les dossiers partout où votre compte a accès.",
+      "filesystem_write": "Écrire des fichiers : créer ou écraser des fichiers texte, créer des dossiers et supprimer des fichiers partout où votre compte a accès."
+    },
+    "permissionNames": {
+      "web_request": "Requêtes web",
+      "server_listen": "Serveur local",
+      "filesystem_read": "Lire les fichiers et dossiers",
+      "filesystem_write": "Écrire et supprimer des fichiers"
+    },
+    "resetPermissions": "Réinitialiser les autorisations à l’enregistrement"
   }
 }

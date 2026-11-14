@@ -2,6 +2,7 @@ import * as fs from 'node:fs/promises'
 import * as path from 'node:path'
 import { createHash, randomUUID } from 'node:crypto'
 import { createServer, type Server } from 'node:http'
+import type { ExtensionDecisions } from './ExtensionDecisions'
 
 export const permissions = [
   'web.request',
@@ -17,6 +18,7 @@ export interface ExtensionInfo {
 }
 interface Session {
   id: string
+  revision: string
   permissions: string[]
   controllers: Set<AbortController>
   servers: Map<string, Server>
@@ -54,7 +56,8 @@ export class ExtensionService {
   private generation = 0
   constructor(
     private directory: string,
-    private disabled: () => string[]
+    private disabled: () => string[],
+    private decisions?: ExtensionDecisions
   ) {}
 
   private async read(id: string): Promise<{ info: ExtensionInfo; source: string; hash: string }> {
@@ -95,7 +98,10 @@ export class ExtensionService {
     if (this.disabled().includes(id)) return null
     const entry = await this.read(id)
     if (entry.info.error) throw new Error(entry.info.error)
-    if (entry.info.permissions.length && !(await consent(entry.info))) return null
+    const revision = this.decisions?.revision(id) || ''
+    const remembered = this.decisions?.get(id, entry.hash, revision)
+    if (entry.info.permissions.length && remembered === false) return null
+    const approved = !entry.info.permissions.length || remembered === true || await consent(entry.info)
     // Never authorize code that changed while the consent dialog was open.
     if (
       generation !== this.generation ||
@@ -104,10 +110,17 @@ export class ExtensionService {
     )
       throw new Error('Extension changed or was disabled during activation. Try again.')
     if (generation !== this.generation) throw new Error('Extension activation was cancelled.')
+    if (revision !== (this.decisions?.revision(id) || '')) throw new Error('Extension permissions were reset during activation.')
+    if (entry.info.permissions.length && remembered === undefined) {
+      // Commit before activating; a failed save must never silently grant access.
+      this.decisions?.set(id, entry.hash, revision, approved)
+    }
+    if (!approved) return null
     this.deactivate(id)
     const token = randomUUID()
     this.sessions.set(token, {
       id,
+      revision,
       permissions: entry.info.permissions,
       controllers: new Set(),
       servers: new Map()
@@ -128,6 +141,9 @@ export class ExtensionService {
   }
   reconcile(): void {
     this.disabled().forEach((id) => this.deactivate(id))
+    for (const session of this.sessions.values()) {
+      if (session.revision !== (this.decisions?.revision(session.id) || '')) this.deactivate(session.id)
+    }
   }
   dispose(): void {
     this.generation++

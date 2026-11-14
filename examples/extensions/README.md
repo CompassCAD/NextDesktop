@@ -8,7 +8,7 @@ Declare permissions in one JSON comment before your Lua code:
 -- @compasscad {"name":"My extension","permissions":["web.request"]}
 ```
 
-Settings → Extensions lists every discovered `.lua` file and all declared permissions. Unknown permissions and malformed manifests block activation. Uncheck and Save to deactivate; check and Save to reactivate. Denied extensions stay inactive for the session; to retry, disable/save then enable/save. Approvals last for one activation and are requested again after restart. Legacy files without a header have canvas/UI access only.
+Settings → Extensions lists every discovered `.lua` file and all declared permissions. Unknown permissions and malformed manifests block activation. Uncheck and Save to deactivate; check and Save to reactivate. Allow and Deny decisions persist across restarts and disable/enable cycles in the application settings. Changed extension source requires new consent. To choose again, use Reset permissions in Settings and Save (Cancel discards the reset). Legacy files without a header have canvas/UI access only.
 
 Each extension has its own Lua state. `require('ui')` and `require('engine')` remain available without permissions. Direct JavaScript, OS libraries, file/module loaders, and debug access are unavailable. Pictures must contain embedded raster data; external image URLs cannot bypass network permissions.
 

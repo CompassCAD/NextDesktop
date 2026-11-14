@@ -74,7 +74,7 @@ const ModalComponent: React.FC<ModalProps> = ({ isOpen, onClose, title, content 
             type="button"
             className={style['modal-close']}
             onClick={onClose}
-            aria-label={getLocaleKey('settings.cancel')}
+            aria-label={getLocaleKey('common.close')}
           >
             <img src={CloseIcon} height={24} alt="" />
           </button>

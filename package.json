@@ -25,12 +25,14 @@
   "dependencies": {
     "@electron-toolkit/preload": "^3.0.2",
     "@electron-toolkit/utils": "^4.0.0",
+    "@modelcontextprotocol/sdk": "^1",
     "derakuma": "0.6.7",
     "electron-log": "^5.4.4",
     "electron-updater": "^6.8.9",
     "fengari": "^0.1.5",
     "fengari-interop": "^0.1.4",
-    "fengari-web": "^0.1.4"
+    "fengari-web": "^0.1.4",
+    "zod": "^3"
   },
   "devDependencies": {
     "@electron-toolkit/eslint-config-prettier": "^3.0.0",

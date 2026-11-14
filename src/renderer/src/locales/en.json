@@ -38,7 +38,8 @@
       "enableSnap": "Snap to Grid",
       "minimize": "Minimize",
       "maximize": "Maximize",
-      "restore": "Restore Down"
+      "restore": "Restore Down",
+      "fullscreen": "Toggle full screen"
     },
     "menu": {
       "newDesign": "New Design",
@@ -64,7 +65,8 @@
       "updateFinished": "Restart CompassCAD NEXT to finish installing it.",
       "restartNow": "Restart Now",
       "couldntCheckForUpdates": "Couldn't check for updates. Please check your internet connection and try again.",
-      "tryAgain": "Try again"
+      "tryAgain": "Try again",
+      "previewDownload": "Preview slow download"
     },
     "about": {
       "openSourceLicenses": "Open Source License"
@@ -158,6 +160,20 @@
     }
   },
   "settings": {
+    "mcp": "MCP / AI agents",
+    "mcpHelp": "Connect local AI agents to this drawing. Each session has a labeled colored cursor. Changes use the normal undo history. Settings take effect after Save; connection changes disconnect existing agents.",
+    "mcpEnabled": "Enable local MCP server",
+    "mcpPort": "Local port",
+    "mcpToken": "Access token (32–256 characters)",
+    "mcpGenerate": "Generate new token",
+    "mcpAllowEdits": "Allow agents to edit designs",
+    "mcpRunning": "Running",
+    "mcpStopped": "Stopped",
+    "mcpSavedError": "Preferences saved, but the MCP server could not start:",
+    "mcpClientHelp": "Copy this draft configuration into an MCP client supporting Streamable HTTP and authorization headers, then Save. Keep the token private. The app must remain open. Agents idle for 30 minutes are disconnected.",
+    "mcpCopy": "Copy client configuration",
+    "mcpAgents": "Connected agents",
+    "mcpNoAgents": "No agents connected",
     "title": "Settings",
     "general": "General",
     "canvas": "Canvas",
@@ -222,12 +238,17 @@
     "ok": "OK",
     "cancel": "Cancel",
     "close": "Close",
-    "enterText": "Enter text..."
+    "enterText": "Enter text...",
+    "select": "Select",
+    "selected": "Selected",
+    "dropdown": "Open options",
+    "slider": "Slider",
+    "version": "Version {version}"
   },
   "extensions": {
     "title": "Extensions",
     "empty": "No extensions installed.",
-    "help": "Uncheck an extension to deactivate it when you save. Enabling an extension requests consent before its code runs. Permissions apply to this activation only.",
+    "help": "Allow and Deny decisions are remembered across restarts. Changed extension code requests consent again. Reset permissions and Save to choose again. Uncheck and Save to deactivate an extension.",
     "canvas": "Canvas access is always available. OS access is limited to the permissions listed above.",
     "none": "No OS permissions requested.",
     "consentTitle": "Extension permissions",
@@ -245,6 +266,7 @@
       "server_listen": "Local server",
       "filesystem_read": "Read files and folders",
       "filesystem_write": "Write and delete files"
-    }
+    },
+    "resetPermissions": "Reset permissions on Save"
   }
 }

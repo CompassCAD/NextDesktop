@@ -5,6 +5,12 @@ declare global {
   interface Window {
     electron: ElectronAPI
     api: {
+      mcpStatus: () => Promise<import('../shared/Mcp').McpStatus>,
+      mcpApply: () => Promise<import('../shared/Mcp').McpStatus>,
+      mcpReady: (ready: boolean) => Promise<void>,
+      mcpReply: (id: string, reply: { result?: unknown; error?: string }) => void,
+      onMcpRequest: (callback: (request: import('../shared/Mcp').McpRequest) => void) => () => void,
+      onMcpAgents: (callback: (agents: import('../shared/Mcp').AgentCursor[]) => void) => () => void,
       onExtensionPermissionRequest: (callback: (request: { requestId: string; id: string; name: string; permissions: string[] }) => void) => () => void,
       respondExtensionPermission: (requestId: string, approved: boolean) => Promise<void>,
       listExtensions: () => Promise<Array<{ id: string; name: string; permissions: string[]; error?: string }>>,

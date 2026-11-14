@@ -5,6 +5,20 @@ import path from 'path'
 
 // Custom APIs for renderer
 const api = {
+  mcpStatus: () => ipcRenderer.invoke('mcp:status'),
+  mcpApply: () => ipcRenderer.invoke('mcp:apply'),
+  mcpReady: (ready: boolean) => ipcRenderer.invoke('mcp:ready', ready),
+  mcpReply: (id: string, reply: { result?: unknown; error?: string }) => ipcRenderer.send('mcp:reply', id, reply),
+  onMcpRequest: (callback: (request: import('../shared/Mcp').McpRequest) => void) => {
+    const listener = (_event: Electron.IpcRendererEvent, request: import('../shared/Mcp').McpRequest): void => callback(request)
+    ipcRenderer.on('mcp:request', listener)
+    return () => { ipcRenderer.removeListener('mcp:request', listener) }
+  },
+  onMcpAgents: (callback: (agents: import('../shared/Mcp').AgentCursor[]) => void) => {
+    const listener = (_event: Electron.IpcRendererEvent, agents: import('../shared/Mcp').AgentCursor[]): void => callback(agents)
+    ipcRenderer.on('mcp:agents', listener)
+    return () => { ipcRenderer.removeListener('mcp:agents', listener) }
+  },
   onExtensionPermissionRequest: (callback: (request: { requestId: string; id: string; name: string; permissions: string[] }) => void) => {
     const listener = (_event: Electron.IpcRendererEvent, request: Parameters<typeof callback>[0]): void => callback(request)
     ipcRenderer.on('extensions:permission-request', listener)

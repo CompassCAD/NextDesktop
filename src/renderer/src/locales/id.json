@@ -38,7 +38,8 @@
       "enableSnap": "Snap ke Grid",
       "minimize": "Minimalkan",
       "maximize": "Maksimalkan",
-      "restore": "Pulihkan"
+      "restore": "Pulihkan",
+      "fullscreen": "Alihkan layar penuh"
     },
     "menu": {
       "newDesign": "Desain Baru",
@@ -64,7 +65,8 @@
       "updateFinished": "Mulai ulang CompassCAD NEXT untuk menyelesaikan instalasi.",
       "restartNow": "Mulai ulang sekarang",
       "couldntCheckForUpdates": "Tidak bisa mengecek update sekarang. Coba lagi sesaat waktu.",
-      "tryAgain": "Coba lagi"
+      "tryAgain": "Coba lagi",
+      "previewDownload": "Pratinjau unduhan lambat"
     },
     "about": {
       "openSourceLicenses": "Lisensi kode sumber terbuka"
@@ -196,7 +198,21 @@
     "invalidNumbers": "Periksa angka: jarak kisi 0,01–100000 cm, toleransi 1–50 px, desimal 0–6, dan riwayat urungkan 10–500.",
     "previewError": "Pratinjau jenis huruf gagal dimuat.",
     "updates": "Pembaruan",
-    "about": "Tentang"
+    "about": "Tentang",
+    "mcp": "MCP / Agen AI",
+    "mcpEnabled": "Aktifkan server MCP lokal",
+    "mcpPort": "Port lokal",
+    "mcpToken": "Token akses (32–256 karakter)",
+    "mcpGenerate": "Buat token baru",
+    "mcpAllowEdits": "Izinkan agen mengedit desain",
+    "mcpRunning": "Berjalan",
+    "mcpStopped": "Berhenti",
+    "mcpSavedError": "Preferensi disimpan, tetapi server MCP gagal dimulai:",
+    "mcpCopy": "Salin konfigurasi klien",
+    "mcpAgents": "Agen terhubung",
+    "mcpNoAgents": "Tidak ada agen terhubung",
+    "mcpHelp": "Hubungkan agen AI lokal ke gambar ini. Setiap sesi memiliki kursor berwarna dengan label. Perubahan menggunakan riwayat urungkan biasa. Pengaturan berlaku setelah disimpan; perubahan koneksi memutus agen yang terhubung.",
+    "mcpClientHelp": "Salin draf konfigurasi ini ke klien MCP yang mendukung Streamable HTTP dan header otorisasi, lalu simpan. Jaga kerahasiaan token. Aplikasi harus tetap terbuka. Agen yang tidak aktif selama 30 menit akan diputus."
   },
   "common": {
     "yes": "Ya",
@@ -204,7 +220,12 @@
     "ok": "OK",
     "cancel": "Batal",
     "close": "Tutup",
-    "enterText": "Masukkan teks..."
+    "enterText": "Masukkan teks...",
+    "select": "Pilih",
+    "selected": "Terpilih",
+    "dropdown": "Buka pilihan",
+    "slider": "Penggeser",
+    "version": "Versi {version}"
   },
   "contextMenu": {
     "title": "Tindakan kanvas",
@@ -223,5 +244,29 @@
     "navigate": "Alat geser tampilan",
     "factor": "Faktor skala k (misalnya, 2 menggandakan ukuran)",
     "invalid": "Masukkan faktor skala terhingga yang lebih besar dari nol."
+  },
+  "extensions": {
+    "title": "Ekstensi",
+    "empty": "Tidak ada ekstensi terpasang.",
+    "help": "Keputusan izinkan dan tolak tetap tersimpan setelah aplikasi dimulai ulang. Kode ekstensi yang berubah akan meminta persetujuan lagi. Atur ulang izin dan simpan untuk memilih lagi. Hapus centang dan simpan untuk menonaktifkan ekstensi.",
+    "canvas": "Akses kanvas selalu tersedia. Akses sistem operasi dibatasi sesuai izin di atas.",
+    "none": "Tidak ada izin sistem operasi yang diminta.",
+    "consentTitle": "Izin ekstensi",
+    "consent": "Sebelum mengaktifkan {name}, {name} ingin meminta beberapa izin dari Anda:",
+    "deny": "Tolak",
+    "allow": "Izinkan dan aktifkan",
+    "permissions": {
+      "web_request": "Permintaan web: kirim dan terima data HTTP(S), termasuk alamat Internet dan jaringan lokal.",
+      "server_listen": "Server lokal: jalankan hingga empat server HTTP di 127.0.0.1. Program lain di komputer ini dapat terhubung.",
+      "filesystem_read": "Baca berkas: baca berkas teks dan daftar folder di semua lokasi yang dapat diakses akun Anda.",
+      "filesystem_write": "Tulis berkas: buat atau timpa berkas teks, buat folder, dan hapus berkas di semua lokasi yang dapat diakses akun Anda."
+    },
+    "permissionNames": {
+      "web_request": "Permintaan web",
+      "server_listen": "Server lokal",
+      "filesystem_read": "Baca berkas dan folder",
+      "filesystem_write": "Tulis dan hapus berkas"
+    },
+    "resetPermissions": "Atur ulang izin saat disimpan"
   }
 }

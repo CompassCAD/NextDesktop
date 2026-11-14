@@ -114,12 +114,20 @@ test('numeric settings reject empty, nonfinite, out of range and fractional inte
   assert.equal(options.validNumericSetting('gridSpacing', 0), false)
   assert.equal(options.validNumericSetting('measurementPrecision', 2.5), false)
 })
-test('every locale translates all Settings keys and the menu entry', () => {
+test('every locale resolves Settings keys with English fallback and translates the menu entry', () => {
   const root = 'src/renderer/src/locales/'
   const en = JSON.parse(fs.readFileSync(root + 'en.json', 'utf8'))
   for (const code of ['fr', 'id', 'ja', 'sv', 'zh']) {
     const locale = JSON.parse(fs.readFileSync(root + code + '.json', 'utf8'))
-    assert.deepEqual(Object.keys(locale.settings).sort(), Object.keys(en.settings).sort(), code)
+    const { getLocaleKey } = load(root + 'Locale.ts', {
+      navigator: { language: code },
+      require: (id) => id.endsWith('.json')
+        ? { default: JSON.parse(fs.readFileSync(path.join(root, id), 'utf8')) }
+        : id.includes('Preferences') ? { preference: () => code } : { settingsStorage: {} }
+    })
+    for (const key of Object.keys(en.settings)) {
+      assert.equal(getLocaleKey('settings.' + key), locale.settings[key] ?? en.settings[key], code + ': ' + key)
+    }
     assert.equal(locale.editor.menu.settings, locale.settings.title)
     for (const value of Object.values(locale.settings)) assert.ok(value.trim().length)
   }

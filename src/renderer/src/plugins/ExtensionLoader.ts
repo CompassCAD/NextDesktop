@@ -11,10 +11,22 @@ export function extensionBlacklist(): string[] {
 let queue: Promise<unknown> = Promise.resolve()
 const attempted = new Set<string>()
 const failures = new Map<string, LoadError>()
+const revisions = new Map<string, string>()
 export function loadAllExtensions(host: LuaPluginHost): Promise<LoadError[]> {
   const next = queue.then(async () => {
     const extensions = await window.api.listExtensions()
     const disabled = extensionBlacklist()
+    const savedRevisions = JSON.parse(settingsStorage.getItem('extensionPermissionRevisions') || '{}')
+    for (const entry of extensions) {
+      const revision = savedRevisions[entry.id] || ''
+      if (revisions.has(entry.id) && revisions.get(entry.id) !== revision) {
+        host.removeExtension(entry.id)
+        await window.api.deactivateExtension(entry.id)
+        attempted.delete(entry.id)
+        failures.delete(entry.id)
+      }
+      revisions.set(entry.id, revision)
+    }
     for (const id of host.extensionIds()) {
       if (disabled.includes(id) || !extensions.some((entry) => entry.id === id)) {
         host.removeExtension(id)

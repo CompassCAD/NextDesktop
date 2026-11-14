@@ -1,3 +1,6 @@
+import { ExtensionDecisions } from './ExtensionDecisions'
+import { CompassMcpServer } from './CompassMcpServer'
+import { readMcpSettings } from '../shared/Mcp'
 import { ExtensionService } from './ExtensionService'
 import { randomUUID } from 'node:crypto'
 import { SettingsStore } from './SettingsStore'
@@ -79,12 +82,13 @@ function createWindow(): void {
     // ...(process.platform === 'linux' ? { icon } : {}),
     webPreferences: {
       preload: join(__dirname, '../preload/index.js'),
-      sandbox: false
+      sandbox: false,
+      backgroundThrottling: false
     }
   })
 
-  mainWindow.webContents.on('did-start-loading', () => extensionService.dispose())
-  mainWindow.on('closed', () => extensionService.dispose())
+  mainWindow.webContents.on('did-start-loading', () => { extensionService.dispose(); disconnectMcpRenderer() })
+  mainWindow.on('closed', () => { extensionService.dispose(); disconnectMcpRenderer() })
   mainWindow.on('ready-to-show', () => {
     mainWindow?.show()
   })
@@ -200,7 +204,14 @@ ipcMain.on('settings:storage', (event, operation: string, entries?: Record<strin
       const blacklist = JSON.parse(nextBlacklist)
       if (!Array.isArray(blacklist) || !blacklist.every((id) => typeof id === 'string')) throw new Error('Invalid extension blacklist.')
     }
+    if (operation !== 'read') {
+      const draft = operation === 'clear' ? {} : { ...settingsStore.read() }
+      if (operation === 'set') Object.assign(draft, entries)
+      if (operation === 'remove') for (const key of Object.keys(entries ?? {})) delete draft[key]
+      readMcpSettings(draft)
+    }
     const values = operation === 'read' ? settingsStore.read() : settingsStore.update(operation, entries)
+    if (operation !== 'read') void mcpServer.configure(values)
     if (operation !== 'read') extensionService.reconcile()
     event.returnValue = { values }
   } catch (error) {
@@ -212,7 +223,7 @@ const extensionService = new ExtensionService(path.join(app.getPath('userData'),
   const value = JSON.parse(settingsStore.read().extensionBlacklist || '[]')
   if (!Array.isArray(value) || !value.every((id) => typeof id === 'string')) throw new Error('Invalid extension blacklist.')
   return value
-})
+}, new ExtensionDecisions(settingsStore))
 function checkExtensionSender(event: Electron.IpcMainInvokeEvent): void {
   if (event.sender !== mainWindow?.webContents || event.senderFrame !== event.sender.mainFrame) throw new Error('Unknown extension sender.')
 }
@@ -246,3 +257,37 @@ ipcMain.handle('extensions:call', (event, token: string, operation: string, args
   return extensionService.call(token, operation, args)
 })
 app.on('before-quit', () => extensionService.dispose())
+
+let mcpRendererReady = false
+const mcpPending = new Map<string, { resolve: (value: unknown) => void; reject: (error: Error) => void; timer: NodeJS.Timeout }>()
+const mcpServer = new CompassMcpServer(request => new Promise((resolve, reject) => {
+  if (!mcpRendererReady || !mainWindow || mainWindow.isDestroyed()) return reject(new Error('The drawing renderer is not ready.'))
+  if (mcpPending.size >= 64) return reject(new Error('Too many pending drawing requests.'))
+  const timer = setTimeout(() => { mcpPending.delete(request.id); reject(new Error('Renderer timed out. Read the design before retrying.')) }, 46_000)
+  mcpPending.set(request.id, { resolve, reject, timer })
+  mainWindow.webContents.send('mcp:request', request)
+}), agents => { if (mcpRendererReady) send('mcp:agents', agents) })
+function disconnectMcpRenderer(): void {
+  mcpRendererReady = false
+  for (const request of mcpPending.values()) { clearTimeout(request.timer); request.reject(new Error('Drawing renderer disconnected.')) }
+  mcpPending.clear()
+}
+ipcMain.handle('mcp:status', event => { checkExtensionSender(event); return mcpServer.status() })
+ipcMain.handle('mcp:apply', event => { checkExtensionSender(event); return mcpServer.configure(settingsStore.read()) })
+ipcMain.handle('mcp:ready', async (event, ready: boolean) => {
+  checkExtensionSender(event)
+  if (!ready) { disconnectMcpRenderer(); return }
+  mcpRendererReady = true
+  await mcpServer.configure(settingsStore.read())
+  send('mcp:agents', mcpServer.status().agents)
+})
+ipcMain.on('mcp:reply', (event, id: string, reply: { result?: unknown; error?: string }) => {
+  if (event.sender !== mainWindow?.webContents || event.senderFrame !== event.sender.mainFrame) return
+  const request = mcpPending.get(id)
+  if (!request) return
+  clearTimeout(request.timer)
+  mcpPending.delete(id)
+  if (reply.error) request.reject(new Error(reply.error))
+  else request.resolve(reply.result)
+})
+app.on('before-quit', () => { disconnectMcpRenderer(); void mcpServer.stop() })

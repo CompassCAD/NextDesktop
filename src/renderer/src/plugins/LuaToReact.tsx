@@ -156,6 +156,7 @@ export function renderLuaNode(node: unknown, key?: React.Key): React.ReactNode {
             objectFit: (toText(props.fit) || 'cover') as React.CSSProperties['objectFit'],
             borderRadius: radius,
             cursor: hasClick ? 'pointer' : undefined,
+            userSelect: 'none'
           }}
         />
       )

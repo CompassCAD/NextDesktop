@@ -29,6 +29,8 @@ function load(file, globals = {}) {
   return exports
 }
 const { ExtensionService, parseManifest } = load('src/main/ExtensionService.ts')
+const { SettingsStore } = load('src/main/SettingsStore.ts')
+const { ExtensionDecisions } = load('src/main/ExtensionDecisions.ts')
 function fixture(t, permissions = []) {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'compass-extension-'))
   let disabled = []
@@ -49,6 +51,43 @@ function fixture(t, permissions = []) {
     }
   }
 }
+
+test('Allow and Deny persist through new service and settings store instances', async (t) => {
+  const { dir, file } = fixture(t, ['web.request'])
+  const config = path.join(dir, '.test-config')
+  const create = () => new ExtensionService(dir, () => [], new ExtensionDecisions(new SettingsStore(config)))
+  let service = create()
+  assert.ok(await service.activate('sample.lua', async () => true))
+  service.dispose()
+  service = create()
+  assert.ok(await service.activate('sample.lua', async () => { throw Error('Unexpected repeated prompt') }))
+  service.dispose()
+  fs.appendFileSync(file, '\n-- New extension version')
+  service = create()
+  let prompts = 0
+  assert.equal(await service.activate('sample.lua', async () => { prompts++; return false }), null)
+  assert.equal(prompts, 1)
+  service.dispose()
+  service = create()
+  assert.equal(await service.activate('sample.lua', async () => { throw Error('Repeated denial prompt') }), null)
+  service.dispose()
+  const store = new SettingsStore(config)
+  store.update('set', { extensionPermissionRevisions: JSON.stringify({ 'sample.lua': 'reset-1' }) })
+  service = create()
+  assert.ok(await service.activate('sample.lua', async () => { prompts++; return true }))
+  assert.equal(prompts, 2)
+  service.dispose()
+})
+
+test('failed decision persistence never authorizes an extension', async (t) => {
+  const { dir } = fixture(t, ['web.request'])
+  const decisions = new ExtensionDecisions({
+    read: () => ({}), update: () => { throw Error('Disk full') }
+  })
+  const service = new ExtensionService(dir, () => [], decisions)
+  await assert.rejects(service.activate('sample.lua', async () => true), /Disk full/)
+  service.dispose()
+})
 test('manifest discovery never executes code; unknown permissions fail closed', async (t) => {
   const { service } = fixture(t, ['shell.execute'])
   assert.match((await service.list())[0].error, /Unsupported/)

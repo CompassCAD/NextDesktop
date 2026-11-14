@@ -38,7 +38,8 @@
       "enableSnap": "吸附到网格",
       "minimize": "最小化",
       "maximize": "最大化",
-      "restore": "向下还原"
+      "restore": "向下还原",
+      "fullscreen": "切换全屏"
     },
     "menu": {
       "newDesign": "新建设计",
@@ -64,7 +65,8 @@
       "updateFinished": "重启 CompassCAD NEXT 以完成安装。",
       "restartNow": "立即重启",
       "couldntCheckForUpdates": "无法检查更新。请检查你的网络连接并重试。",
-      "tryAgain": "重试"
+      "tryAgain": "重试",
+      "previewDownload": "预览慢速下载"
     },
     "about": {
       "openSourceLicenses": "开源许可证"
@@ -196,7 +198,21 @@
     "invalidNumbers": "请检查数值：网格间距 0.01–100000 cm，选择容差 1–50 px，小数位数 0–6，撤销历史 10–500。",
     "previewError": "无法加载字体预览。",
     "updates": "更新",
-    "about": "关于"
+    "about": "关于",
+    "mcp": "MCP / AI 智能体",
+    "mcpEnabled": "启用本地 MCP 服务器",
+    "mcpPort": "本地端口",
+    "mcpToken": "访问令牌（32–256 个字符）",
+    "mcpGenerate": "生成新令牌",
+    "mcpAllowEdits": "允许智能体编辑图纸",
+    "mcpRunning": "运行中",
+    "mcpStopped": "已停止",
+    "mcpSavedError": "设置已保存，但 MCP 服务器无法启动：",
+    "mcpCopy": "复制客户端配置",
+    "mcpAgents": "已连接的智能体",
+    "mcpNoAgents": "没有已连接的智能体",
+    "mcpHelp": "将本地 AI 智能体连接到此图纸。每个会话都有带名称的彩色光标。更改使用常规撤销历史。设置在保存后生效；修改连接设置会断开现有智能体。",
+    "mcpClientHelp": "将此配置草稿复制到支持 Streamable HTTP 和授权请求头的 MCP 客户端中，然后保存。请保密令牌。应用必须保持打开。闲置 30 分钟的智能体将被断开。"
   },
   "common": {
     "yes": "是",
@@ -204,7 +220,12 @@
     "ok": "确定",
     "cancel": "取消",
     "close": "关闭",
-    "enterText": "输入文本…"
+    "enterText": "输入文本…",
+    "select": "选择",
+    "selected": "已选择",
+    "dropdown": "打开选项",
+    "slider": "滑块",
+    "version": "版本 {version}"
   },
   "contextMenu": {
     "title": "画布操作",
@@ -223,5 +244,29 @@
     "navigate": "平移工具",
     "factor": "缩放因子 k（例如，2 表示放大至两倍）",
     "invalid": "请输入大于零的有限缩放因子。"
+  },
+  "extensions": {
+    "title": "扩展",
+    "empty": "未安装任何扩展。",
+    "help": "允许和拒绝的选择会在重启后保留。扩展代码变更后会再次请求同意。重置权限并保存即可重新选择。取消勾选并保存即可停用扩展。",
+    "canvas": "画布访问始终可用。操作系统访问仅限于上述权限。",
+    "none": "未请求操作系统权限。",
+    "consentTitle": "扩展权限",
+    "consent": "启用 {name} 前，{name} 希望向您请求以下权限：",
+    "deny": "拒绝",
+    "allow": "允许并启用",
+    "permissions": {
+      "web_request": "网络请求：发送和接收 HTTP(S) 数据，包括互联网和本地网络地址。",
+      "server_listen": "本地服务器：在 127.0.0.1 上托管最多四个 HTTP 服务器。此计算机上的其他程序可以连接。",
+      "filesystem_read": "读取文件：在您的账户可访问的任何位置读取文本文件和列出文件夹。",
+      "filesystem_write": "写入文件：在您的账户可访问的任何位置创建或覆盖文本文件、创建文件夹以及删除文件。"
+    },
+    "permissionNames": {
+      "web_request": "网络请求",
+      "server_listen": "本地服务器",
+      "filesystem_read": "读取文件和文件夹",
+      "filesystem_write": "写入和删除文件"
+    },
+    "resetPermissions": "保存时重置权限"
   }
 }

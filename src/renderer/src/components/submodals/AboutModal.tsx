@@ -24,7 +24,7 @@ export default function AboutModal(): React.ReactElement {
       <img src={CompassCADLogo} alt="CompassCAD logo" height={36} />
       <br />
       <div>
-        <p>CompassCAD NEXT (version {version})</p>
+        <p>CompassCAD NEXT ({getLocaleKey('common.version').replace('{version}', () => version)})</p>
         <p>Copyright &copy; 2024 - {new Date().getFullYear()} PT Trivi Buat Teknologi & zeankun.</p>
       </div>
       <br />

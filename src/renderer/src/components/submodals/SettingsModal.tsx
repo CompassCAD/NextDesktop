@@ -1,3 +1,4 @@
+import { readMcpSettings, type McpStatus } from '../../../../shared/Mcp'
 import { extensionBlacklist } from '../../plugins/ExtensionLoader'
 import AboutModal from './AboutModal'
 import UpdaterModal from './UpdaterModal'
@@ -24,9 +25,10 @@ import gear from '../../assets/icons/settings.svg'
 import grid from '../../assets/icons/blueprint.svg'
 import logo from '../../assets/icons/newlogo.svg'
 import jigsaw from '../../assets/icons/stroke-white-jigsaw.svg'
+import Clanker from '../../assets/icons/clanker.svg'
 
 const t = (key: keyof typeof en.settings): string => getLocaleKey(`settings.${key}`)
-type Section = 'general' | 'canvas' | 'measurements' | 'updates' | 'about' | 'extensions'
+type Section = 'general' | 'canvas' | 'measurements' | 'updates' | 'about' | 'extensions' | 'mcp'
 
 function FontPreview({
   face,
@@ -94,6 +96,24 @@ export default function SettingsModal({ onClose }: { onClose: () => void }): Rea
   const dialog = useRef<HTMLDialogElement>(null)
   const { renderer } = useRenderer()
   const [section, setSection] = useState<Section>('general')
+  const [mcp, setMcp] = useState(() => ({
+    mcpEnabled: preference('mcpEnabled', 'false'),
+    mcpPort: preference('mcpPort', '3847'),
+    mcpToken: preference('mcpToken', '') || crypto.randomUUID() + crypto.randomUUID(),
+    mcpAllowEdits: preference('mcpAllowEdits', 'true')
+  }))
+  const [mcpStatus, setMcpStatus] = useState<McpStatus | null>(null)
+  useEffect(() => {
+    const refresh = (): void => {
+      void window.api
+        .mcpStatus()
+        .then(setMcpStatus)
+        .catch((error) => setError(String(error)))
+    }
+    refresh()
+    const timer = setInterval(refresh, 2000)
+    return () => clearInterval(timer)
+  }, [])
   const [search, setSearch] = useState('')
   const [updatesVisited, setUpdatesVisited] = useState(false)
   const [face, setFace] = useState(fontPreference)
@@ -122,6 +142,8 @@ export default function SettingsModal({ onClose }: { onClose: () => void }): Rea
     Awaited<ReturnType<typeof window.api.listExtensions>>
   >([])
   const [blacklist, setBlacklist] = useState(extensionBlacklist)
+  const [permissionRevisions, setPermissionRevisions] = useState<Record<string, string>>(() =>
+    JSON.parse(settingsStorage.getItem('extensionPermissionRevisions') || '{}'))
   useEffect(() => {
     void window.api
       .listExtensions()
@@ -162,6 +184,7 @@ export default function SettingsModal({ onClose }: { onClose: () => void }): Rea
     ['measurementUnit', 'measurementPrecision'].some((key) =>
       matches(key as keyof typeof en.settings)
     )
+  const showMcp = searching ? matches('mcp') : section === 'mcp'
   const showUpdates = searching ? matches('updates') : section === 'updates'
   const showExtensions = searching
     ? getLocaleKey('extensions.title').toLowerCase().includes(search.toLowerCase().trim())
@@ -207,10 +230,13 @@ export default function SettingsModal({ onClose }: { onClose: () => void }): Rea
     setSaving(true)
     setError('')
     try {
+      readMcpSettings(mcp)
       const font = new DerakumaParser(fonts[face].source)
       await font.ready()
       settingsStorage.setItems({
+        ...mcp,
         extensionBlacklist: JSON.stringify(blacklist),
+        extensionPermissionRevisions: JSON.stringify(permissionRevisions),
         fontFace: face,
         fontSize: String(fontSize),
         language,
@@ -221,6 +247,12 @@ export default function SettingsModal({ onClose }: { onClose: () => void }): Rea
       })
       renderer?.setStrokeFont(font)
       renderer?.applyPreferences()
+      const status = await window.api.mcpApply()
+      setMcpStatus(status)
+      if (status.error) {
+        setError(t('mcpSavedError') + ' ' + status.error)
+        return
+      }
       onClose()
     } catch (error) {
       setError(t('error') + ' ' + (error instanceof Error ? error.message : String(error)))
@@ -230,6 +262,7 @@ export default function SettingsModal({ onClose }: { onClose: () => void }): Rea
     }
   }
   const sectionIcons: Record<Section, string> = {
+    mcp: Clanker,
     general: gear,
     canvas: grid,
     measurements: grid,
@@ -262,22 +295,30 @@ export default function SettingsModal({ onClose }: { onClose: () => void }): Rea
             autoFocus
           />
           <nav aria-label={t('title')}>
-            {(['general', 'canvas', 'measurements', 'extensions', 'updates', 'about'] as const).map(
-              (item) => (
-                <button
-                  key={item}
-                  type="button"
-                  aria-current={!searching && section === item ? 'page' : undefined}
-                  onClick={() => {
-                    setSection(item)
-                    setSearch('')
-                  }}
-                >
-                  <img src={sectionIcons[item]} alt="" />
-                  {sectionTitle(item)}
-                </button>
-              )
-            )}
+            {(
+              [
+                'general',
+                'canvas',
+                'measurements',
+                'extensions',
+                'mcp',
+                'updates',
+                'about'
+              ] as const
+            ).map((item) => (
+              <button
+                key={item}
+                type="button"
+                aria-current={!searching && section === item ? 'page' : undefined}
+                onClick={() => {
+                  setSection(item)
+                  setSearch('')
+                }}
+              >
+                <img src={sectionIcons[item]} alt="" />
+                {sectionTitle(item)}
+              </button>
+            ))}
           </nav>
           <div className={style.device}>
             <img src={logo} alt="" />
@@ -299,8 +340,102 @@ export default function SettingsModal({ onClose }: { onClose: () => void }): Rea
           </button>
           <h2 className={style.title}>{searching ? t('search') : sectionTitle(section)}</h2>
           <div className={style.content}>
+            {showMcp && (
+              <section aria-label={t('mcp')}>
+                <p className={style.hint}>{t('mcpHelp')}</p>
+                <label className={style.row}>
+                  {t('mcpEnabled')}
+                  <input
+                    type="checkbox"
+                    checked={mcp.mcpEnabled === 'true'}
+                    onChange={(e) => setMcp({ ...mcp, mcpEnabled: String(e.target.checked) })}
+                  />
+                </label>
+                <label className={style.row}>
+                  {t('mcpPort')}
+                  <input
+                    type="number"
+                    min="1024"
+                    max="65535"
+                    required
+                    value={mcp.mcpPort}
+                    onChange={(e) => setMcp({ ...mcp, mcpPort: e.target.value })}
+                  />
+                </label>
+                <label className={style.row}>
+                  {t('mcpToken')}
+                  <input
+                    type="password"
+                    autoComplete="off"
+                    value={mcp.mcpToken}
+                    onChange={(e) => setMcp({ ...mcp, mcpToken: e.target.value })}
+                  />
+                </label>
+                <button
+                  type="button"
+                  onClick={() =>
+                    setMcp({ ...mcp, mcpToken: crypto.randomUUID() + crypto.randomUUID() })
+                  }
+                >
+                  {t('mcpGenerate')}
+                </button>
+                <br />
+                <label className={style.row}>
+                  {t('mcpAllowEdits')}
+                  <input
+                    type="checkbox"
+                    checked={mcp.mcpAllowEdits === 'true'}
+                    onChange={(e) => setMcp({ ...mcp, mcpAllowEdits: String(e.target.checked) })}
+                  />
+                </label>
+                <p>
+                  {mcpStatus?.running ? t('mcpRunning') : t('mcpStopped')} · {mcpStatus?.endpoint}
+                </p>
+                {mcpStatus?.error && (
+                  <p role="alert" className={style.error}>
+                    {mcpStatus.error}
+                  </p>
+                )}
+                <br />
+                <p className={style.hint}>{t('mcpClientHelp')}</p>
+                <button
+                  type="button"
+                  onClick={() => {
+                    void navigator.clipboard
+                      .writeText(
+                        JSON.stringify(
+                          {
+                            mcpServers: {
+                              compasscad: {
+                                url: `http://127.0.0.1:${mcp.mcpPort}/mcp`,
+                                headers: { Authorization: `Bearer ${mcp.mcpToken}` }
+                              }
+                            }
+                          },
+                          null,
+                          2
+                        )
+                      )
+                      .catch((error) => setError(String(error)))
+                  }}
+                >
+                  {t('mcpCopy')}
+                </button>
+                <h3>{t('mcpAgents')}</h3>
+                {mcpStatus?.agents.length ? (
+                  mcpStatus.agents.map((agent) => (
+                    <p key={agent.id}>
+                      <span style={{ color: agent.color }}>●</span> {agent.name} ·{' '}
+                      {agent.id.slice(0, 4)}
+                    </p>
+                  ))
+                ) : (
+                  <p>{t('mcpNoAgents')}</p>
+                )}
+              </section>
+            )}
             {showExtensions && (
-              <section aria-label={getLocaleKey('extensions.title')}>
+              <section aria-label={getLocaleKey('extensions.title')} className={style['extension-container']}>
                 {extensions.length === 0 && <p>{getLocaleKey('extensions.empty')}</p>}
                 {extensions.map((entry) => (
                   <article className={style.extension} key={entry.id}>
@@ -322,6 +457,9 @@ export default function SettingsModal({ onClose }: { onClose: () => void }): Rea
                         }
                       />
                     </label>
+                    <button type="button" disabled={saving} onClick={() => setPermissionRevisions({
+                      ...permissionRevisions, [entry.id]: crypto.randomUUID()
+                    })}>{getLocaleKey('extensions.resetPermissions')}</button>
                     {entry.error && (
                       <p role="alert" className={style.error}>
                         {entry.error}
@@ -470,7 +608,8 @@ export default function SettingsModal({ onClose }: { onClose: () => void }): Rea
                 <AboutModal />
               </section>
             )}
-            {!showExtensions &&
+            {!showMcp &&
+              !showExtensions &&
               !showGeneral &&
               !showCanvas &&
               !showMeasurements &&
