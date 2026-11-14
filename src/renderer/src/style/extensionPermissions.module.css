@@ -1,5 +1,6 @@
 .content {
   width: min(520px, calc(100vw - 80px));
+  user-select: none;
 }
 .intro {
   margin: 0 0 10px;

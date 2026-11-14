@@ -27,6 +27,7 @@
   box-shadow: 0px 0px 13px 3px rgba(0, 0, 0, 0.5);
   animation: popup 0.25s cubic-bezier(0.31, 1.02, 0.51, 1.17);
   overflow: hidden;
+  user-select: none;
 }
 .dialog::backdrop {
   background-color: rgba(0, 0, 0, 0.25);
@@ -55,9 +56,6 @@
 .dialog select {
   font-family: var(--font);
   color: var(--text);
-}
-.dialog button {
-  cursor: pointer;
 }
 .search {
   width: 100%;

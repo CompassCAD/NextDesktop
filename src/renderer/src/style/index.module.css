@@ -129,6 +129,7 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
+    user-select: none;
 }
 .modal-header span {
     padding: 10px;
