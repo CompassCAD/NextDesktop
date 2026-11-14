@@ -1,4 +1,5 @@
 import React from 'react'
+import Slider from '../components/CustomSlider'
 
 function isLuaNode(v: unknown): v is Record<string, any> {
   return v != null && (typeof v === 'object' || typeof v === 'function')
@@ -28,6 +29,20 @@ function callIfFn(fn: unknown, ...args: unknown[]): void {
   if (typeof fn === 'function') fn(...args)
 }
 
+function toNumber(v: unknown, fallback: number): number {
+  const n = typeof v === 'number' ? v : Number(v)
+  return Number.isFinite(n) ? n : fallback
+}
+
+// Accepts a plain number, an array (e.g. [n]), or a change event, so it
+// keeps working whichever way CustomSlider reports its value.
+function extractSliderValue(arg: unknown): number | undefined {
+  if (typeof arg === 'number') return arg
+  if (Array.isArray(arg)) return toNumber(arg[0], NaN)
+  const fromEvent = (arg as any)?.target?.value
+  if (fromEvent !== undefined) return toNumber(fromEvent, NaN)
+  return undefined
+}
 function getChildren(node: Record<string, any>): unknown[] {
   const children: unknown[] = []
 
@@ -63,7 +78,7 @@ export function renderLuaNode(node: unknown, key?: React.Key): React.ReactNode {
   const props = isLuaNode(node.props) ? node.props : {}
   const rawChildren = getChildren(node)
   
-  console.log('Rendering LuaNode:', { kind, props, count: rawChildren.length, key })
+  // console.log('Rendering LuaNode:', { kind, props, count: rawChildren.length, key })
 
   const children = rawChildren.map((child, index) => renderLuaNode(child, index))
 
@@ -121,6 +136,54 @@ export function renderLuaNode(node: unknown, key?: React.Key): React.ReactNode {
           )}
           {toText(props.label) || null}
         </label>
+      )
+    }
+    case 'Image': {
+      const radius = props.radius !== undefined ? toNumber(props.radius, 8) : 8
+      const width = props.width !== undefined ? props.width : '100%'
+      const hasClick = typeof props.onClick === 'function'
+
+      return (
+        <img
+          key={key}
+          src={toText(props.src)}
+          alt={toText(props.alt)}
+          onClick={hasClick ? () => callIfFn(props.onClick) : undefined}
+          style={{
+            display: 'block',
+            width,
+            height: props.height !== undefined ? props.height : 'auto',
+            objectFit: (toText(props.fit) || 'cover') as React.CSSProperties['objectFit'],
+            borderRadius: radius,
+            cursor: hasClick ? 'pointer' : undefined,
+          }}
+        />
+      )
+    }
+    case 'Slider': {
+      const min = toNumber(props.min, 0)
+      const max = toNumber(props.max, 100)
+      const step = toNumber(props.step, 1)
+      const value = toNumber(props.value, min)
+      const radius = props.radius !== undefined ? toNumber(props.radius, 8) : 8
+      const hasHandler = typeof props.onChange === 'function'
+
+      return (
+        <div key={key} style={{ width: '100%', borderRadius: radius }}>
+          <Slider
+            value={value}
+            min={min}
+            max={max}
+            step={step}
+            disabled={!!props.disabled}
+            onChange={(arg: unknown) => {
+              const next = extractSliderValue(arg)
+              if (hasHandler && next !== undefined && !Number.isNaN(next)) {
+                props.onChange(next)
+              }
+            }}
+          />
+        </div>
       )
     }
     default:

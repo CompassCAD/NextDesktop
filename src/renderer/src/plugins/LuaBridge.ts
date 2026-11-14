@@ -134,6 +134,8 @@ M.Text     = makeComponent("Text")
 M.Button   = makeComponent("Button")
 M.Input    = makeComponent("Input")
 M.Checkbox = makeComponent("Checkbox")
+M.Image    = makeComponent("Image")
+M.Slider   = makeComponent("Slider")
 
 function M.registerTab(name, renderFn)
   __native_registerTab(name, renderFn)
@@ -325,6 +327,43 @@ package.loaded.engine = M
 return M
 `
 
+// Pure-Lua "timer" module. Thin wrappers over __native_timer_* (installed in
+// installTimerBridge()). Callbacks run on the JS event loop, never during a
+// render pass, so they're safe to use with UI.useState setters:
+//
+//   local timer = require("timer")
+//   UI.useEffect(function()
+//     local id = timer.setInterval(function() setCount(function(c) return c + 1 end) end, 1000)
+//     return function() timer.clearInterval(id) end
+//   end, {})
+const TIMER_LUA_SOURCE = `
+local M = {}
+
+-- Runs fn once after ms milliseconds. Returns a timer id.
+function M.setTimeout(fn, ms)
+  assert(type(fn) == "function", "timer.setTimeout: first argument must be a function")
+  return __native_timer_set(ms or 0, fn, false)
+end
+
+-- Runs fn every ms milliseconds until cleared. Returns a timer id.
+function M.setInterval(fn, ms)
+  assert(type(fn) == "function", "timer.setInterval: first argument must be a function")
+  return __native_timer_set(ms or 0, fn, true)
+end
+
+-- Both return true if a pending timer was cancelled, false otherwise
+-- (already fired, already cleared, or nil). Safe to call from inside the
+-- timer's own callback.
+function M.clearTimeout(id)
+  if id == nil then return false end
+  return __native_timer_clear(id)
+end
+M.clearInterval = M.clearTimeout
+
+package.loaded.timer = M
+return M
+`
+
 type UpdateListener = () => void
 
 interface RegisteredTab {
@@ -348,6 +387,16 @@ export class LuaPluginHost {
   private children = new Map<string, LuaPluginHost>()
   private disposed = false
 
+  // Active timers for this Lua state, keyed by the id handed back to Lua.
+  // Each holds a registry ref to the Lua callback, released on fire (one-shot),
+  // clear, or dispose.
+  private timers = new Map<number, { handle: number; ref: number; repeat: boolean }>()
+  private nextTimerId = 1
+  // Sandbox guards: a plugin can't spawn unbounded timers or spin the UI at
+  // setInterval(fn, 0), since every fire triggers a UI update.
+  private static readonly MAX_TIMERS = 64
+  private static readonly MIN_INTERVAL_MS = 16
+
   constructor(private token?: string) {
     this.L = lauxlib.luaL_newstate()
     lualib.luaL_openlibs(this.L)
@@ -357,8 +406,10 @@ export class LuaPluginHost {
     this.runSource(UI_LUA_SOURCE, '<ui-module>')
     this.runSource(ENGINE_LUA_SOURCE, '<engine-module>')
     this.installSystemBridge()
+    this.installTimerBridge()
+    this.runSource(TIMER_LUA_SOURCE, '<timer-module>')
     this.runSource(`
-      local modules = { ui = package.loaded.ui, engine = package.loaded.engine, system = { call = __native_system_call } }
+      local modules = { ui = package.loaded.ui, engine = package.loaded.engine, timer = package.loaded.timer, system = { call = __native_system_call } }
       function require(name)
         if modules[name] then return modules[name] end
         error("Module is not available: " .. tostring(name))
@@ -404,6 +455,76 @@ export class LuaPluginHost {
   }
 
   extensionIds(): string[] { return [...this.children.keys()] }
+
+  /**
+   * Cancels a timer and frees its Lua callback ref. Idempotent: returns false
+   * if the id is unknown (already fired, cleared, or never existed), which is
+   * what makes it safe to call from inside the timer's own callback.
+   */
+  private releaseTimer(id: number): boolean {
+    const timer = this.timers.get(id)
+    if (!timer) return false
+    this.timers.delete(id)
+    if (timer.repeat) window.clearInterval(timer.handle)
+    else window.clearTimeout(timer.handle)
+    lauxlib.luaL_unref(this.L, lua.LUA_REGISTRYINDEX, timer.ref)
+    return true
+  }
+
+  // __native_timer_set(ms, fn, repeat) -> id, and __native_timer_clear(id) -> bool.
+  // Callbacks fire from the JS event loop (never mid-render), errors in them
+  // are logged instead of thrown, and every fire emits a UI update so tabs
+  // re-render if the callback changed module-level state.
+  private installTimerBridge(): void {
+    const setTimerCFn = (L: any): number => {
+      // stack: 1 = ms (number), 2 = callback (function), 3 = repeat (boolean)
+      const ms = lauxlib.luaL_checknumber(L, 1)
+      lauxlib.luaL_checktype(L, 2, lua.LUA_TFUNCTION)
+      const repeat = !!lua.lua_toboolean(L, 3)
+
+      if (this.timers.size >= LuaPluginHost.MAX_TIMERS) {
+        lauxlib.luaL_error(
+          L,
+          `timer: too many active timers (limit ${LuaPluginHost.MAX_TIMERS}); clear some before creating more`
+        )
+        return 0
+      }
+
+      lua.lua_pushvalue(L, 2)
+      const ref = lauxlib.luaL_ref(L, lua.LUA_REGISTRYINDEX)
+      const delay = Math.max(repeat ? LuaPluginHost.MIN_INTERVAL_MS : 0, Number.isFinite(ms) ? ms : 0)
+      const id = this.nextTimerId++
+
+      const fire = (): void => {
+        if (this.disposed || !this.timers.has(id)) return
+        try {
+          this.callRef(ref)
+        } catch (error) {
+          console.error(`[${this.currentGroup}] timer callback error:`, error)
+        } finally {
+          // One-shot timers release after running. If the callback already
+          // cleared itself this is a no-op (releaseTimer is idempotent).
+          if (!repeat) this.releaseTimer(id)
+          if (!this.disposed) this.emitUpdate()
+        }
+      }
+
+      const handle = repeat ? window.setInterval(fire, delay) : window.setTimeout(fire, delay)
+      this.timers.set(id, { handle, ref, repeat })
+
+      lua.lua_pushnumber(L, id)
+      return 1
+    }
+    lua.lua_pushcfunction(this.L, setTimerCFn)
+    lua.lua_setglobal(this.L, '__native_timer_set')
+
+    const clearTimerCFn = (L: any): number => {
+      lua.lua_pushboolean(L, this.releaseTimer(lua.lua_tonumber(L, 1)))
+      return 1
+    }
+    lua.lua_pushcfunction(this.L, clearTimerCFn)
+    lua.lua_setglobal(this.L, '__native_timer_clear')
+  }
 
   private installSystemBridge(): void {
     lua.lua_pushcfunction(this.L, (L: any): number => {
@@ -1128,6 +1249,8 @@ export class LuaPluginHost {
     this.disposed = true
     this.children.forEach((child) => child.dispose())
     this.children.clear()
+    // Must run before lua_close: releasing a timer unrefs its callback in L.
+    for (const id of [...this.timers.keys()]) this.releaseTimer(id)
     this.listeners.clear()
     this.tabs.clear()
     this.renderer = null

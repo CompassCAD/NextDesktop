@@ -767,6 +767,10 @@ input[type="checkbox"] {
   /* Do NOT use transition: all here */
 }
 
+.collapsible-container > img {
+  width: 100%;
+}
+
 .collapsible-button {
   appearance: none;
   padding: 10px;
