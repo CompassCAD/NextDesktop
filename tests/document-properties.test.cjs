@@ -63,7 +63,7 @@ test('Next round trip preserves document metadata and centimetre geometry; legac
 })
 
 test('paper orientation, margins, reduction and enlargement have physical units', () => {
-  const p = { ...defaults(), paper: 'A4', scaleDenominator: 100 }
+  const p = { ...defaults(), paper: 'A4', orientation: 'portrait', scaleDenominator: 100 }
   assert.equal(worldPaperDimensions(p).width, 2100)
   assert.equal(worldPaperDimensions(p).height, 2970)
   assert.equal(worldPaperDimensions(p).margin, 100)
@@ -291,7 +291,7 @@ test('app preferences respect document units and changing properties preserves g
 test('A6 fits at 0.3x and can zoom in and out without changing exported sizes', () => {
   const r = Object.create(loadRenderer().prototype)
   Object.assign(r, {
-    documentProperties: { ...defaults(), canvas: 'paper', paper: 'A6' },
+    documentProperties: { ...defaults(), canvas: 'paper', paper: 'A6', orientation: 'portrait' },
     documentViewScale: 1,
     displayWidth: 1200,
     displayHeight: 800,
@@ -353,10 +353,12 @@ test('all paper presets fit proportionally at 0.3x, including large drawing scal
     }
   }
   r.applyPreferences = () => {}
+  const previousScale = r.documentViewScale
+  const previousZoom = r.zoom
   r.setDocumentProperties(null)
-  assert.equal(r.documentViewScale, 1)
-  assert.ok(Math.abs(r.zoom - 0.3) < 1e-10)
-  assert.ok(Math.abs(r.targetZoom - 0.3) < 1e-10)
+  assert.equal(r.documentViewScale, previousScale)
+  assert.equal(r.zoom, previousZoom)
+  assert.ok(Math.abs(r.viewZoom - 0.3) < 1e-10)
 })
 
 test('title blocks stay within the bottom-left margins for every paper and scale', () => {
@@ -417,7 +419,9 @@ test('drawing frame uses stroke glyphs, contains metadata and leaves component g
       save() {},
       restore() {},
       setLineDash() {},
-      fillRect() { throw new Error('Document frame must remain unfilled') },
+      fillRect() {
+        throw new Error('Document frame must remain unfilled')
+      },
       beginPath() {},
       clip() {},
       stroke() {},
@@ -457,4 +461,25 @@ test('drawing frame uses stroke glyphs, contains metadata and leaves component g
   r.documentProperties.canvas = 'infinite'
   r.drawDocumentFrame()
   assert.equal(rectangles.length, 8)
+})
+
+test('new paper and infinite designs retain the current zoom without fitting the paper', () => {
+  for (const canvas of ['paper', 'infinite']) {
+    for (const documentViewScale of [1, 40]) {
+      const f = fixture()
+      Object.assign(f.renderer, {
+        zoom: 1.15 * documentViewScale,
+        targetZoom: 1.15 * documentViewScale,
+        documentViewScale,
+        fitDocumentPaper() {
+          throw new Error('New design must not auto-fit')
+        }
+      })
+      f.file.createNewFile(f.renderer, { ...defaults(), canvas, paper: 'A6' })
+      assert.ok(Math.abs(f.renderer.zoom / f.renderer.documentViewScale - 1.15) < 1e-10)
+      assert.equal(f.renderer.targetZoom, 1.15 * documentViewScale)
+      assert.equal(f.renderer.camX, 0)
+      assert.equal(f.renderer.camY, 0)
+    }
+  }
 })

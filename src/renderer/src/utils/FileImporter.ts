@@ -28,7 +28,7 @@ export const createNewFile = (
   renderer.redoStack = []
   renderer.postDoAfterComponentImport()
   renderer.camX = renderer.camY = 0
-  renderer.zoom = renderer.targetZoom = 1
+  // Keep the current camera magnification, including the document view scale.
   renderer.fitDocumentPaper()
   renderer.onZoomUpdate?.()
   currentFilePath = undefined

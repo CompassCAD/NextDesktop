@@ -114,7 +114,7 @@ export default function DocumentPropertiesModal({
     if (creating) createNewFile(renderer, valid)
     else {
       renderer.setDocumentProperties(valid)
-      if (fitPaper) renderer.fitDocumentPaper()
+      // if (fitPaper) renderer.fitDocumentPaper()
     }
     onClose()
   }

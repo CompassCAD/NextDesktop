@@ -466,28 +466,37 @@ export class GraphicsRenderer {
 
   setDocumentProperties(properties: DocumentProperties | null): void {
     this.documentProperties = properties ? validateDocumentProperties(properties) : null
-    if (!this.documentProperties || this.documentProperties.canvas === 'infinite') {
-      const scale = this.documentViewScale ?? 1
-      this.zoom /= scale
-      this.targetZoom /= scale
-      this.documentViewScale = 1
-      this.onZoomUpdate?.()
-    }
+    if (!this.documentProperties || this.documentProperties.canvas === 'infinite') this.restoreViewBeforeFit()
     this.applyPreferences()
     window.dispatchEvent(new Event('document-properties-changed'))
   }
 
+  private preFit: { zoom: number; viewScale: number; camX: number; camY: number } | null = null
+
   fitDocumentPaper(): void {
     if (!this.documentProperties || this.documentProperties.canvas === 'infinite') return
     const { width, height } = worldPaperDimensions(this.documentProperties)
-    const fittedScale = Math.min(this.displayWidth * 0.8 / width, this.displayHeight * 0.8 / height)
+    const w = this.displayRef?.clientWidth || this.displayWidth
+    const h = this.displayRef?.clientHeight || this.displayHeight
+    const fittedScale = Math.min(w * 0.8 / width, h * 0.8 / height)
     if (!Number.isFinite(fittedScale) || fittedScale <= 0) return
-    this.camX = 0
-    this.camY = 0
+
+    this.preFit ??= { zoom: this.targetZoom, viewScale: this.documentViewScale,
+                      camX: this.camX, camY: this.camY }
+    this.camX = this.camY = 0
     this.documentViewScale = fittedScale / 0.3
     this.zoom = this.targetZoom = fittedScale
     this.onZoomUpdate?.()
     this.markDirty('fit document paper')
+  }
+
+  restoreViewBeforeFit(): void {
+    if (!this.preFit) return
+    Object.assign(this, { zoom: this.preFit.zoom, targetZoom: this.preFit.zoom,
+      documentViewScale: this.preFit.viewScale, camX: this.preFit.camX, camY: this.preFit.camY })
+    this.preFit = null
+    this.onZoomUpdate?.()
+    this.markDirty('restore view')
   }
 
   drawDocumentPaper(): void {
