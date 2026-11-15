@@ -1,3 +1,5 @@
+import { documentTitleBlockLayout } from '../utils/DocumentFrame'
+import { type DocumentProperties, validateDocumentProperties, worldPaperDimensions } from '../utils/DocumentProperties'
 import { drawMcpCursors } from './McpCursors'
 import { getLocaleKey } from '../locales/Locale'
 import { measurementUnits, resolveUnit } from '../utils/SettingsOptions'
@@ -453,6 +455,121 @@ export class GraphicsRenderer {
     this._debugMode = isDevModeEnabled()
   }
 
+  documentProperties: DocumentProperties | null = null
+  // View-only magnification: a fitted paper is 0.3x regardless of its physical size.
+  // Geometry and exported document dimensions remain in their original units.
+  documentViewScale = 1
+
+  get viewZoom(): number {
+    return this.zoom / (this.documentViewScale ?? 1)
+  }
+
+  setDocumentProperties(properties: DocumentProperties | null): void {
+    this.documentProperties = properties ? validateDocumentProperties(properties) : null
+    if (!this.documentProperties || this.documentProperties.canvas === 'infinite') {
+      const scale = this.documentViewScale ?? 1
+      this.zoom /= scale
+      this.targetZoom /= scale
+      this.documentViewScale = 1
+      this.onZoomUpdate?.()
+    }
+    this.applyPreferences()
+    window.dispatchEvent(new Event('document-properties-changed'))
+  }
+
+  fitDocumentPaper(): void {
+    if (!this.documentProperties || this.documentProperties.canvas === 'infinite') return
+    const { width, height } = worldPaperDimensions(this.documentProperties)
+    const fittedScale = Math.min(this.displayWidth * 0.8 / width, this.displayHeight * 0.8 / height)
+    if (!Number.isFinite(fittedScale) || fittedScale <= 0) return
+    this.camX = 0
+    this.camY = 0
+    this.documentViewScale = fittedScale / 0.3
+    this.zoom = this.targetZoom = fittedScale
+    this.onZoomUpdate?.()
+    this.markDirty('fit document paper')
+  }
+
+  drawDocumentPaper(): void {
+    const p = this.documentProperties
+    if (!p || p.canvas === 'infinite' || !p.showPaper || !this.context) return
+    const { width, height, margin } = worldPaperDimensions(p)
+    const ctx = this.context
+    const x = (this.cOutX - width / 2) * this.zoom
+    const y = (this.cOutY - height / 2) * this.zoom
+    ctx.save()
+    ctx.strokeStyle = '#ffffff'
+    ctx.lineWidth = 1
+    ctx.strokeRect(x, y, width * this.zoom, height * this.zoom)
+    if (margin > 0 && !p.showTitleBlock) {
+      ctx.setLineDash([5, 5])
+      ctx.strokeStyle = '#ffffff'
+      ctx.strokeRect(x + margin * this.zoom, y + margin * this.zoom,
+        (width - margin * 2) * this.zoom, (height - margin * 2) * this.zoom)
+    }
+    ctx.restore()
+  }
+
+  drawDocumentFrame(): void {
+    const p = this.documentProperties
+    const ctx = this.context
+    if (!p || p.canvas !== 'paper' || !p.showPaper || !p.showTitleBlock || !ctx) return
+    const paper = worldPaperDimensions(p)
+    const block = documentTitleBlockLayout(p)
+    const sx = (x: number): number => (x + this.cOutX) * this.zoom
+    const sy = (y: number): number => (y + this.cOutY) * this.zoom
+    ctx.save()
+    ctx.setLineDash([])
+    ctx.strokeStyle = '#ffffff'
+    ctx.lineWidth = Math.max(0.6, 0.25 * p.scaleDenominator / p.scaleNumerator / 10 * this.zoom)
+    ctx.strokeRect(sx(-paper.width / 2 + paper.margin), sy(-paper.height / 2 + paper.margin),
+      (paper.width - 2 * paper.margin) * this.zoom, (paper.height - 2 * paper.margin) * this.zoom)
+    for (const cell of block.cells) {
+      const x = sx(cell.x), y = sy(cell.y)
+      const w = cell.width * this.zoom, h = cell.height * this.zoom
+      ctx.strokeRect(x, y, w, h)
+      const padding = Math.min(h * 0.1, w * 0.04)
+      const value = cell.field === 'paper' && p.paper === 'custom'
+        ? getLocaleKey('documentProperties.custom') : cell.value
+      this.drawDocumentCellText(getLocaleKey(`documentProperties.${cell.field}`),
+        x + padding, y + padding, w - padding * 2, h * 0.23, '#ffffff')
+      this.drawDocumentCellText(value, x + padding, y + h * 0.44,
+        w - padding * 2, h * 0.4, '#ffffff')
+    }
+    ctx.restore()
+  }
+
+  private drawDocumentCellText(text: string, x: number, y: number, width: number, height: number, color: string): void {
+    const ctx = this.context
+    // Keep arbitrary notes on one line; constrain long metadata to its cell.
+    const glyphs = this._getSpacedGlyphs(text.replace(/\s+/g, ' ').trim().slice(0, 240))
+    if (!ctx || !glyphs || width <= 0 || height <= 0) return
+    let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity
+    for (const glyph of glyphs) for (const cmd of glyph.commands) {
+      minX = Math.min(minX, cmd.x); maxX = Math.max(maxX, cmd.x)
+      minY = Math.min(minY, cmd.y); maxY = Math.max(maxY, cmd.y)
+    }
+    if (!Number.isFinite(minX) || maxY <= minY) return
+    const scale = Math.min(width / Math.max(maxX - minX, 1), height / (maxY - minY))
+    ctx.save()
+    ctx.beginPath()
+    ctx.rect(x, y, width, height)
+    ctx.clip()
+    ctx.strokeStyle = color
+    ctx.lineWidth = Math.max(0.45, height * 0.055)
+    ctx.lineCap = 'round'
+    ctx.lineJoin = 'round'
+    ctx.beginPath()
+    for (const glyph of glyphs) for (const cmd of glyph.commands) {
+      const px = x + (cmd.x - minX) * scale
+      const py = y + (maxY - cmd.y) * scale
+      if (cmd.command === 'PD') ctx.moveTo(px, py)
+      else if (cmd.command === 'MP') ctx.lineTo(px, py)
+    }
+    ctx.stroke()
+    ctx.restore()
+  }
+
   applyPreferences(): void {
     this.fontSize = numberPreference('fontSize', 18, 1, 256)
     this.showGrid = preference('showGrid', 'true') === 'true'
@@ -462,8 +579,8 @@ export class GraphicsRenderer {
     this.gridSpacing = numericPreference('gridSpacing')
     this.snapTolerance = numericPreference('snapTolerance')
     this.maximumStack = numericPreference('maximumStack')
-    this.measurementPrecision = numericPreference('measurementPrecision')
-    const unit = resolveUnit(preference('measurementUnit', 'm'))
+    this.measurementPrecision = this.documentProperties?.measurementPrecision ?? numericPreference('measurementPrecision')
+    const unit = this.documentProperties?.measurementUnit ?? resolveUnit(preference('measurementUnit', 'm'))
     this.unitMeasure = unit
     this.unitConversionFactor = measurementUnits[unit].factor
     this.markDirty('settings changed')
@@ -3944,8 +4061,9 @@ export class GraphicsRenderer {
     var newZoom = this.zoom * zoomFactor
     this.cleanLog(newZoom)
 
-    // Zoom interval control
-    if (newZoom <= 0.25 || newZoom >= 15) return
+    // Limits are relative to the fitted paper, not centimetres per pixel.
+    const viewZoom = newZoom / (this.documentViewScale ?? 1)
+    if (!Number.isFinite(viewZoom) || viewZoom <= 0.25 || viewZoom >= 15) return
 
     this.targetZoom = newZoom
     const viewportCenterX = this.displayWidth / 2
@@ -4007,6 +4125,7 @@ export class GraphicsRenderer {
     this.zoom = this.targetZoom
     this.updateCamera()
     this.clearGrid()
+    this.drawDocumentPaper()
     if (this.showGrid) this.drawGrid(this.cOutX, this.cOutY)
 
     if (this.showOrigin) this.drawOrigin(this.cOutX, this.cOutY)
@@ -4014,6 +4133,7 @@ export class GraphicsRenderer {
     this.drawAllComponents(this.logicDisplay!.components, 0, 0, true)
     if (this.temporaryComponentType != null) this.drawTemporaryComponent()
     this.flushBatchedPaths()
+    this.drawDocumentFrame()
     this.drawRules()
     this.refreshSelectionTools()
     if (this.context) drawMcpCursors(this.context, this.mcpAgents, this.cOutX, this.cOutY, this.zoom)

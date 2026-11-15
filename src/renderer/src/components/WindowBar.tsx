@@ -6,6 +6,7 @@ import { settingsStorage, SETTINGS_CHANGED } from '../utils/SettingsStorage'
 import { resolveUnit, formatMeasurement } from '../utils/SettingsOptions'
 import { toast } from './Toast'
 import SettingsModal from './submodals/SettingsModal'
+import DocumentPropertiesModal from './submodals/DocumentPropertiesModal'
 import SettingsIcon from '../assets/icons/settings.svg'
 import styles from '../style/index.module.css'
 import React, { useEffect, useState } from 'react'
@@ -13,13 +14,14 @@ import { MenuProvider, MenuContext } from './MenuProvider'
 import { openModal } from './ModalProvider'
 import { useRenderer } from './RendererContextProvider'
 import { InternalUtilities, RNGSpamGen } from '../utils/InternalStuffs'
-import { createNewFile, openFileAndParse, saveFile } from '../utils/FileImporter'
+import { openFileAndParse, saveFile } from '../utils/FileImporter'
 import { getLocaleKey } from '../locales/Locale'
 import Dropdown from './Dropdown'
 import { useDevMode } from '../exports'
 
 import CompassCADLogoMonochrome from '../assets/icons/newlogo.svg'
 import MenuIcon from '../assets/icons/menu.svg'
+import DocumentPropertiesIcon from '../assets/icons/docproperties.svg'
 // Context icons
 import NewFileIcon from '../assets/icons/newLogic.svg'
 import OpenFileIcon from '../assets/icons/openLogic.svg'
@@ -121,6 +123,8 @@ function ConnectedAgentAvatars(): React.ReactElement | null {
 }
 
 export default function WindowBar(): React.ReactElement {
+  const [documentModal, setDocumentModal] = useState<'new' | 'properties' | null>(null)
+  const [, refreshDocument] = useState(0)
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [isMaximized, setMaximized] = useState<boolean>(false)
   const [zoom, setZoom] = useState<number>(1)
@@ -131,6 +135,16 @@ export default function WindowBar(): React.ReactElement {
   const [gridSpacing, setGridSpacing] = useState(() => numericPreference('gridSpacing'))
   const { renderer } = useRenderer()
   const { isDevMode } = useDevMode()
+  useEffect(() => {
+    const refresh = (): void => refreshDocument(n => n + 1)
+    window.addEventListener('document-properties-changed', refresh)
+    return () => window.removeEventListener('document-properties-changed', refresh)
+  }, [])
+  const newDesign = async (): Promise<void> => {
+    setMenuOpened(false)
+    if (renderer && ((!renderer.logicDisplay?.components.length && !renderer.documentProperties) ||
+      await callGenericPrompt(getLocaleKey('editor.menu.newDesignWarning'), { buttons: 'yesno' }) === 'yes')) setDocumentModal('new')
+  }
 
   window.electron.ipcRenderer.on('isMaximized', (_event, isMaximized: boolean) => {
     console.log(`[windowbar] isMaximized: ${isMaximized}`)
@@ -159,7 +173,7 @@ export default function WindowBar(): React.ReactElement {
   })
   if (renderer) {
     renderer.onZoomUpdate = () => {
-      setZoom(renderer!.zoom)
+      setZoom(renderer!.viewZoom)
     }
   }
   window.onkeydown = (e: KeyboardEvent) => {
@@ -170,6 +184,12 @@ export default function WindowBar(): React.ReactElement {
     if (ctrlOrMeta && keyLower === ',') {
       e.preventDefault()
       setSettingsOpen(true)
+      return
+    }
+
+    if (ctrlOrMeta && keyLower === 'n') {
+      e.preventDefault()
+      void newDesign()
       return
     }
 
@@ -245,7 +265,7 @@ export default function WindowBar(): React.ReactElement {
   }
   const resetZoom = (): void => {
     console.log('resetting zoom!')
-    const zoomFactor: number = 1 / renderer!.zoom
+    const zoomFactor: number = 1 / renderer!.viewZoom
     renderer!.setZoom(zoomFactor)
     renderer!.markDirty('zoom reset')
   }
@@ -270,9 +290,7 @@ export default function WindowBar(): React.ReactElement {
       icon: NewFileIcon,
       title: getLocaleKey('editor.menu.newDesign'),
       keyCombinations: [controlKey, 'N'],
-      onAction: async () => {
-        if ((await callGenericPrompt(getLocaleKey('editor.menu.newDesignWarning'), { buttons: 'yesno' })) == 'yes') createNewFile(renderer!)
-      }
+      onAction: () => void newDesign()
     },
     {
       icon: OpenFileIcon,
@@ -305,6 +323,11 @@ export default function WindowBar(): React.ReactElement {
         ]
       : []),
     {
+      icon: DocumentPropertiesIcon,
+      title: getLocaleKey('documentProperties.title'),
+      onAction: () => { setMenuOpened(false); if (renderer) setDocumentModal('properties') }
+    },
+    {
       icon: SettingsIcon,
       title: getLocaleKey('editor.menu.settings'),
       keyCombinations: [controlKey, ','],
@@ -313,10 +336,11 @@ export default function WindowBar(): React.ReactElement {
   ]
 
   const defaultMeasure = [...new Set([1000, 500, 200, 100, 50, 25, 10, 5, 1, gridSpacing])].sort((a, b) => b - a)
-  const measurementUnit = resolveUnit(preference('measurementUnit', 'm'))
+  const measurementUnit = renderer?.documentProperties?.measurementUnit ?? resolveUnit(preference('measurementUnit', 'm'))
 
   return (
     <>
+      {documentModal && <DocumentPropertiesModal creating={documentModal === 'new'} onClose={() => setDocumentModal(null)} />}
       {settingsOpen && <SettingsModal onClose={() => setSettingsOpen(false)} />}
       <div className={styles['window-bar']}>
         <div className={styles['window-bar-left']}>
@@ -353,6 +377,12 @@ export default function WindowBar(): React.ReactElement {
             icon={MenuIcon}
             title={getLocaleKey('editor.window.menu')}
             onClick={toggleMenuState}
+          />
+          <MenuButton
+            id="menu-opener"
+            icon={DocumentPropertiesIcon}
+            title={getLocaleKey('documentProperties.title')}
+            onClick={() => { if (renderer) setDocumentModal('properties') }}
           />
           <MenuButton
             id="menu-opener"

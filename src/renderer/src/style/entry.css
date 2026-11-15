@@ -91,6 +91,7 @@ body {
   background: var(--primary-background);
   color: var(--text);
   font-family: var(--font);
+  font-size: 12pt;
   -webkit-user-select: none;
   -webkit-app-region: no-drag;
   overflow-x: hidden;

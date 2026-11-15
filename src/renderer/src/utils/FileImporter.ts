@@ -1,65 +1,74 @@
 import { GraphicsRenderer } from '../engine/Engine'
 import { Component } from '../engine/Component'
+import { LogicDisplay } from '../engine/Logic'
 import { getLocaleKey } from '../locales/Locale'
 import { convertDxfToCompassCad } from './dxfparse'
 import { toast } from '../components/Toast'
+import { callGenericPrompt } from '../components/GenericPrompt'
+import {
+  decodeDocument,
+  encodeDocument,
+  defaultDocumentProperties,
+  type DocumentProperties
+} from './DocumentProperties'
 
 let currentFilePath: string | undefined
+const extension = (path: string): string => path.split('.').pop()!.toLowerCase()
+export const getDialogPath = (file: string | string[] | undefined): string | undefined =>
+  Array.isArray(file) ? file[0] : file || undefined
 
-export const getDialogPath = (file: string | string[] | undefined): string | undefined => {
-  if (!file) return undefined
-  if (Array.isArray(file)) return file[0]
-  return file
-}
-
-export const createNewFile = (renderer: GraphicsRenderer): void => {
-  renderer!.logicDisplay!.components = []
-  renderer?.cleanUpBeforeImport()
-  renderer?.postDoAfterComponentImport()
-  currentFilePath = ''
+export const createNewFile = (
+  renderer: GraphicsRenderer,
+  properties = defaultDocumentProperties()
+): void => {
+  renderer.setDocumentProperties(properties)
+  renderer.logicDisplay!.components = []
+  renderer.cleanUpBeforeImport()
+  renderer.undoStack = ['[]']
+  renderer.redoStack = []
+  renderer.postDoAfterComponentImport()
+  renderer.camX = renderer.camY = 0
+  renderer.zoom = renderer.targetZoom = 1
+  renderer.fitDocumentPaper()
+  renderer.onZoomUpdate?.()
+  currentFilePath = undefined
 }
 
 export const openFileAndParse = async (renderer: GraphicsRenderer): Promise<void> => {
-  const file = await window.api.showOpenFileDialog({
-    title: getLocaleKey('editor.sysdialogs.openFile'),
-    filters: [
-      // { name: 'CompassCAD NEXT Files', extensions: ['cnext'] }, <- Still haven't planned on .cnext (could be an SQLite file ig)
-      { name: getLocaleKey('editor.sysdialogs.compassFiles'), extensions: ['ccad'] },
-      { name: getLocaleKey('editor.sysdialogs.qrocadFiles'), extensions: ['qrocad', 'qrocad2'] },
-      { name: 'AutoCAD DXF', extensions: ['dxf'] }
-    ]
-  })
-  const filePath = getDialogPath(file)
-  if (filePath != undefined) {
-    console.log(filePath)
-    const fileContent = window.api.readFile(filePath)
-    try {
-      let parsedData: unknown
-      if (
-        filePath.includes('ccad') ||
-        filePath.includes('qrocad') ||
-        filePath.includes('qrocad2')
-      ) {
-        parsedData = JSON.parse(fileContent)
-      } else if (filePath.includes('dxf')) {
-        parsedData = convertDxfToCompassCad(fileContent, {
-          scale: 10,
-          flipY: true
-        })
-      } else {
-        return
-      }
-      renderer!.logicDisplay!.components = []
-      renderer?.cleanUpBeforeImport()
-      renderer!.logicDisplay?.importJSON(
-        parsedData as Component[],
-        renderer!.logicDisplay.components
-      )
-      renderer?.postDoAfterComponentImport()
-      currentFilePath = filePath
-    } catch (e) {
-      console.error('[windowbar] failed to open file: ', e)
-    }
+  try {
+    const file = await window.api.showOpenFileDialog({
+      title: getLocaleKey('editor.sysdialogs.openFile'),
+      filters: [
+        { name: getLocaleKey('documentProperties.nextFiles'), extensions: ['cnext'] },
+        { name: getLocaleKey('editor.sysdialogs.compassFiles'), extensions: ['ccad'] },
+        { name: getLocaleKey('editor.sysdialogs.qrocadFiles'), extensions: ['qrocad', 'qrocad2'] },
+        { name: 'AutoCAD DXF', extensions: ['dxf'] }
+      ]
+    })
+    const filePath = getDialogPath(file)
+    if (!filePath) return
+    const ext = extension(filePath)
+    const source = window.api.readFile(filePath)
+    let components: unknown[]
+    let properties: DocumentProperties | null = null
+    if (['cnext', 'ccad', 'qrocad', 'qrocad2'].includes(ext)) {
+      ;({ components, properties } = decodeDocument(source, ext === 'cnext'))
+    } else if (ext === 'dxf') {
+      components = convertDxfToCompassCad(source, { scale: 10, flipY: true })
+    } else throw new Error(getLocaleKey('documentProperties.unsupported'))
+    // Construct everything before replacing the active design, including history.
+    const staged = new LogicDisplay()
+    staged.importJSON(components as Component[], staged.components)
+    renderer.logicDisplay!.components = staged.components
+    renderer.cleanUpBeforeImport()
+    renderer.setDocumentProperties(properties)
+    renderer.undoStack = [renderer.logicDisplay!.exportJSON()]
+    renderer.redoStack = []
+    renderer.postDoAfterComponentImport()
+    renderer.fitDocumentPaper()
+    currentFilePath = filePath
+  } catch (error) {
+    void toast(getLocaleKey('documentProperties.openError') + ' ' + String(error))
   }
 }
 
@@ -67,22 +76,59 @@ export const saveFile = async (
   renderer: GraphicsRenderer,
   options?: { forceSaveDialog?: boolean }
 ): Promise<void> => {
-  let targetPath = options?.forceSaveDialog ? undefined : currentFilePath
-
-  if (!targetPath) {
-    const file = await window.api.showSaveFileDialog({
-      title: getLocaleKey('editor.sysdialogs.saveFile'),
-      filters: [{ name: getLocaleKey('editor.sysdialogs.compassFiles'), extensions: ['ccad'] }],
-      defaultPath: currentFilePath || `${getLocaleKey('editor.sysdialogs.defaultName')}.ccad`
-    })
-    targetPath = getDialogPath(file)
-  }
-
-  if (targetPath != undefined) {
-    console.log('Saving file to: ', targetPath)
-    const fileContent = renderer!.logicDisplay!.exportJSON()
-    window.api.writeFile(targetPath, fileContent)
-    currentFilePath = targetPath
-    toast(getLocaleKey('editor.sysdialogs.saved').replace('{path}', () => targetPath!))
+  try {
+    // Properties always require Next format; imported formats are never overwritten.
+    let targetPath = options?.forceSaveDialog ? undefined : currentFilePath
+    if (
+      targetPath &&
+      extension(targetPath) !== 'cnext' &&
+      (renderer.documentProperties || extension(targetPath) !== 'ccad')
+    )
+      targetPath = undefined
+    if (!targetPath) {
+      const base =
+        currentFilePath?.replace(/\.[^.\\/]+$/, '') ||
+        (
+          renderer.documentProperties?.name || getLocaleKey('editor.sysdialogs.defaultName')
+        ).replace(/[<>:"/\\|?*]/g, '_')
+      targetPath = getDialogPath(
+        await window.api.showSaveFileDialog({
+          title: getLocaleKey('editor.sysdialogs.saveFile'),
+          filters: [
+            { name: getLocaleKey('documentProperties.nextFiles'), extensions: ['cnext'] },
+            { name: getLocaleKey('editor.sysdialogs.compassFiles'), extensions: ['ccad'] }
+          ],
+          defaultPath: base + '.cnext'
+        })
+      )
+    }
+    if (!targetPath) return
+    if (!/\.[^\\/.]+$/.test(targetPath)) targetPath += '.cnext'
+    const next = extension(targetPath) === 'cnext'
+    if (!next && extension(targetPath) !== 'ccad')
+      throw new Error(getLocaleKey('documentProperties.unsupported'))
+    if (
+      !next &&
+      renderer.documentProperties &&
+      (await callGenericPrompt(getLocaleKey('documentProperties.legacyWarning'), {
+        buttons: 'yesno'
+      })) !== 'yes'
+    )
+      return
+    const properties = renderer.documentProperties || {
+      ...defaultDocumentProperties(),
+      measurementUnit: renderer.unitMeasure as DocumentProperties['measurementUnit'],
+      measurementPrecision: renderer.measurementPrecision
+    }
+    window.api.writeFile(
+      targetPath,
+      encodeDocument(renderer.logicDisplay!.components, properties, next)
+    )
+    if (next && !renderer.documentProperties) renderer.setDocumentProperties(properties)
+    // A legacy export does not redirect subsequent saves away from the Next document.
+    if (next || !renderer.documentProperties) currentFilePath = targetPath
+    void toast(getLocaleKey('editor.sysdialogs.saved').replace('{path}', () => targetPath!))
+  } catch (error) {
+    void toast(getLocaleKey('documentProperties.saveError') + ' ' + String(error))
   }
 }

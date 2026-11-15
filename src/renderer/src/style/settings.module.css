@@ -261,3 +261,15 @@
     flex-direction: column;
     gap: 10px;
 }
+
+/* Document notes use the same dark input surface as Settings fields. */
+.row textarea {
+  font-family: var(--font);
+  color: var(--text);
+  background-color: var(--secondary);
+  border: none;
+  border-radius: 10px;
+  padding: 10px;
+  width: 55%;
+  resize: vertical;
+}
