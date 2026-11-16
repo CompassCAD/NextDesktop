@@ -977,6 +977,10 @@ input[type="checkbox"] {
   background: var(--secondary);
 }
 .canvas-context-menu button:disabled { opacity: .35; cursor: default; }
+.canvas-context-menu kbd {
+  margin-inline-start: auto;
+  opacity: .7;
+}
 
 .hierarchy-group, .hierarchy-group-children {
   display: flex;
@@ -1027,6 +1031,12 @@ button.componentlist-selector {
   font: inherit;
   text-align: left;
   border: 0;
+}
+button.componentlist-selector[data-layer-drop="before"] {
+  box-shadow: inset 0 2px currentColor;
+}
+button.componentlist-selector[data-layer-drop="after"] {
+  box-shadow: inset 0 -2px currentColor;
 }
 .componentlist-selector img {
   width: 20px;

@@ -113,6 +113,30 @@ export class GraphicsRenderer {
     this.setSelection(this.logicDisplay?.components.map((_, i) => i) ?? [])
   }
 
+  reorderLayers(destination: 'front' | 'back' | number, indexes = this.getSelection()): void {
+    if (!this.logicDisplay || this.readonly || this.isEditing || this._bulkImportActive) return
+    const components = this.logicDisplay.components
+    const boundary = destination === 'front' ? components.length : destination === 'back' ? 0 : destination
+    if (!indexes.length || !Number.isInteger(boundary) || boundary < 0 || boundary > components.length) return
+
+    const moving = new Set(indexes)
+    const before: number[] = []
+    const moved: number[] = []
+    const after: number[] = []
+    components.forEach((_, index) => {
+      const partition = moving.has(index) ? moved : index < boundary ? before : after
+      partition.push(index)
+    })
+    const order = [...before, ...moved, ...after]
+    if (order.every((index, position) => index === position)) return
+
+    const selection = new Set(this.getSelection())
+    this.logicDisplay.components = order.map(index => components[index])
+    this.setSelection(order.flatMap((index, position) => selection.has(index) ? [position] : []),
+      this.selectionExpandsGroups)
+    this.saveState()
+  }
+
   groupSelection(ungroup = false, baseName = 'Group'): void {
     const indexes = this.getSelection()
     if (this.readonly || (!ungroup && indexes.length < 2)) return
@@ -1591,6 +1615,9 @@ export class GraphicsRenderer {
       const candidates = this._quadtree
         ? this._quadtree.query(viewport)
         : components.map((c) => ({ item: c, bbox: this.getComponentBoundaryBox(c) }))
+      if (this._quadtree) {
+        candidates.sort((a, b) => this._componentIndexes.get(a.item)! - this._componentIndexes.get(b.item)!)
+      }
       for (const { item: component, bbox } of candidates) {
         if (component.active == false) continue
         if (!this.isComponentInCamera(bbox)) continue
@@ -3014,9 +3041,8 @@ export class GraphicsRenderer {
         [componentTypes.measure]: 8
       }
 
-      if (typePriority[a.type] !== typePriority[b.type]) {
-        return typePriority[a.type] - typePriority[b.type]
-      }
+      const typeDifference = (typePriority[a.type] ?? Infinity) - (typePriority[b.type] ?? Infinity)
+      if (typeDifference) return typeDifference
 
       // 3. Third priority: Point type within component
       const pointTypePriority: { [key: string]: number } = {
@@ -3025,7 +3051,7 @@ export class GraphicsRenderer {
         end: 3
       }
 
-      return (pointTypePriority[a.pointType] || 0) - (pointTypePriority[b.pointType] || 0)
+      return (pointTypePriority[a.pointType] || 0) - (pointTypePriority[b.pointType] || 0) || b.index - a.index
     })
 
     // Return the index of the highest priority intersection

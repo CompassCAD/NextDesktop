@@ -55,6 +55,47 @@ test('group, ungroup, scale and delete have repeatable undo and redo',()=>{
   r.setSelection([0]); r.deleteSelection(); assert.equal(r.logicDisplay.components.length,0);
   r.undo(); assert.equal(r.logicDisplay.components.length,2);
 });
+test('layer moves preserve relative order and selection, and undo restores paint order',()=>{
+  const r = renderer([0, 1, 2, 3].map(y => new C.Line(0, y, 10, y)));
+  const order = () => Array.from(r.logicDisplay.components, component => component.y1);
+  r.setSelection([2, 0], false);
+  r.reorderLayers('front');
+  assert.deepEqual(order(), [1, 3, 0, 2]);
+  assert.deepEqual(Array.from(r.getSelection()), [2, 3]);
+  assert.equal(r.selectionExpandsGroups, false);
+  r.reorderLayers('front');
+  assert.equal(r.undoStack.length, 2);
+  r.reorderLayers('back');
+  assert.deepEqual(order(), [0, 2, 1, 3]);
+
+  // A hierarchy drop moves the dragged rows and keeps the original selection.
+  r.reorderLayers(1, [2, 3]);
+  assert.deepEqual(order(), [0, 1, 3, 2]);
+  assert.deepEqual(Array.from(r.getSelection()), [0, 3]);
+  r.undo();
+  assert.deepEqual(order(), [0, 2, 1, 3]);
+  r.redo();
+  assert.deepEqual(order(), [0, 1, 3, 2]);
+  r.readonly = true;
+  r.reorderLayers(0, [2, 3]);
+  assert.deepEqual(order(), [0, 1, 3, 2]);
+});
+test('spatially culled drawing uses layer order and equivalent hits prefer the front layer',()=>{
+  const r = renderer([new C.Line(0, 0, 10, 0), new C.Line(0, 0, 10, 0)]);
+  const [back, front] = r.logicDisplay.components;
+  const bbox = { minX: 0, maxX: 10, minY: 0, maxY: 0 };
+  r._componentIndexes = new Map([[back, 0], [front, 1]]);
+  r._isQuadtreeDirty = false;
+  r._quadtree = { query: () => [{ item: front, bbox }, { item: back, bbox }] };
+  r.snapTolerance = 1;
+  r.isComponentInCamera = () => true;
+  const drawn = [];
+  r.drawComponent = component => drawn.push(component);
+  r.drawAllComponents(r.logicDisplay.components, 0, 0, true);
+  assert.deepEqual(drawn, [back, front]);
+  r._quadtree.query = () => [{ item: back, bbox }, { item: front, bbox }];
+  assert.equal(r.findIntersectionWith(0, 0), 1);
+});
 test('Shift-click toggles whole groups and box selection contains objects',()=>{
   const r=renderer([new C.Line(0,0,10,0),new C.Line(0,10,10,10)]);
   r.getCursorXRaw=()=>50; r.getCursorYRaw=()=>50; r.findIntersectionWith=()=>0;

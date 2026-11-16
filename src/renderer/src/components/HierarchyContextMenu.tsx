@@ -55,6 +55,8 @@ export default function HierarchyContextMenu({ position, renderer, onClose, onRe
     { label:t('clear'), run:() => renderer.setSelection([]), enabled:!!selection.length },
     { label:t('group'), run:() => renderer.groupSelection(false, getLocaleKey('editor.inspector.general.group')), enabled:!editing && editable && selection.length > 1 },
     { label:t('ungroup'), run:() => renderer.groupSelection(true), enabled:editable && selection.some(i => renderer.logicDisplay?.components[i].groupId) },
+    { label:getLocaleKey('contextMenu.bringToFront'), shortcut:'[', run:() => renderer.reorderLayers('front'), enabled:editable && !editing && !!selection.length },
+    { label:getLocaleKey('contextMenu.sendToBack'), shortcut:']', run:() => renderer.reorderLayers('back'), enabled:editable && !editing && !!selection.length },
   ]
   return createPortal(<div ref={menu} role="menu" aria-label={getLocaleKey('contextMenu.hierarchyTitle')}
     className={`${styles['menu-provider']} ${styles['canvas-context-menu']}`}
@@ -73,6 +75,8 @@ export default function HierarchyContextMenu({ position, renderer, onClose, onRe
       }
     }}>
     {actions.map(action => <button type="button" role="menuitem" key={action.label}
-      disabled={!action.enabled} onClick={() => { close(); void action.run() }}>{action.label}</button>)}
+      aria-keyshortcuts={action.shortcut} disabled={!action.enabled} onClick={() => { close(); void action.run() }}>
+      <span>{action.label}</span>{action.shortcut && <kbd aria-hidden="true">{action.shortcut}</kbd>}
+    </button>)}
   </div>, document.body)
 }

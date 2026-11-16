@@ -222,6 +222,8 @@
   "contextMenu": {
     "title": "Canvas actions",
     "hierarchyTitle": "Hierarchy actions",
+    "bringToFront": "Bring to Front",
+    "sendToBack": "Send to Back",
     "rename": "Rename group",
     "cancel": "Cancel current edit",
     "selectAll": "Select all",

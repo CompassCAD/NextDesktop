@@ -95,12 +95,16 @@ export default function Inspector(): React.ReactElement {
   const [renamingGroup, setRenamingGroup] = useState<string | null>(null)
   const [groupNameDraft, setGroupNameDraft] = useState('')
   const cancelRename = useRef(false)
-  const selectionAnchor = useRef<string | null>(null)
+  const selectionAnchor = useRef<{ key: string; component?: Component } | null>(null)
   const [hierarchyMenu, setHierarchyMenu] = useState<{ x: number; y: number; groupId?: string } | null>(null)
+  const layerDrag = useRef<{ components: Component[]; indexes: number[]; parentGroup?: string } | null>(null)
+  const [layerDrop, setLayerDrop] = useState<{ index: number; side: 'before' | 'after' } | null>(null)
   const hierarchyRows = useMemo(() => {
     const rows: { groupId?: string; name?: string; members: { comp: Component; originalIndex: number }[] }[] = []
     const groups = new Map<string, (typeof rows)[number]>()
-    componentArray.forEach((comp, originalIndex) => {
+    // The last component painted is the first layer shown in the hierarchy.
+    for (let originalIndex = componentArray.length - 1; originalIndex >= 0; originalIndex--) {
+      const comp = componentArray[originalIndex]
       const member = { comp, originalIndex }
       if (!comp.groupId) rows.push({ members: [member] })
       else {
@@ -112,7 +116,7 @@ export default function Inspector(): React.ReactElement {
         }
         row.members.push(member)
       }
-    })
+    }
     const usedNames = new Set(rows.map(row => row.members[0].comp.groupName).filter(Boolean))
     let number = 1
     for (const row of rows) {
@@ -140,13 +144,73 @@ export default function Inspector(): React.ReactElement {
     return row.groupId ? [{ key: 'group:' + row.groupId, indexes: row.members.map(item => item.originalIndex) },
       ...(hierarchySearch || !collapsedGroups.has(row.groupId) ? children : [])] : children
   })
+  const clearLayerDrag = (): void => {
+    layerDrag.current = null
+    setLayerDrop(null)
+  }
+  const layerDragProps = (indexes: number[], parentGroup?: string): React.ButtonHTMLAttributes<HTMLButtonElement> &
+    { 'data-layer-drop'?: 'before' | 'after' } => {
+    const index = indexes[0]
+    const canDrag = !!renderer && !renderer.readonly && !renderer.isEditing && !renamingGroup
+    const getDropSide = (event: React.DragEvent<HTMLButtonElement>): 'before' | 'after' | null => {
+      const drag = layerDrag.current
+      if (!canDrag || !drag || drag.components !== renderer.logicDisplay?.components ||
+        drag.parentGroup !== parentGroup || indexes.some(i => drag.indexes.includes(i))) return null
+      const bounds = event.currentTarget.getBoundingClientRect()
+      return event.clientY < bounds.top + bounds.height / 2 ? 'before' : 'after'
+    }
+    return {
+      draggable: canDrag,
+      'data-layer-drop': layerDrop?.index === index && layerDrag.current?.parentGroup === parentGroup
+        ? layerDrop?.side : undefined,
+      onDragStart: event => {
+        const components = renderer?.logicDisplay?.components
+        if (!canDrag || !components) {
+          event.preventDefault()
+          return
+        }
+        layerDrag.current = { components, indexes, parentGroup }
+        event.dataTransfer.effectAllowed = 'move'
+        event.dataTransfer.setData('application/x-compasscad-layer', String(index))
+      },
+      onDragOver: event => {
+        const side = getDropSide(event)
+        if (!side) return
+        event.preventDefault()
+        event.dataTransfer.dropEffect = 'move'
+        setLayerDrop(previous => previous?.index === index && previous.side === side ? previous : { index, side })
+      },
+      onDragLeave: event => {
+        if (event.relatedTarget instanceof Node && event.currentTarget.contains(event.relatedTarget)) return
+        setLayerDrop(previous => previous?.index === index ? null : previous)
+      },
+      onDrop: event => {
+        const side = getDropSide(event)
+        const drag = layerDrag.current
+        if (side && drag) {
+          event.preventDefault()
+          // Visual order is the reverse of paint order. Group rows span their member indexes.
+          const boundary = side === 'before' ? index + 1 : indexes[indexes.length - 1]
+          renderer?.reorderLayers(boundary, drag.indexes)
+        }
+        clearLayerDrag()
+      },
+      onDragEnd: clearLayerDrag
+    }
+  }
   const selectHierarchyRow = (key: string, event: { shiftKey: boolean; ctrlKey: boolean; metaKey: boolean }): void => {
     if (!renderer) return
-    const index = visibleRows.findIndex(row => row.key === key)
-    if (index < 0) return
-    const next = selectHierarchyIndexes(visibleRows, key, selectionAnchor.current,
+    const row = visibleRows.find(row => row.key === key)
+    if (!row) return
+    const getRowComponent = (row: (typeof visibleRows)[number]): Component | undefined =>
+      row.key.startsWith('component:') ? componentArray[row.indexes[0]] : undefined
+    const anchor = selectionAnchor.current
+    const anchorRow = anchor?.component
+      ? visibleRows.find(row => getRowComponent(row) === anchor.component)
+      : visibleRows.find(row => row.key === anchor?.key)
+    const next = selectHierarchyIndexes(visibleRows, key, anchorRow?.key ?? null,
       renderer.getSelection(), event.shiftKey, event.ctrlKey || event.metaKey)
-    if (!event.shiftKey || !visibleRows.some(row => row.key === selectionAnchor.current)) selectionAnchor.current = key
+    if (!event.shiftKey || !anchorRow) selectionAnchor.current = { key, component: getRowComponent(row) }
     renderer.setMode(Types.NavigationTypes.Select)
     renderer.setSelection(next, false)
   }
@@ -686,12 +750,13 @@ export default function Inspector(): React.ReactElement {
                 {hierarchy.map(row => {
                   const members = row.members.map(item => (
                     <button type="button" key={item.originalIndex}
+                      {...layerDragProps([item.originalIndex], row.groupId)}
                       className={[styles['componentlist-selector'], selection.includes(item.originalIndex) ? styles['componentlist-selector-selected'] : ''].join(' ')}
                       aria-pressed={selection.includes(item.originalIndex)}
                       onClick={event => selectHierarchyRow('component:' + item.originalIndex, event)}
                       onContextMenu={event => openHierarchyMenu(event, 'component:' + item.originalIndex)}
                       onDoubleClick={() => animateToComponentOrigin(item.originalIndex)}>
-                      <img src={componentImages[item.comp.type]} alt="" /> {item.comp.name}
+                      <img src={componentImages[item.comp.type]} alt="" draggable={false} /> {item.comp.name}
                     </button>
                   ))
                   if (!row.groupId) return members[0]
@@ -721,6 +786,7 @@ export default function Inspector(): React.ReactElement {
                             event.currentTarget.blur()
                           }
                         }} /> : <button type="button" aria-pressed={selected}
+                        {...layerDragProps(row.members.map(item => item.originalIndex))}
                         title={getLocaleKey('editor.inspector.general.renameGroup')}
                         onDoubleClick={startRename}
                         onKeyDown={event => {
@@ -729,7 +795,7 @@ export default function Inspector(): React.ReactElement {
                         className={styles['componentlist-selector']}
                         onClick={event => selectHierarchyRow('group:' + id, event)}
                         onContextMenu={event => openHierarchyMenu(event, 'group:' + id, id)}>
-                        <img src={HierarchyIcon} alt="" />
+                        <img src={HierarchyIcon} alt="" draggable={false} />
                         {groupName}
                       </button>}
                       <button type="button" aria-expanded={expanded}

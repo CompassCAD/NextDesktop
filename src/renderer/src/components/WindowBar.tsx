@@ -182,6 +182,14 @@ export default function WindowBar(): React.ReactElement {
     const ctrlOrMeta = e.ctrlKey || e.metaKey
     const keyLower = e.key.toLowerCase()
 
+    if (renderer && !e.defaultPrevented && !e.isComposing && !ctrlOrMeta && !e.altKey && !e.shiftKey &&
+      !menuOpened && !renderer.contextMenuOpen && (e.key === '[' || e.key === ']') &&
+      !(e.target instanceof HTMLElement && (e.target.isContentEditable || e.target.closest('input, textarea, select')))) {
+      e.preventDefault()
+      renderer.reorderLayers(e.key === '[' ? 'front' : 'back')
+      return
+    }
+
     if (ctrlOrMeta && (keyLower === 'e' || keyLower === 'p')) {
       e.preventDefault()
       if (renderer) void exportDrawing(renderer, keyLower === 'e' ? 'svg' : 'pdf')

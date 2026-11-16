@@ -9,6 +9,8 @@ import SelectAllIcon from '../assets/icons/boundbox.svg'
 import ClearIcon from '../assets/icons/close.svg'
 import GroupIcon from '../assets/icons/hierarchy.svg'
 import UngroupIcon from '../assets/icons/restoredown.svg'
+import FrontIcon from '../assets/icons/arrow-up.svg'
+import BackIcon from '../assets/icons/arrow-down.svg'
 
 export default function CanvasContextMenu(): React.JSX.Element | null {
   const { renderer } = useRenderer()
@@ -66,6 +68,8 @@ export default function CanvasContextMenu(): React.JSX.Element | null {
     { label:t('clear'), icon:ClearIcon, run:() => renderer.setSelection([]), enabled:!!selection.length },
     { label:t('group'), icon:GroupIcon, run:() => renderer.groupSelection(false, getLocaleKey('editor.inspector.general.group')), enabled:!editing && editable && selection.length > 1 },
     { label:t('ungroup'), icon:UngroupIcon, run:() => renderer.groupSelection(true), enabled:editable && selection.some(i => renderer.logicDisplay?.components[i].groupId) },
+    { label:getLocaleKey('contextMenu.bringToFront'), icon:FrontIcon, shortcut:'[', run:() => renderer.reorderLayers('front'), enabled:editable && !editing && !!selection.length },
+    { label:getLocaleKey('contextMenu.sendToBack'), icon:BackIcon, shortcut:']', run:() => renderer.reorderLayers('back'), enabled:editable && !editing && !!selection.length },
   ]
   return <div ref={menu} role="menu" aria-label={t('title')}
     className={`${styles['menu-provider']} ${styles['canvas-context-menu']}`}
@@ -84,6 +88,9 @@ export default function CanvasContextMenu(): React.JSX.Element | null {
       }
     }}>
     {actions.map(action => <button type="button" role="menuitem" key={action.label}
-      disabled={!action.enabled} onClick={() => { close(); void action.run() }}><img src={action.icon} alt="" aria-hidden="true" /><span>{action.label}</span></button>)}
+      aria-keyshortcuts={action.shortcut} disabled={!action.enabled} onClick={() => { close(); void action.run() }}>
+      <img src={action.icon} alt="" aria-hidden="true" /><span>{action.label}</span>
+      {action.shortcut && <kbd aria-hidden="true">{action.shortcut}</kbd>}
+    </button>)}
   </div>
 }
