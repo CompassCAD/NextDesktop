@@ -26,7 +26,36 @@ jobs:
         run: yarn install --frozen-lockfile
 
       - name: Build macOS dmg + zip (unsigned)
-        run: yarn build:mac --publish=always
+        run: yarn build:mac --publish=never
         env:
           CSC_IDENTITY_AUTO_DISCOVERY: false
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Launch app and capture preview
+        shell: bash
+        run: |
+          set -euo pipefail
+          app_path="$(find dist/mac* -maxdepth 1 -name '*.app' -print -quit)"
+          test -n "$app_path"
+          open "$app_path"
+          for attempt in {1..30}; do
+            if pgrep -f "$app_path/Contents/MacOS/" >/dev/null; then
+              break
+            fi
+            sleep 1
+          done
+          pgrep -f "$app_path/Contents/MacOS/" >/dev/null
+          sleep 15
+          mkdir -p artifacts
+          screencapture -x artifacts/macos-preview.png
+          pkill -f "$app_path/Contents/MacOS/" || true
+
+      - name: Upload macOS build and preview
+        uses: actions/upload-artifact@v4
+        with:
+          name: compasscad-macos-preview
+          path: |
+            dist/*.dmg
+            dist/*.zip
+            artifacts/macos-preview.png
+          if-no-files-found: error
+          retention-days: 14
