@@ -34,14 +34,14 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          app_path="$(find dist -type d -name '*.app' -print -quit)"
+          app_path="$(find "$PWD/dist" -type d -name '*.app' -print -quit)"
           if [[ -z "$app_path" ]]; then
             echo 'No packaged .app bundle found under dist. Build output:'
             find dist -maxdepth 4 -print || true
             exit 1
           fi
           bundle_id="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleIdentifier' "$app_path/Contents/Info.plist")"
-          open -a "$app_path"
+          open "$app_path"
           for attempt in {1..120}; do
             window_count="$(osascript -e "tell application \"System Events\" to count (windows of (first process whose bundle identifier is \"$bundle_id\"))" 2>/dev/null || echo 0)"
             if [[ "$window_count" =~ ^[0-9]+$ ]] && (( window_count > 0 )); then
@@ -56,7 +56,7 @@ jobs:
           osascript -e "tell application \"$bundle_id\" to activate"
           sleep 15
           mkdir -p artifacts
-          screencapture -x -l "$(osascript -e 'tell application "System Events" to unix id of first process whose frontmost is true')" artifacts/macos-preview.png
+          screencapture -x artifacts/macos-preview.png
           osascript -e "tell application \"$bundle_id\" to quit" || true
 
       - name: Upload macOS build and preview
