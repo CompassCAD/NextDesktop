@@ -53,11 +53,11 @@ jobs:
             echo "App window did not appear within 120 seconds (bundle id: $bundle_id)."
             exit 1
           fi
-          osascript -e "tell application \"$bundle_id\" to activate"
+          osascript -e "tell application id \"$bundle_id\" to activate"
           sleep 15
           mkdir -p artifacts
           screencapture -x artifacts/macos-preview.png
-          osascript -e "tell application \"$bundle_id\" to quit" || true
+          osascript -e "tell application id \"$bundle_id\" to quit" || true
 
       - name: Upload macOS build and preview
         uses: actions/upload-artifact@v4
