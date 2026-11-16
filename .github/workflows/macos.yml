@@ -36,18 +36,24 @@ jobs:
           set -euo pipefail
           app_path="$(find dist/mac* -maxdepth 1 -name '*.app' -print -quit)"
           test -n "$app_path"
-          open "$app_path"
-          for attempt in {1..30}; do
-            if pgrep -f "$app_path/Contents/MacOS/" >/dev/null; then
+          bundle_id="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleIdentifier' "$app_path/Contents/Info.plist")"
+          open -W -a "$app_path"
+          for attempt in {1..120}; do
+            window_count="$(osascript -e "tell application \"System Events\" to count (windows of (first process whose bundle identifier is \"$bundle_id\"))" 2>/dev/null || echo 0)"
+            if [[ "$window_count" =~ ^[0-9]+$ ]] && (( window_count > 0 )); then
               break
             fi
             sleep 1
           done
-          pgrep -f "$app_path/Contents/MacOS/" >/dev/null
+          if ! [[ "$window_count" =~ ^[0-9]+$ ]] || (( window_count == 0 )); then
+            echo "App window did not appear within 120 seconds (bundle id: $bundle_id)."
+            exit 1
+          fi
+          osascript -e "tell application \"$bundle_id\" to activate"
           sleep 15
           mkdir -p artifacts
-          screencapture -x artifacts/macos-preview.png
-          pkill -f "$app_path/Contents/MacOS/" || true
+          screencapture -x -l "$(osascript -e 'tell application "System Events" to unix id of first process whose frontmost is true')" artifacts/macos-preview.png
+          osascript -e "tell application \"$bundle_id\" to quit" || true
 
       - name: Upload macOS build and preview
         uses: actions/upload-artifact@v4
