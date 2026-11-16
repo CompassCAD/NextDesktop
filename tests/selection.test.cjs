@@ -9,7 +9,7 @@ function load(name) {
   if(cache.has(name)) return cache.get(name);
   const exports={}; cache.set(name,exports);
   const code=ts.transpileModule(fs.readFileSync(path.join('src/renderer/src/engine',name+'.ts'),'utf8').replace(/(undo|redo) = \(\): void => \{/g, '$1(): void {'),{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022}}).outputText;
-  vm.runInNewContext(code,{exports,require:id=>id==='../utils/Units'?load('../utils/Units'):['./Component','./Logic','./Selection'].includes(id)?load(id.slice(2)):id.endsWith('.svg')?{default:id}:{},performance,console,crypto:require('node:crypto').webcrypto,structuredClone},{filename:name});
+  vm.runInNewContext(code,{exports,require:id=>['./Component','./Logic','./Selection'].includes(id)?load(id.slice(2)):id.endsWith('.svg')?{default:id}:{},performance,console,crypto:require('node:crypto').webcrypto,structuredClone},{filename:name});
   return exports;
 }
 const C=load('Component');
@@ -28,7 +28,7 @@ test('uniform scaling preserves rotations and transforms nested geometry in loca
   shape.components=[new C.Line(0,0,10,10),new C.Label(5,5,'test',12),new C.Picture(2,2,'test')];
   transformComponent(shape,2,-10,-20);
   assert.equal(shape.x,10); assert.equal(shape.y,20); assert.equal(shape.rotation,30);
-  assert.equal(shape.components[0].x2,20); assert.equal(shape.components[1].fontSize,24); assert.equal(shape.components[2].imageScale,2 * 0.0254 / 96);
+  assert.equal(shape.components[0].x2,20); assert.equal(shape.components[1].fontSize,24); assert.equal(shape.components[2].imageScale,2);
 });
 test('group membership and image size survive serialization and importing',()=>{
   const line=new C.Line(0,0,10,10); line.groupId='group';

@@ -28,8 +28,7 @@ export const createNewFile = (
   renderer.redoStack = []
   renderer.postDoAfterComponentImport()
   renderer.camX = renderer.camY = 0
-  // Keep the current camera magnification, including the document view scale.
-  renderer.fitDocumentPaper()
+  // A new sheet is a reference in the existing world-space viewport.
   renderer.onZoomUpdate?.()
   currentFilePath = undefined
 }
@@ -54,7 +53,7 @@ export const openFileAndParse = async (renderer: GraphicsRenderer): Promise<void
     if (['cnext', 'ccad', 'qrocad', 'qrocad2'].includes(ext)) {
       ;({ components, properties } = decodeDocument(source, ext === 'cnext'))
     } else if (ext === 'dxf') {
-      components = convertDxfToCompassCad(source, { flipY: true })
+      components = convertDxfToCompassCad(source, { scale: 10, flipY: true })
     } else throw new Error(getLocaleKey('documentProperties.unsupported'))
     // Construct everything before replacing the active design, including history.
     const staged = new LogicDisplay()

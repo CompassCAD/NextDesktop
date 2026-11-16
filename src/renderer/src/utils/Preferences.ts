@@ -26,13 +26,6 @@ export function fontPreference(): keyof typeof fonts {
 }
 
 export function numericPreference(key: NumericSetting): number {
-  // Old application preferences stored grid spacing in centimetres.
-  if (key === 'gridSpacing') {
-    const metres = preference('gridSpacingMetres', '')
-    const legacy = preference('gridSpacing', '')
-    const value = metres || (legacy ? String(Number(legacy) / 100) : String(numericSettings.gridSpacing.default))
-    return validNumericSetting(key, value) ? Number(value) : numericSettings.gridSpacing.default
-  }
   const value = preference(key, String(numericSettings[key].default))
   return validNumericSetting(key, value) ? Number(value) : numericSettings[key].default
 }

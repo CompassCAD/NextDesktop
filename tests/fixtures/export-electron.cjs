@@ -33,6 +33,22 @@ app.whenReady().then(async () => {
       ]
       const before = JSON.stringify(geometry)
       const paper = await r.render(geometry,p)
+      // Only the page transform/frame may change. All component paths and world
+      // stroke widths, including nested geometry and dimensions, must be identical.
+      const contentOf = page => new DOMParser().parseFromString(page.svg, 'image/svg+xml')
+        .documentElement.querySelector(':scope > g').outerHTML
+      const reference = contentOf(await r.render(geometry, {...p,canvas:'infinite',showTitleBlock:false}))
+      for (const scaleDenominator of [1,4,100,1000]) {
+        const page = await r.render(geometry, {...p,scaleDenominator,showTitleBlock:false})
+        if (contentOf(page) !== reference) throw new Error('Paper changed component geometry or strokes')
+      }
+      const strokePage = await r.render([{...base,type:2,radius:2,x1:0,y1:0,x2:100,y2:0}], {...p,showTitleBlock:false})
+      const strokeSvg = new DOMParser().parseFromString(strokePage.svg, 'image/svg+xml').documentElement
+      const width = Number(strokeSvg.querySelector('line').parentElement.getAttribute('stroke-width'))
+      const physicalStroke = width * strokePage.widthMm / strokeSvg.viewBox.baseVal.width
+      if (Math.abs(physicalStroke - 0.2) > 1e-10) throw new Error('Default world stroke has wrong print width')
+      const overflow = await r.render([{...base,type:2,radius:2,x1:1484.5,y1:0,x2:1484.5,y2:20}],p)
+      if (!overflow.outsidePaper) throw new Error('Export ignored a stroke extending outside the paper')
       const infinite = await r.render([{...base,type:2,x1:0,y1:0,x2:10,y2:0,rotation:90}],{...p,canvas:'infinite'})
       const portrait = await r.render([], {...p,orientation:'portrait'})
       const custom = await r.render([], {...p,paper:'custom',widthMm:100,heightMm:200,scaleNumerator:2,scaleDenominator:1})

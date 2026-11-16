@@ -44,7 +44,7 @@ const {
 const { Line } = load('src/renderer/src/engine/Component.ts')
 const { LogicDisplay } = load('src/renderer/src/engine/Logic.ts')
 
-test('Next round trip preserves document metadata and metre geometry; legacy stays an array', () => {
+test('Next round trip preserves document metadata and centimetre geometry; legacy stays an array', () => {
   const p = {
     ...defaults(),
     name: 'House',
@@ -58,17 +58,17 @@ test('Next round trip preserves document metadata and metre geometry; legacy sta
   assert.equal(result.properties.name, 'House')
   assert.equal(result.properties.scaleDenominator, 100)
   assert.equal(result.components[0].x2, 100)
-  assert.equal(JSON.parse(encodeDocument(geometry, p, false))[0].x2, 10000)
+  assert.equal(encodeDocument(geometry, p, false), JSON.stringify(geometry))
   assert.equal(decodeDocument(encodeDocument(geometry, p, false), false).properties, null)
 })
 
 test('paper orientation, margins, reduction and enlargement have physical units', () => {
   const p = { ...defaults(), paper: 'A4', orientation: 'portrait', scaleDenominator: 100 }
-  assert.equal(worldPaperDimensions(p).width, 21)
-  assert.equal(worldPaperDimensions(p).height, 29.700000000000003)
-  assert.equal(worldPaperDimensions(p).margin, 1)
+  assert.equal(worldPaperDimensions(p).width, 2100)
+  assert.equal(worldPaperDimensions(p).height, 2970)
+  assert.equal(worldPaperDimensions(p).margin, 100)
   assert.equal(paperDimensions({ ...p, orientation: 'landscape' }).width, 297)
-  assert.equal(worldPaperDimensions({ ...p, scaleDenominator: 1, scaleNumerator: 2 }).width, 0.105)
+  assert.equal(worldPaperDimensions({ ...p, scaleDenominator: 1, scaleNumerator: 2 }).width, 10.5)
   assert.equal(paperDimensions({ ...p, paper: 'Letter' }).width, 215.9)
   assert.equal(paperDimensions({ ...p, paper: 'custom', widthMm: 400, heightMm: 200 }).height, 400)
 })
@@ -154,14 +154,14 @@ function fixture() {
 test('open Next then legacy resets per-document properties and history', async () => {
   const f = fixture()
   await f.file.openFileAndParse(f.renderer)
-  assert.equal(f.renderer.documentProperties.measurementUnit, 'm')
+  assert.equal(f.renderer.documentProperties.measurementUnit, 'mm')
   assert.equal(f.renderer.undoStack.length, 1)
   assert.equal(f.renderer.redoStack.length, 0)
   f.state.path = 'OLD.CCAD'
   f.state.content = JSON.stringify([new Line(1, 2, 3, 4)])
   await f.file.openFileAndParse(f.renderer)
   assert.equal(f.renderer.documentProperties, null)
-  assert.equal(f.renderer.logicDisplay.components[0].x2, 0.03)
+  assert.equal(f.renderer.logicDisplay.components[0].x2, 3)
 })
 
 test('invalid and cancelled opens leave the design, properties and history intact', async () => {
@@ -190,7 +190,7 @@ test('legacy export requires acknowledgement and never serializes properties', a
   await f.file.saveFile(f.renderer)
   assert.equal(f.calls.prompts, 2)
   assert.ok(Array.isArray(JSON.parse(f.calls.writes[0].data)))
-  assert.equal(f.renderer.documentProperties.measurementUnit, 'm')
+  assert.equal(f.renderer.documentProperties.measurementUnit, 'mm')
 })
 
 test('failed save and cancelled save never report success or retain the failed path', async () => {
@@ -244,8 +244,6 @@ function loadRenderer() {
     performance,
     window: { dispatchEvent() {} },
     require: (id) =>
-      id === '../utils/Units' ? load('src/renderer/src/utils/Units.ts') :
-      id === '../utils/MeasurementAnnotation' ? load('src/renderer/src/utils/MeasurementAnnotation.ts') :
       id === '../locales/Locale'
         ? { getLocaleKey: (key) => key }
         : id === '../utils/DocumentProperties'
@@ -260,7 +258,9 @@ function loadRenderer() {
                     numberPreference: (_key, fallback) => fallback,
                     numericPreference: (key) => settings.numericSettings[key].default
                   }
-                : {}
+                : id === '../utils/MeasurementAnnotation'
+                  ? load('src/renderer/src/utils/MeasurementAnnotation.ts')
+                  : {}
   })
   return exports.GraphicsRenderer
 }
@@ -290,11 +290,10 @@ test('app preferences respect document units and changing properties preserves g
   assert.equal(r.measurementPrecision, 2)
 })
 
-test('A6 fits using a fixed pixels-per-metre camera and can zoom in and out without changing exported sizes', () => {
+test('A6 fit uses world zoom and remains navigable without changing exported sizes', () => {
   const r = Object.create(loadRenderer().prototype)
   Object.assign(r, {
     documentProperties: { ...defaults(), canvas: 'paper', paper: 'A6', orientation: 'portrait' },
-    documentViewScale: 1,
     displayWidth: 1200,
     displayHeight: 800,
     offsetX: 0,
@@ -307,32 +306,33 @@ test('A6 fits using a fixed pixels-per-metre camera and can zoom in and out with
   const geometry = [new Line(0, 0, 5, 10)]
   const before = encodeDocument(geometry, r.documentProperties, true)
   r.fitDocumentPaper()
-  const fittedZoom = r.viewZoom
-  assert.equal(r.documentViewScale, 3000)
-  assert.ok(r.zoom > 30, 'effective camera scale may exceed the old limit')
+  const fittedZoom = r.zoom
+  assert.equal(r.viewZoom, fittedZoom)
   const world = worldPaperDimensions(r.documentProperties)
   assert.ok(Math.abs(world.height * r.zoom - 640) < 0.0001)
   assert.ok(Math.abs(world.width / world.height - 105 / 148) < 0.0001)
   r.setZoom(1.5)
   r.zoom = r.targetZoom
   assert.ok(Math.abs(r.viewZoom - fittedZoom * 1.5) < 1e-10)
-  r.setZoom(1 / r.viewZoom)
+  r.setZoom(fittedZoom / r.viewZoom)
   r.zoom = r.targetZoom
-  assert.ok(Math.abs(r.viewZoom - r.zoom / 3000) < 1e-10)
+  assert.ok(Math.abs(r.viewZoom - fittedZoom) < 1e-10)
   r.setZoom(0.9)
   r.zoom = r.targetZoom
-  assert.ok(Math.abs(r.viewZoom - 0.9) < 1e-10)
+  assert.ok(Math.abs(r.viewZoom - fittedZoom * 0.9) < 1e-10)
   r.setZoom(14.9 / r.viewZoom)
   r.zoom = r.targetZoom
   assert.ok(Math.abs(r.viewZoom - 14.9) < 0.0001)
-  const maximum = r.targetZoom
-  r.setZoom(Infinity)
-  assert.equal(r.targetZoom, maximum)
+  r.setZoom(2)
+  assert.ok(Math.abs(r.targetZoom - 29.8) < 0.0001)
+  const previous = r.targetZoom
+  for (const factor of [NaN, Infinity, 0, -1, 1e20]) r.setZoom(factor)
+  assert.equal(r.targetZoom, previous)
   assert.equal(encodeDocument(geometry, r.documentProperties, true), before)
-  assert.equal(JSON.parse(encodeDocument(geometry, r.documentProperties, false))[0].x2, 500)
+  assert.equal(encodeDocument(geometry, r.documentProperties, false), JSON.stringify(geometry))
 })
 
-test('all paper presets fit proportionally without redefining the zoom baseline, including large drawing scales', () => {
+test('all paper presets fit with an honest world zoom and removing paper preserves the camera', () => {
   const r = Object.create(loadRenderer().prototype)
   Object.assign(r, { displayWidth: 1200, displayHeight: 800, markDirty() {} })
   for (const paper of Object.keys(model.paperSizes)) {
@@ -347,7 +347,7 @@ test('all paper presets fit proportionally without redefining the zoom baseline,
         }
         r.fitDocumentPaper()
         const world = worldPaperDimensions(r.documentProperties)
-        assert.ok(Math.abs(r.viewZoom - 0.3) < 1e-10)
+        assert.equal(r.viewZoom, r.zoom)
         const width = world.width * r.zoom
         const height = world.height * r.zoom
         assert.ok(width <= 960.00001 && height <= 640.00001)
@@ -356,12 +356,10 @@ test('all paper presets fit proportionally without redefining the zoom baseline,
     }
   }
   r.applyPreferences = () => {}
-  const previousScale = r.documentViewScale
   const previousZoom = r.zoom
   r.setDocumentProperties(null)
-  assert.equal(r.documentViewScale, previousScale)
   assert.equal(r.zoom, previousZoom)
-  assert.ok(Math.abs(r.viewZoom - 0.3) < 1e-10)
+  assert.equal(r.viewZoom, previousZoom)
 })
 
 test('title blocks stay within the bottom-left margins for every paper and scale', () => {
@@ -454,7 +452,7 @@ test('drawing frame uses stroke glyphs, contains metadata and leaves component g
   r.drawDocumentFrame()
   assert.equal(rectangles.length, 8)
   assert.ok(text.includes('Designer'))
-  assert.ok(text.includes('1:1'))
+  assert.ok(text.includes('1:100'))
   assert.ok(paths.length > 0)
   assert.equal(r.logicDisplay.components.length, 0)
   r.documentProperties.showTitleBlock = false
@@ -468,21 +466,97 @@ test('drawing frame uses stroke glyphs, contains metadata and leaves component g
 
 test('new paper and infinite designs retain the current zoom without fitting the paper', () => {
   for (const canvas of ['paper', 'infinite']) {
-    for (const documentViewScale of [1, 40]) {
+    for (const zoom of [0.02, 1.15, 40]) {
       const f = fixture()
       Object.assign(f.renderer, {
-        zoom: 1.15 * documentViewScale,
-        targetZoom: 1.15 * documentViewScale,
-        documentViewScale,
+        zoom,
+        targetZoom: zoom,
         fitDocumentPaper() {
           throw new Error('New design must not auto-fit')
         }
       })
       f.file.createNewFile(f.renderer, { ...defaults(), canvas, paper: 'A6' })
-      assert.ok(Math.abs(f.renderer.zoom / f.renderer.documentViewScale - 1.15) < 1e-10)
-      assert.equal(f.renderer.targetZoom, 1.15 * documentViewScale)
+      assert.equal(f.renderer.zoom, zoom)
+      assert.equal(f.renderer.targetZoom, zoom)
       assert.equal(f.renderer.camX, 0)
       assert.equal(f.renderer.camY, 0)
     }
+  }
+})
+
+test('paper properties never change world strokes, markers, labels, or measurement paths', () => {
+  const r = Object.create(loadRenderer().prototype)
+  const trace = []
+  const record = (name) => (...args) => trace.push([name, ...args])
+  const context = Object.fromEntries(['save', 'restore', 'translate', 'rotate', 'beginPath',
+    'moveTo', 'lineTo', 'closePath', 'fill', 'stroke'].map(name => [name, record(name)]))
+  Object.defineProperty(context, 'lineWidth', { set: record('width') })
+  Object.assign(r, {
+    context, cOutX: 12, cOutY: -4, zoom: 1, mode: 0, modes: { Move: 1 },
+    unitMeasure: 'mm', measurementPrecision: 2,
+    markDirty() {}, cleanLog() {}, getColorWithOpacityFromCache: () => '#fff',
+    getBatchPath(_color, width) {
+      trace.push(['width', width])
+      return Object.fromEntries(['moveTo', 'lineTo', 'arc'].map(name => [name, record(name)]))
+    },
+    _getSpacedGlyphs: () => [{ commands: [
+      { command: 'PD', x: 0, y: 0 }, { command: 'MP', x: 10, y: 10 }
+    ] }]
+  })
+  const draw = () => {
+    trace.length = 0
+    r.drawLine(0, 0, 100, 0, '#fff', 2, 100)
+    r.drawRectangle(0, 0, 100, 50, '#fff', 2, 100)
+    r.drawCircle(0, 0, 30, 0, '#fff', 2, 100)
+    r.drawArc(0, 0, 30, 0, 0, 30, '#fff', 2, 100)
+    r.drawPoint(0, 0, '#fff', 3, 100)
+    r.drawLabel(0, 0, 3, 'Label', '#fff', 18, 100)
+    r.drawPolygon([{ x: 0, y: 0 }, { x: 40, y: 0 }, { x: 20, y: 20 }], '#fff', '#fff', 2, 100, true)
+    r.drawMeasure(0, 0, 100, 0, '#fff', 2, 100, 30)
+    return JSON.stringify(trace)
+  }
+  for (const zoom of [0.01, 0.3, 1, 40]) {
+    r.zoom = zoom
+    r.setDocumentProperties({ ...defaults(), canvas: 'infinite' })
+    const original = draw()
+    assert.equal(trace[0][1], 2 * zoom)
+    for (const scaleDenominator of [1, 4, 100, 1000]) {
+      for (const showPaper of [true, false]) {
+        r.setDocumentProperties({ ...defaults(), canvas: 'paper', scaleDenominator, showPaper })
+        assert.equal(draw(), original)
+        assert.equal(r.zoom, zoom)
+      }
+    }
+  }
+})
+
+test('zoom keeps the same world point under the cursor for both canvas modes', () => {
+  const r = Object.create(loadRenderer().prototype)
+  for (const canvas of ['paper', 'infinite']) {
+    Object.assign(r, { documentProperties: { ...defaults(), canvas }, zoom: 0.02,
+      camX: 70, camY: -30, displayWidth: 1200, displayHeight: 800,
+      offsetX: 10, offsetY: 20, mouse: { cursorXGlobal: 900, cursorYGlobal: 200 },
+      cleanLog() {}, markDirty() {} })
+    const screenX = 900 - 10 - 600, screenY = 200 - 20 - 400
+    const x = screenX / r.zoom - r.camX, y = screenY / r.zoom - r.camY
+    for (const factor of [1.5, 0.5, 10, 0.01]) {
+      r.setZoom(factor)
+      r.zoom = r.targetZoom
+      assert.ok(Math.abs((x + r.camX) * r.zoom - screenX) < 1e-8)
+      assert.ok(Math.abs((y + r.camY) * r.zoom - screenY) < 1e-8)
+    }
+  }
+})
+
+test('new document scale gives radius 2 a 0.2 mm print width without migrating saved scales', () => {
+  const p = defaults()
+  assert.equal(2 * 10 * p.scaleNumerator / p.scaleDenominator, 0.2)
+  const components = [new Line(0, 0, 100, 0)]
+  for (const scaleDenominator of [1, 4, 100]) {
+    const source = encodeDocument(components, { ...p, canvas: 'paper', scaleDenominator }, true)
+    const decoded = decodeDocument(source, true)
+    assert.equal(decoded.properties.scaleDenominator, scaleDenominator)
+    assert.equal(decoded.components[0].radius, 2)
+    assert.equal(decoded.components[0].x2, 100)
   }
 })

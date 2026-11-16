@@ -1,4 +1,3 @@
-import { convertGeometryUnits } from './Units'
 import { measurementUnits, type MeasurementUnit } from './SettingsOptions'
 
 // Physical paper dimensions in millimetres, short edge first.
@@ -41,7 +40,7 @@ export interface DocumentProperties {
   widthMm: number
   heightMm: number
   marginMm: number
-  // Paper : real world. Geometry always remains in metres.
+  // Paper : real world. Geometry always remains in centimetres.
   scaleNumerator: number
   scaleDenominator: number
   measurementUnit: MeasurementUnit
@@ -64,8 +63,9 @@ export function defaultDocumentProperties(): DocumentProperties {
     heightMm: 297,
     marginMm: 10,
     scaleNumerator: 1,
-    scaleDenominator: 1,
-    measurementUnit: 'm',
+    // The legacy radius 2 is 2 cm in model space: 0.2 mm on paper at 1:100.
+    scaleDenominator: 100,
+    measurementUnit: 'mm',
     measurementPrecision: 2,
     showPaper: true,
     showTitleBlock: true
@@ -86,7 +86,7 @@ export function worldPaperDimensions(p: DocumentProperties): {
   margin: number
 } {
   const { width, height } = paperDimensions(p)
-  const factor = p.scaleDenominator / p.scaleNumerator / 1000
+  const factor = p.scaleDenominator / p.scaleNumerator / 10
   return { width: width * factor, height: height * factor, margin: p.marginMm * factor }
 }
 
@@ -138,18 +138,16 @@ export function decodeDocument(
   const data = JSON.parse(source)
   if (!next) {
     if (!Array.isArray(data)) throw new Error('Legacy documents must contain a component array')
-    return { components: convertGeometryUnits(data, 0.01, true), properties: null }
+    return { components: data, properties: null }
   }
   if (
     !data ||
     data.format !== 'CompassCAD.Next' ||
-    ![1, 2].includes(data.version) ||
+    data.version !== 1 ||
     !Array.isArray(data.components)
   )
     throw new Error('Invalid or unsupported .cnext document version')
-  if (data.version === 2 && data.geometryUnit !== 'm') throw new Error('Unsupported geometry unit')
-  return { components: data.version === 1 ? convertGeometryUnits(data.components, 0.01, true) : data.components,
-    properties: validateDocumentProperties(data.document) }
+  return { components: data.components, properties: validateDocumentProperties(data.document) }
 }
 
 export function encodeDocument(
@@ -161,12 +159,11 @@ export function encodeDocument(
     next
       ? {
           format: 'CompassCAD.Next',
-          version: 2,
-          geometryUnit: 'm',
+          version: 1,
           document: validateDocumentProperties(properties),
           components
         }
-      : convertGeometryUnits(components, 100),
+      : components,
     null,
     next ? 2 : undefined
   )

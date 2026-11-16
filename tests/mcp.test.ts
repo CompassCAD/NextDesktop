@@ -37,7 +37,7 @@ test('SDK client creates and edits a design, isolates cursors, rejects stale rev
             mimeType: 'image/png',
             width: 1,
             height: 1,
-            viewport: { left: 0, top: 0, right: 10, bottom: 10, units: 'm' }
+            viewport: { left: 0, top: 0, right: 10, bottom: 10, units: 'cm' }
           }
         : execute(request),
     () => {}
@@ -412,7 +412,7 @@ test('canvas capture redraws before encoding, scales HiDPI output and reports vi
     height: 720,
     data: 'cG5n',
     mimeType: 'image/png',
-    viewport: { left: -500, top: -175, right: 300, bottom: 275, units: 'm' }
+    viewport: { left: -500, top: -175, right: 300, bottom: 275, units: 'cm' }
   })
   expect(renderer.logicDisplay.components).toHaveLength(0)
   canvas.toDataURL = () => {

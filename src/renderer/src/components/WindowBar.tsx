@@ -349,7 +349,7 @@ export default function WindowBar(): React.ReactElement {
     }
   ]
 
-  const defaultMeasure = [...new Set([10, 5, 2, 1, 0.5, 0.25, 0.1, 0.05, 0.01, 0.005, 0.001, gridSpacing])].sort((a, b) => b - a)
+  const defaultMeasure = [...new Set([1000, 500, 200, 100, 50, 25, 10, 5, 1, gridSpacing])].sort((a, b) => b - a)
   const measurementUnit = renderer?.documentProperties?.measurementUnit ?? resolveUnit(preference('measurementUnit', 'm'))
 
   return (
@@ -450,7 +450,7 @@ export default function WindowBar(): React.ReactElement {
             }))}
             value={String(gridSpacing)}
             onChange={(value) => {
-              savePreference('gridSpacingMetres', String(value))
+              savePreference('gridSpacing', String(value))
             }}
           />
         </div>

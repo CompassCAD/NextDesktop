@@ -9,7 +9,7 @@ const style = {
     .string()
     .regex(/^#[0-9a-fA-F]{6}$/)
     .default('#ffffff'),
-  width: z.number().min(0.000001).max(1).default(0.00025)
+  width: z.number().min(0.1).max(100).default(2)
 }
 export const primitiveSchema = z.discriminatedUnion('kind', [
   z.object({ kind: z.literal('point'), ...position, ...style }),
@@ -22,7 +22,7 @@ export const primitiveSchema = z.discriminatedUnion('kind', [
     kind: z.literal('label'),
     ...position,
     text: z.string().max(2000),
-    fontSize: z.number().min(0.000001).max(100).default(0.004233333333333333),
+    fontSize: z.number().min(1).max(256).default(18),
     ...style
   }),
   z.object({
@@ -68,7 +68,7 @@ export const canvasScreenshotSchema = z.object({
     top: z.number().finite(),
     right: z.number().finite(),
     bottom: z.number().finite(),
-    units: z.literal('m')
+    units: z.literal('cm')
   })
 })
 export interface AgentCursor {

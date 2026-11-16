@@ -44,7 +44,7 @@ export function captureMcpCanvas(
       top: -halfHeight - renderer.cOutY,
       right: halfWidth - renderer.cOutX,
       bottom: halfHeight - renderer.cOutY,
-      units: 'm'
+      units: 'cm'
     }
   })
 }

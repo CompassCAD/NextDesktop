@@ -1,4 +1,3 @@
-import { DEFAULT_IMAGE_SCALE } from '../utils/Units'
 import { measurementAnnotation } from '../utils/MeasurementAnnotation'
 import { Arc, Component, Label, Line, Picture, Point, Polygon, Shape, componentTypes as T } from './Component'
 import { DocumentProperties, paperDimensions, worldPaperDimensions } from '../utils/DocumentProperties'
@@ -17,9 +16,12 @@ function node(tag: string, attrs: Record<string, string | number> = {}): SVGElem
 // The editor's white ink becomes black on white paper. Other colours are retained.
 const ink = (color: string): string => /^(#fff(?:fff)?|#eee(?:eee)?|#e9e9e9|white)$/i.test(color) ? '#000000' : color
 
-/** Render-only derivative of Engine: no canvas, input, viewport, selection or undo state. */
+/**
+ * Render-only derivative of Engine: no canvas, input, viewport, selection or undo state.
+ * Coordinates and stroke widths share the same centimetre space as the infinite canvas.
+ */
 export class ExportRenderer {
-  private padding = 0.001
+  private padding = 0.1
   constructor(private glyphs: Glyphs, private translate: (key: TranslationKey) => string = key => key) {}
 
   private text(text: string, x: number, y: number, sx: number, sy = sx): SVGElement {
@@ -41,17 +43,19 @@ export class ExportRenderer {
   }
 
   private async component(c: Component, p: DocumentProperties): Promise<SVGElement> {
-    const g = node('g', { fill: 'none', stroke: ink(c.color), 'stroke-width': c.radius,
+    const width = c.radius
+    const g = node('g', { fill: 'none', stroke: ink(c.color), 'stroke-width': width,
       opacity: Math.max(0, Math.min(100, c.opacity)) / 100 })
     if (!c.active || c.type === T.boundBox) return g
-    this.padding = Math.max(this.padding, c.radius * 2)
+    this.padding = Math.max(this.padding, width * 2)
     const rotate = (x: number, y: number): void => { g.setAttribute('transform', `rotate(${c.rotation || 0} ${x} ${y})`) }
     const line = (x1: number, y1: number, x2: number, y2: number): void => { g.append(node('line', { x1, y1, x2, y2 })) }
     switch (c.type) {
       case T.point: {
         const a = c as Point
-        g.append(node('circle', { cx: a.x, cy: a.y, r: 0.0005, 'stroke-width': 0.00025 }))
-        this.padding = Math.max(this.padding, 0.000625)
+        // Same marker as the editor: radius 2, stroke 3, in stroke units.
+        g.append(node('circle', { cx: a.x, cy: a.y, r: 2, 'stroke-width': 3 }))
+        this.padding = Math.max(this.padding, 3.5)
         break
       }
       case T.line: case T.rectangle: case T.circle: case T.measure: {
@@ -63,7 +67,7 @@ export class ExportRenderer {
         else {
           const length = Math.hypot(dx, dy), angle = Math.atan2(dy, dx)
           const layout = measurementAnnotation(length, p.measurementUnit, p.measurementPrecision,
-            p.scaleDenominator / p.scaleNumerator, this.glyphs)
+            this.glyphs)
           const annotation = node('g', { transform: `translate(${(a.x1 + a.x2) / 2} ${(a.y1 + a.y2) / 2}) rotate(${angle * 180 / Math.PI})` })
           for (const [x1, y1, x2, y2] of layout.lines) annotation.append(node('line', { x1, y1, x2, y2 }))
           annotation.append(this.text(layout.text, layout.textX, layout.textY, layout.textScale))
@@ -84,7 +88,7 @@ export class ExportRenderer {
         rotate(a.x, a.y)
         let text = '', count = 0, row = 0
         const flush = (): void => {
-          g.append(this.text(text, a.x + (a.textOffsetX ?? 0), a.y + row++ * (a.textLineSpacing ?? a.fontSize * 1.5), a.fontSize / 10 * 0.75, a.fontSize / 10))
+          g.append(this.text(text, a.x - 5, a.y + row++ * (30 + a.fontSize / 2), a.fontSize / 10 * 0.75, a.fontSize / 10))
           text = ''; count = 0
         }
         for (const word of a.text.split(' ')) {
@@ -92,7 +96,7 @@ export class ExportRenderer {
           if (count > 24) flush()
         }
         if (text.trim()) flush()
-        g.setAttribute('stroke-width', String(c.radius / 2))
+        g.setAttribute('stroke-width', String(width / 2))
         break
       }
       case T.polygon: {
@@ -119,7 +123,7 @@ export class ExportRenderer {
         if (!ctx) throw new Error('Cannot embed picture')
         ctx.drawImage(img, 0, 0)
         rotate(a.x, a.y)
-        g.append(node('image', { x: a.x, y: a.y, width: img.naturalWidth * (a.imageScale ?? DEFAULT_IMAGE_SCALE), height: img.naturalHeight * (a.imageScale ?? DEFAULT_IMAGE_SCALE), href: canvas.toDataURL('image/png') }))
+        g.append(node('image', { x: a.x, y: a.y, width: img.naturalWidth * (a.imageScale ?? 1), height: img.naturalHeight * (a.imageScale ?? 1), href: canvas.toDataURL('image/png') }))
         break
       }
     }
@@ -127,12 +131,12 @@ export class ExportRenderer {
   }
 
   async render(components: Component[], p: DocumentProperties): Promise<ExportPage> {
-    this.padding = 0.001
+    this.padding = 0.1
     const svg = node('svg', { 'stroke-linecap': 'round', 'stroke-linejoin': 'round' }) as SVGSVGElement
     const content = node('g') as SVGGElement
     for (const c of components) content.append(await this.component(c, p))
     svg.append(content)
-    // Measure the same metre-space paths used for output before adding the paper frame.
+    // Measure the same centimetre-space paths used for output before adding the paper frame.
     svg.style.cssText = 'position:fixed;left:-100000px;top:0;visibility:hidden'
     document.body.append(svg)
     let bounds: DOMRect
@@ -147,7 +151,7 @@ export class ExportRenderer {
         bounds.x - this.padding < x || bounds.y - this.padding < y ||
         bounds.x + bounds.width + this.padding > x + width || bounds.y + bounds.height + this.padding > y + height)
       if (p.showTitleBlock) {
-        const frame = node('g', { fill: 'none', stroke: '#000000', 'stroke-width': 0.00025 * p.scaleDenominator / p.scaleNumerator })
+        const frame = node('g', { fill: 'none', stroke: '#000000', 'stroke-width': 0.025 * p.scaleDenominator / p.scaleNumerator })
         frame.append(node('rect', { x: x + paper.margin, y: y + paper.margin, width: width - paper.margin * 2, height: height - paper.margin * 2 }))
         for (const cell of documentTitleBlockLayout(p).cells) {
           frame.append(node('rect', { x: cell.x, y: cell.y, width: cell.width, height: cell.height }))
@@ -165,9 +169,9 @@ export class ExportRenderer {
       try {
         const b = content.getBBox()
         x = b.x - this.padding; y = b.y - this.padding
-        width = Math.max(0.001, b.width + this.padding * 2); height = Math.max(0.001, b.height + this.padding * 2)
+        width = Math.max(0.1, b.width + this.padding * 2); height = Math.max(0.1, b.height + this.padding * 2)
       } finally { svg.remove(); svg.removeAttribute('style') }
-      widthMm = width * 1000 * p.scaleNumerator / p.scaleDenominator; heightMm = height * 1000 * p.scaleNumerator / p.scaleDenominator
+      widthMm = width * 10 * p.scaleNumerator / p.scaleDenominator; heightMm = height * 10 * p.scaleNumerator / p.scaleDenominator
     }
     svg.setAttribute('viewBox', `${x} ${y} ${width} ${height}`)
     svg.setAttribute('width', `${widthMm}mm`); svg.setAttribute('height', `${heightMm}mm`)
