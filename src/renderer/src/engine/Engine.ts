@@ -1,3 +1,5 @@
+import { PIXELS_PER_METRE, METRES_PER_POINT, DEFAULT_FONT_HEIGHT, DEFAULT_IMAGE_SCALE, DEFAULT_STROKE_WIDTH } from '../utils/Units'
+import { measurementAnnotation } from '../utils/MeasurementAnnotation'
 import { documentTitleBlockLayout } from '../utils/DocumentFrame'
 import { type DocumentProperties, validateDocumentProperties, worldPaperDimensions } from '../utils/DocumentProperties'
 import { drawMcpCursors } from './McpCursors'
@@ -396,7 +398,7 @@ export class GraphicsRenderer {
     this.temporaryShape = null
     this.temporaryPoints = [null, null, null, null, null, null]
     this.selectedColor = '#0080ff'
-    this.selectedRadius = 2
+    this.selectedRadius = DEFAULT_STROKE_WIDTH
     this.undoStack = ['[]']
     this.redoStack = []
     this.temporaryObjectArray = []
@@ -409,11 +411,11 @@ export class GraphicsRenderer {
     this.offsetY = 0
     this.camX = 0
     this.camY = 0
-    this.zoom = 1
+    this.zoom = PIXELS_PER_METRE
     this.zoomIn = 3 / 2
     this.zoomOut = 2 / 3
     this.currentZoom = 1
-    this.targetZoom = 1
+    this.targetZoom = PIXELS_PER_METRE
     this.zoomSpeed = 0.05
     this.camMoving = false
     this.xCNaught = 0
@@ -424,16 +426,16 @@ export class GraphicsRenderer {
     this.showOrigin = false
     this.showRules = true
     this.gridPointer = false
-    this.gridSpacing = 10
+    this.gridSpacing = 0.01
     this.conversionFactor = 1
-    this.unitName = 'px'
+    this.unitName = 'm'
     this.unitMeasure = 'm'
     this.unitFactor = 1
-    this.unitConversionFactor = 1 / 100
+    this.unitConversionFactor = 1
     this.snap = true
     this.recordingMode = false
     this.snapTolerance = 10
-    this.fontSize = 18
+    this.fontSize = DEFAULT_FONT_HEIGHT
     this.maximumStack = 50
     this.displayRef = displayRef != null ? displayRef : null
     this.defaultTooltip = 'CompassCAD'
@@ -456,17 +458,17 @@ export class GraphicsRenderer {
   }
 
   documentProperties: DocumentProperties | null = null
-  // View-only magnification: a fitted paper is 0.3x regardless of its physical size.
+  // Stable display scale: 1x is always the same pixels per metre for every document.
   // Geometry and exported document dimensions remain in their original units.
-  documentViewScale = 1
+  documentViewScale = PIXELS_PER_METRE
 
   get viewZoom(): number {
-    return this.zoom / (this.documentViewScale ?? 1)
+    return this.zoom / (this.documentViewScale ?? PIXELS_PER_METRE)
   }
 
   setDocumentProperties(properties: DocumentProperties | null): void {
     this.documentProperties = properties ? validateDocumentProperties(properties) : null
-    if (!this.documentProperties || this.documentProperties.canvas === 'infinite') this.restoreViewBeforeFit()
+
     this.applyPreferences()
     window.dispatchEvent(new Event('document-properties-changed'))
   }
@@ -484,7 +486,7 @@ export class GraphicsRenderer {
     this.preFit ??= { zoom: this.targetZoom, viewScale: this.documentViewScale,
                       camX: this.camX, camY: this.camY }
     this.camX = this.camY = 0
-    this.documentViewScale = fittedScale / 0.3
+    this.documentViewScale = PIXELS_PER_METRE
     this.zoom = this.targetZoom = fittedScale
     this.onZoomUpdate?.()
     this.markDirty('fit document paper')
@@ -530,7 +532,7 @@ export class GraphicsRenderer {
     ctx.save()
     ctx.setLineDash([])
     ctx.strokeStyle = '#ffffff'
-    ctx.lineWidth = Math.max(0.6, 0.25 * p.scaleDenominator / p.scaleNumerator / 10 * this.zoom)
+    ctx.lineWidth = Math.max(0.6, 0.25 * p.scaleDenominator / p.scaleNumerator / 1000 * this.zoom)
     ctx.strokeRect(sx(-paper.width / 2 + paper.margin), sy(-paper.height / 2 + paper.margin),
       (paper.width - 2 * paper.margin) * this.zoom, (paper.height - 2 * paper.margin) * this.zoom)
     for (const cell of block.cells) {
@@ -580,7 +582,7 @@ export class GraphicsRenderer {
   }
 
   applyPreferences(): void {
-    this.fontSize = numberPreference('fontSize', 18, 1, 256)
+    this.fontSize = numberPreference('fontSize', 12, 1, 256) * METRES_PER_POINT
     this.showGrid = preference('showGrid', 'true') === 'true'
     this.showOrigin = preference('showOrigin', 'false') === 'true'
     this.showRules = preference('showRules', 'true') === 'true'
@@ -728,6 +730,10 @@ export class GraphicsRenderer {
     return this._charSpacingOverrides.get(char) ?? GraphicsRenderer.SPACE_PER_CHAR
   }
 
+  getStrokeGlyphs(text: string): any[] | null {
+    return this._getSpacedGlyphs(text)
+  }
+
   private _getSpacedGlyphs(text: string): any[] | null {
     const cached = this._spacedGlyphLayoutCache.get(text)
     if (cached) return cached
@@ -867,7 +873,7 @@ export class GraphicsRenderer {
   async start() {
     this.markDirty('Engine started')
     this.logicDisplay = new LogicDisplay()
-    this.zoom = 1
+    this.zoom = PIXELS_PER_METRE
     this.temporaryObjectArray = []
     this.keyboard = new KeyboardHandler()
     this.mouse = new MouseHandler()
@@ -1510,8 +1516,8 @@ export class GraphicsRenderer {
         return {
           minX: pic.x - pic.radius,
           minY: pic.y - pic.radius,
-          maxX: pic.x + width * (pic.imageScale ?? 1),
-          maxY: pic.y + height * (pic.imageScale ?? 1)
+          maxX: pic.x + width * (pic.imageScale ?? DEFAULT_IMAGE_SCALE),
+          maxY: pic.y + height * (pic.imageScale ?? DEFAULT_IMAGE_SCALE)
         }
       }
       case componentTypes.boundBox: {
@@ -1525,9 +1531,8 @@ export class GraphicsRenderer {
       }
       case componentTypes.label: {
         const lbl = component as Label
-        const fontSize = lbl.fontSize ?? 14
-        const localDiff = 30
-        const rowStep = localDiff + fontSize / 2 // matches drawLabel's currentLineY step
+        const fontSize = lbl.fontSize ?? DEFAULT_FONT_HEIGHT
+        const rowStep = lbl.textLineSpacing ?? fontSize * 1.5 // matches drawLabel's currentLineY step
         const avgCharWidth = fontSize * 0.6
 
         // Use the SAME wrap logic as drawLabel, not raw '\n' splitting.
@@ -1862,7 +1867,9 @@ export class GraphicsRenderer {
           label.color,
           label.fontSize,
           label.opacity,
-          rotation
+          rotation,
+          label.textOffsetX,
+          label.textLineSpacing
         )
         break
       }
@@ -1889,7 +1896,7 @@ export class GraphicsRenderer {
       }
       case componentTypes.picture: {
         const pic = component as Picture
-        this.drawPicture(pic.x + moveByX, pic.y + moveByY, pic.pictureSource, pic.opacity, rotation, pic.imageScale ?? 1)
+        this.drawPicture(pic.x + moveByX, pic.y + moveByY, pic.pictureSource, pic.opacity, rotation, pic.imageScale ?? DEFAULT_IMAGE_SCALE)
         break
       }
       case componentTypes.polygon: {
@@ -1913,7 +1920,7 @@ export class GraphicsRenderer {
           boundbox.x2,
           boundbox.y2,
           '#e9e9e9',
-          2,
+          DEFAULT_STROKE_WIDTH,
           50,
           rotation
         )
@@ -2125,8 +2132,8 @@ export class GraphicsRenderer {
     }
 
     const strokeStyle = this.getColorWithOpacityFromCache(color, opacity)
-    const path = this.getBatchPath(strokeStyle, 3 * this.zoom)
-    const r = 2 * this.zoom
+    const path = this.getBatchPath(strokeStyle, 0.00025 * this.zoom)
+    const r = 0.0005 * this.zoom
     path.moveTo(cx + r, cy)
     path.arc(cx, cy, r, 0, Math.PI * 2, false)
   }
@@ -2359,105 +2366,22 @@ export class GraphicsRenderer {
     return fbWidth
   }
 
-  drawMeasure(
-    x1: number,
-    y1: number,
-    x2: number,
-    y2: number,
-    color: string,
-    radius: number,
-    opacity: number,
-    rotation: number = 0
-  ) {
-    let ax1 = x1,
-      ay1 = y1,
-      ax2 = x2,
-      ay2 = y2
-    if (rotation) {
-      const ox = (x1 + x2) / 2
-      const oy = (y1 + y2) / 2
-      const p1 = this.rotatePoint(x1, y1, ox, oy, rotation)
-      const p2 = this.rotatePoint(x2, y2, ox, oy, rotation)
-      ax1 = p1.x
-      ay1 = p1.y
-      ax2 = p2.x
-      ay2 = p2.y
+  drawMeasure(x1: number, y1: number, x2: number, y2: number, color: string,
+    radius: number, opacity: number, rotation = 0): void {
+    const length = this.getDistance(x1, y1, x2, y2)
+    const angle = Math.atan2(y2 - y1, x2 - x1) + rotation * Math.PI / 180
+    const mx = (x1 + x2) / 2, my = (y1 + y2) / 2
+    const p = this.documentProperties
+    const layout = measurementAnnotation(length, resolveUnit(this.unitMeasure), this.measurementPrecision,
+      p ? p.scaleDenominator / p.scaleNumerator : 1, text => this._getSpacedGlyphs(text))
+    const point = (x: number, y: number): Vector2 => ({ x: mx + x * Math.cos(angle) - y * Math.sin(angle), y: my + x * Math.sin(angle) + y * Math.cos(angle) })
+    for (const [x1, y1, x2, y2] of layout.lines) {
+      const a = point(x1, y1), b = point(x2, y2)
+      this.drawLine(a.x, a.y, b.x, b.y, color, radius, opacity)
     }
-
-    let distance =
-      this.getDistance(ax1, ay1, ax2, ay2) * this.unitFactor * this.unitConversionFactor
-    let angle = Math.atan2(ay2 - ay1, ax2 - ax1)
-    var defaultArrowLength = 25
-    var arrowOffset = 5
-    let arrowLength = defaultArrowLength
-    let localZoom = this.zoom
-    let localDiff = 0
-    if (this.zoom <= 0.25) {
-      localZoom = 0.5
-      localDiff = 20
-    }
-    const distanceText = distance.toFixed(this.measurementPrecision) + ' ' + this.unitMeasure
-
-    const targetFontSize = 2 * this.zoom
-    const glyphs = this._getSpacedGlyphs(distanceText)
-    if (!glyphs) return
-    let maxX = 0
-    if (glyphs && glyphs.length > 0) {
-      maxX = glyphs.reduce(
-        (max, g) =>
-          Math.max(
-            max,
-            g.commands.reduce((m, c) => Math.max(m, c.x), 0)
-          ),
-        0
-      )
-    }
-    const calculatedTextWidth = maxX * targetFontSize
-
-    const minDistanceForFullArrow = (defaultArrowLength * 2) / 100
-    if (distance < minDistanceForFullArrow) {
-      arrowLength = (distance / minDistanceForFullArrow) * defaultArrowLength
-    }
-    const isShortDistance = distance < minDistanceForFullArrow * 2
-    const midX = (ax1 + ax2) / 2
-    const midY = (ay1 + ay2) / 2
-    const textOffsetY = isShortDistance ? (750 / 100) * this.zoom : 0
-
-    if (!isShortDistance) {
-      const basePadding = 20
-      const adaptivePadding = basePadding * this.zoom
-      const labelGap = (calculatedTextWidth + adaptivePadding) / this.zoom
-
-      const halfGapX = (labelGap / 2) * Math.cos(angle)
-      const halfGapY = (labelGap / 2) * Math.sin(angle)
-
-      this.drawLine(ax1, ay1, midX - halfGapX, midY - halfGapY, color, radius, opacity, 0)
-      this.drawLine(midX + halfGapX, midY + halfGapY, ax2, ay2, color, radius, opacity, 0)
-    }
-
-    this.drawArrowhead(ax1, ay1, angle, arrowLength, arrowOffset, color, radius, opacity, 0)
-    this.drawArrowhead(ax2, ay2, angle, -arrowLength, arrowOffset, color, radius, opacity, 0)
-
-    let posX = midX * this.zoom + this.cOutX * this.zoom
-    let posY = midY * this.zoom + textOffsetY * 2 + this.cOutY * this.zoom
-
-    if (localDiff !== 0) {
-      posX += localDiff * Math.sin(angle)
-      posY -= localDiff * Math.cos(angle)
-    }
-
-    this.drawRawFontobeneAtLocation(
-      posX,
-      posY,
-      distanceText,
-      color,
-      targetFontSize,
-      radius,
-      opacity,
-      angle,
-      'center',
-      isShortDistance ? 'top' : 'middle'
-    )
+    const text = point(layout.textX, layout.textY)
+    this.drawRawFontobeneAtLocation((text.x + this.cOutX) * this.zoom, (text.y + this.cOutY) * this.zoom,
+      layout.text, color, layout.textScale * this.zoom, radius, opacity, angle)
   }
 
   drawLabel(
@@ -2468,14 +2392,16 @@ export class GraphicsRenderer {
     color: string,
     fontSize: number,
     opacity: number,
-    rotation: number = 0
+    rotation: number = 0,
+    textOffsetX = 0,
+    textLineSpacing = fontSize * 1.5
   ) {
     if (!this.context) return
 
     // A label's x/y coordinates are its rotation anchor.
     const rotationOrigin = { x, y }
 
-    const localDiff = 30
+    const rowStep = textLineSpacing
     // Keep label glyphs in world space. The screen conversion below applies
     // this.zoom, so including it here would make labels scale as zoom squared.
     const targetFontScale = fontSize / 10
@@ -2503,7 +2429,7 @@ export class GraphicsRenderer {
       const glyphs = this._getSpacedGlyphs(lineText)
       if (!glyphs) continue
 
-      const currentLineY = y + lineIndex * (localDiff + fontSize / 2)
+      const currentLineY = y + lineIndex * rowStep
       const strokeStyle = this.getColorWithOpacityFromCache(color, opacity)
       const path = this.getBatchPath(strokeStyle, (radius / 2) * this.zoom, 'round')
 
@@ -2512,7 +2438,7 @@ export class GraphicsRenderer {
 
       for (const glyph of glyphs) {
         for (const cmd of glyph.commands) {
-          let lx = cmd.x * targetFontScale * condensedWidthScale - 5
+          let lx = cmd.x * targetFontScale * condensedWidthScale + textOffsetX
           let ly = -cmd.y * targetFontScale
           if (rotation) {
             const rp = this.rotatePoint(
@@ -2599,7 +2525,7 @@ export class GraphicsRenderer {
     this.drawPoint(shape.x, shape.y, shape.color, shape.radius, shape.opacity, rotation)
   }
 
-  drawPicture(x: number, y: number, basedURL: string, opacity: number, rotation: number = 0, scale = 1) {
+  drawPicture(x: number, y: number, basedURL: string, opacity: number, rotation: number = 0, scale = DEFAULT_IMAGE_SCALE) {
     this.drawPoint(x, y, '#00ffff', 2, opacity, rotation)
     if (!this.imageCache.has(basedURL)) {
       const img = new Image()
@@ -2632,7 +2558,7 @@ export class GraphicsRenderer {
     img: HTMLImageElement | null,
     opacity: number,
     rotation: number = 0,
-    scale = 1
+    scale = DEFAULT_IMAGE_SCALE
   ) {
     if (!img || img === null) {
       const errorShape: Shape = {
@@ -4071,8 +3997,8 @@ export class GraphicsRenderer {
     this.cleanLog(newZoom)
 
     // Limits are relative to the fitted paper, not centimetres per pixel.
-    const viewZoom = newZoom / (this.documentViewScale ?? 1)
-    if (!Number.isFinite(viewZoom) || viewZoom <= 0.25 || viewZoom >= 15) return
+    const viewZoom = newZoom / (this.documentViewScale ?? PIXELS_PER_METRE)
+    if (!Number.isFinite(viewZoom) || viewZoom < 0.000001 || viewZoom > 1000000) return
 
     this.targetZoom = newZoom
     const viewportCenterX = this.displayWidth / 2

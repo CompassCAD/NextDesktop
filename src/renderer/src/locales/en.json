@@ -20,6 +20,7 @@
       }
     },
     "sysdialogs": {
+      "exportError": "Could not export drawing.",
       "openFile": "Open a CompassCAD file/import a non-CompassCAD file",
       "saveFile": "Save a CompassCAD file",
       "images": "Images",
@@ -48,6 +49,7 @@
       "saveDesign": "Save Design",
       "saveAs": "Save as",
       "exportToSvg": "Export to SVG",
+      "exportToPdf": "Export printable PDF",
       "checkForUpdates": "Check for Updates",
       "about": "About CompassCAD NEXT",
       "settings": "Settings",
@@ -104,12 +106,12 @@
       },
       "general": {
         "active": "Active",
-        "radius": "Radius",
+        "radius": "Stroke width (m)",
         "name": "Name",
         "color": "Color",
         "opacity": "Opacity",
         "rotation": "Rotation",
-        "position": "Position",
+        "position": "Position (m)",
         "size": "Size",
         "coverage": "Coverage",
         "group": "Group",
@@ -128,7 +130,7 @@
       "text": {
         "heading": "Label Properties",
         "text": "Text",
-        "fontSize": "Font Size"
+        "fontSize": "Font size (pt)"
       },
       "picture": {
         "heading": "Image Properties",
@@ -182,7 +184,7 @@
     "canvas": "Canvas",
     "search": "Search settings",
     "fontFace": "Default Font Face",
-    "fontSize": "Default Font Size",
+    "fontSize": "Default label size (pt)",
     "preview": "Font Face Preview",
     "language": "Language",
     "showBeta": "Show beta welcome on startup",
@@ -196,14 +198,14 @@
     "local": "Stored on this device",
     "fontHelp": "Font face applies to drawing text. Font size applies to new labels.",
     "error": "Could not save settings. Your changes have not been applied.",
-    "invalidSize": "Font size must be between 1 and 256.",
+    "invalidSize": "Font size must be between 1 and 256 pt.",
     "measurements": "Measurements",
     "snap": "Snap to grid",
-    "gridSpacing": "Grid spacing (cm)",
-    "gridHelp": "Custom spacing in drawing units: 1 drawing unit = 1 cm. Also available in the toolbar.",
+    "gridSpacing": "Grid spacing (m)",
+    "gridHelp": "Grid and snap spacing in metres: 0.01 m = 10 mm. Display units do not change geometry.",
     "snapTolerance": "Selection tolerance (screen pixels)",
     "measurementUnit": "Measurement units",
-    "unitsHelp": "Changes measurement labels and toolbar units without scaling geometry. Inspector coordinates remain in drawing units (cm).",
+    "unitsHelp": "Display units change measurement labels only. Inspector coordinates are metres.",
     "metricM": "Metric — metres (m)",
     "metricCm": "Metric — centimetres (cm)",
     "metricMm": "Metric — millimetres (mm)",
@@ -310,7 +312,7 @@
     "scaleNumerator": "Paper units",
     "scaleDenominator": "Real-world units",
     "scaleHelp": "Scale is paper : real world. At 1:100, 1 cm on paper represents 1 m in the design. Use 2:1 for an enlargement. Scale controls paper coverage; it does not change geometry or viewport zoom. Paper guides provide a layout reference.",
-    "unitsHelp": "Geometry is always stored in centimetres. Document units and precision override application measurement defaults for this design only.",
+    "unitsHelp": "Geometry is stored in metres: 10 mm = 0.01 m. Display units and precision do not change geometry or paper scale.",
     "storageHelp": "Apply changes to this design, then save to .cnext to keep them. Legacy .ccad files contain geometry only and cannot store document properties.",
     "invalid": "Check all tabs: sizes and scale values must be between 0.001 and 1,000,000, margins must leave a positive drawing area, and decimal places must be an integer from 0 to 6.",
     "fitPaper": "Fit paper in view after applying",
@@ -336,6 +338,7 @@
     "infiniteDimensionHelp": "No paper edges. Enter dimensions to switch to a custom sheet.",
     "includeTitleBlock": "Include border & title block",
     "advancedSetup": "More document options",
-    "backToTemplates": "Back to templates"
+    "backToTemplates": "Back to templates",
+    "exportOutsidePaper": "Part of the drawing is outside the paper and will be cropped. Export this paper anyway? Choose No to adjust the paper size or drawing scale in Document Properties."
   }
 }

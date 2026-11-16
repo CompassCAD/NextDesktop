@@ -54,7 +54,7 @@ export const openFileAndParse = async (renderer: GraphicsRenderer): Promise<void
     if (['cnext', 'ccad', 'qrocad', 'qrocad2'].includes(ext)) {
       ;({ components, properties } = decodeDocument(source, ext === 'cnext'))
     } else if (ext === 'dxf') {
-      components = convertDxfToCompassCad(source, { scale: 10, flipY: true })
+      components = convertDxfToCompassCad(source, { flipY: true })
     } else throw new Error(getLocaleKey('documentProperties.unsupported'))
     // Construct everything before replacing the active design, including history.
     const staged = new LogicDisplay()

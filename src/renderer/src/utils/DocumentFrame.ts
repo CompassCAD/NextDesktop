@@ -9,7 +9,7 @@ export interface TitleBlockCell {
   height: number
 }
 
-/** Paper-millimetre layout converted to centimetre geometry, independent of viewport zoom. */
+/** Paper-millimetre layout converted to metre geometry, independent of viewport zoom. */
 export function documentTitleBlockLayout(p: DocumentProperties): {
   x: number
   y: number
@@ -18,7 +18,7 @@ export function documentTitleBlockLayout(p: DocumentProperties): {
   cells: TitleBlockCell[]
 } {
   const paper = worldPaperDimensions(p)
-  const mm = p.scaleDenominator / p.scaleNumerator / 10
+  const mm = p.scaleDenominator / p.scaleNumerator / 1000
   const size =
     Math.min(
       1,

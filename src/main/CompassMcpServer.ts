@@ -25,9 +25,9 @@ const descriptions: Record<McpTool, string> = {
   get_canvas_screenshot:
     'Capture the current visible drawing canvas as a PNG image to visually inspect and verify your work. Waits for earlier edits, redraws even when unfocused, and includes the grid and agent cursors. Does not fit or pan the camera; offscreen geometry is not shown. maxDimension defaults to 1280 pixels (maximum 1600).',
   get_design:
-    'Read the active design, component indexes and revision. Coordinates are centimetres, +x right, +y down. Read again before replacing or deleting.',
+    'Read the active design, component indexes and revision. Coordinates are metres, +x right, +y down. Read again before replacing or deleting.',
   set_cursor:
-    'Move your labeled cursor in world centimetres. Optionally choose your session color (#RRGGBB).',
+    'Move your labeled cursor in world metres. Optionally choose your session color (#RRGGBB).',
   add_components:
     'Add up to 50 components sequentially with visible cursor movement and one undo step per component. Prefer small batches; wait for completion before the next call. Circle: center (x1,y1), point on circumference (x2,y2). Arc: center, start, end. Width is stroke width. Does not save a file.',
   replace_component:

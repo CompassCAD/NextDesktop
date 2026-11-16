@@ -1,4 +1,5 @@
 import { ExtensionDecisions } from './ExtensionDecisions'
+import { renderPdf } from './PrintExport'
 import { CompassMcpServer } from './CompassMcpServer'
 import { readMcpSettings } from '../shared/Mcp'
 import { ExtensionService } from './ExtensionService'
@@ -168,6 +169,10 @@ ipcMain.handle('dialog:showOpenFileDialog', (_event, options) => {
 })
 ipcMain.handle('dialog:showSaveFileDialog', (_event, options) => {
   return dialog.showSaveDialogSync(options)
+})
+ipcMain.handle('export:pdf', (event, page) => {
+  if (event.sender !== mainWindow?.webContents) throw new Error('Unauthorized export request')
+  return renderPdf(page)
 })
 ipcMain.handle('extensions:fetch', () => {
   console.log(`I am looking at ${path.join(app.getPath('userData'), 'extensions')}`)

@@ -1,4 +1,5 @@
 import { preference, numericPreference } from '../utils/Preferences'
+import { exportDrawing } from '../utils/ExportDrawing'
 import type { AgentCursor } from '../../../shared/Mcp'
 import { AgentAvatar } from './AgentAvatar'
 import presenceStyle from '../style/agentPresence.module.css'
@@ -181,6 +182,12 @@ export default function WindowBar(): React.ReactElement {
     const ctrlOrMeta = e.ctrlKey || e.metaKey
     const keyLower = e.key.toLowerCase()
 
+    if (ctrlOrMeta && (keyLower === 'e' || keyLower === 'p')) {
+      e.preventDefault()
+      if (renderer) void exportDrawing(renderer, keyLower === 'e' ? 'svg' : 'pdf')
+      return
+    }
+
     if (ctrlOrMeta && keyLower === ',') {
       e.preventDefault()
       setSettingsOpen(true)
@@ -314,7 +321,14 @@ export default function WindowBar(): React.ReactElement {
     {
       icon: ExportIcon,
       title: getLocaleKey('editor.menu.exportToSvg'),
-      keyCombinations: [controlKey, 'E']
+      keyCombinations: [controlKey, 'E'],
+      onAction: () => { if (renderer) void exportDrawing(renderer, 'svg') }
+    },
+    {
+      icon: ExportIcon,
+      title: getLocaleKey('editor.menu.exportToPdf'),
+      keyCombinations: [controlKey, 'P'],
+      onAction: () => { if (renderer) void exportDrawing(renderer, 'pdf') }
     },
     ...(isDevMode
       ? [
@@ -335,7 +349,7 @@ export default function WindowBar(): React.ReactElement {
     }
   ]
 
-  const defaultMeasure = [...new Set([1000, 500, 200, 100, 50, 25, 10, 5, 1, gridSpacing])].sort((a, b) => b - a)
+  const defaultMeasure = [...new Set([10, 5, 2, 1, 0.5, 0.25, 0.1, 0.05, 0.01, 0.005, 0.001, gridSpacing])].sort((a, b) => b - a)
   const measurementUnit = renderer?.documentProperties?.measurementUnit ?? resolveUnit(preference('measurementUnit', 'm'))
 
   return (
@@ -436,7 +450,7 @@ export default function WindowBar(): React.ReactElement {
             }))}
             value={String(gridSpacing)}
             onChange={(value) => {
-              savePreference('gridSpacing', String(value))
+              savePreference('gridSpacingMetres', String(value))
             }}
           />
         </div>

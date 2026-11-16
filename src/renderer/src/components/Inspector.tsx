@@ -1,3 +1,4 @@
+import { METRES_PER_POINT } from '../utils/Units'
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import styles from '../style/index.module.css'
 import { useEffect, useState, useMemo, useCallback, useRef } from 'react'
@@ -602,9 +603,9 @@ export default function Inspector(): React.ReactElement {
                     <label>{getLocaleKey('editor.inspector.text.fontSize')}</label>
                     <input
                       type="number"
-                      value={component.fontSize ?? ''}
+                      value={component.fontSize === undefined ? '' : Number((component.fontSize / METRES_PER_POINT).toFixed(3))}
                       onChange={(e) =>
-                        handleComponentChange('fontSize', parseFloat(e.target.value))
+                        handleComponentChange('fontSize', parseFloat(e.target.value) * METRES_PER_POINT)
                       }
                     />
                   </div>

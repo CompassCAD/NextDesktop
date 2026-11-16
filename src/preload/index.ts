@@ -5,6 +5,7 @@ import path from 'path'
 
 // Custom APIs for renderer
 const api = {
+  renderPdf: (page: { svg: string; widthMm: number; heightMm: number }) => ipcRenderer.invoke('export:pdf', page),
   mcpStatus: () => ipcRenderer.invoke('mcp:status'),
   mcpApply: () => ipcRenderer.invoke('mcp:apply'),
   mcpReady: (ready: boolean) => ipcRenderer.invoke('mcp:ready', ready),

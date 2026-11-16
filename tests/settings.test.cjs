@@ -95,10 +95,10 @@ test('renderer API coerces strings, migrates once, and propagates errors', (t) =
 
 const options = load('src/renderer/src/utils/SettingsOptions.ts')
 test('metric and imperial conversions preserve physical distances', () => {
-  assert.equal(options.formatMeasurement(100, 'm', 2), '1.00 m')
-  assert.equal(options.formatMeasurement(2.54, 'in', 3), '1.000 in')
-  assert.equal(options.formatMeasurement(30.48, 'ft', 0), '1 ft')
-  assert.equal(options.formatMeasurement(1, 'mm', 1), '10.0 mm')
+  assert.equal(options.formatMeasurement(1, 'm', 2), '1.00 m')
+  assert.equal(options.formatMeasurement(0.0254, 'in', 3), '1.000 in')
+  assert.equal(options.formatMeasurement(0.3048, 'ft', 0), '1 ft')
+  assert.equal(options.formatMeasurement(0.01, 'mm', 1), '10.0 mm')
   assert.equal(options.resolveUnit('unknown'), 'm')
   assert.equal(options.resolveUnit('__proto__'), 'm')
 })
@@ -135,7 +135,7 @@ test('every locale resolves Settings keys with English fallback and translates t
 test('renderer applies preferences and snaps to the custom grid without changing geometry', () => {
   const values = { snap: 'true', measurementUnit: 'in' }
   const numbers = {
-    gridSpacing: 2.54,
+    gridSpacing: 0.0254,
     snapTolerance: 14,
     maximumStack: 100,
     measurementPrecision: 3
@@ -151,36 +151,36 @@ test('renderer applies preferences and snaps to the custom grid without changing
           }
         : id.endsWith('/SettingsOptions')
           ? options
-          : {}
+          : id.endsWith('/Units') ? load('src/renderer/src/utils/Units.ts') : {}
   })
   const renderer = Object.create(GraphicsRenderer.prototype)
   renderer.markDirty = () => {}
   renderer.logicDisplay = { components: [{ x: 25.4, y: 50.8 }] }
   const before = JSON.stringify(renderer.logicDisplay)
   renderer.applyPreferences()
-  assert.equal(renderer.gridSpacing, 2.54)
+  assert.equal(renderer.gridSpacing, 0.0254)
   assert.equal(renderer.snapTolerance, 14)
   assert.equal(renderer.maximumStack, 100)
   assert.equal(renderer.unitMeasure, 'in')
-  assert.equal(renderer.unitConversionFactor, 1 / 2.54)
+  assert.equal(renderer.unitConversionFactor, 1 / 0.0254)
   assert.equal(renderer.measurementPrecision, 3)
   Object.assign(renderer, {
-    mouse: { cursorXGlobal: 3, cursorYGlobal: 5 },
+    mouse: { cursorXGlobal: 90, cursorYGlobal: 150 },
     offsetX: 0,
     offsetY: 0,
     displayWidth: 0,
     displayHeight: 0,
-    zoom: 1,
+    zoom: 3000,
     camX: 0,
     camY: 0
   })
-  assert.equal(renderer.getCursorXLocal(), 2.54)
-  assert.equal(renderer.getCursorYLocal(), 5.08)
+  assert.equal(renderer.getCursorXLocal(), 0.0254)
+  assert.equal(renderer.getCursorYLocal(), 0.0508)
   values.snap = 'false'
   values.measurementUnit = 'ft'
   renderer.applyPreferences()
-  assert.equal(renderer.getCursorXLocal(), 3)
-  assert.equal(renderer.getCursorYLocal(), 5)
-  assert.equal(renderer.unitConversionFactor, 1 / 30.48)
+  assert.equal(renderer.getCursorXLocal(), 0.03)
+  assert.equal(renderer.getCursorYLocal(), 0.05)
+  assert.equal(renderer.unitConversionFactor, 1 / 0.3048)
   assert.equal(JSON.stringify(renderer.logicDisplay), before)
 })

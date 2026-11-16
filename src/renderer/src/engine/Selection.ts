@@ -1,3 +1,4 @@
+import { DEFAULT_IMAGE_SCALE } from '../utils/Units'
 import { Component, Label, Picture, Polygon, Shape, componentTypes } from './Component'
 
 /** Uniform world-space transform; nested shape coordinates stay relative to their parent. */
@@ -15,10 +16,15 @@ export function transformComponent(component: Component, k: number, x: number, y
       point.y = point.y * k + y
     }
   }
-  if (component.type === componentTypes.label) (component as Label).fontSize *= k
+  if (component.type === componentTypes.label) {
+    const label = component as Label
+    label.fontSize *= k
+    if (label.textOffsetX !== undefined) label.textOffsetX *= k
+    if (label.textLineSpacing !== undefined) label.textLineSpacing *= k
+  }
   if (component.type === componentTypes.picture) {
     const picture = component as Picture
-    picture.imageScale = (picture.imageScale ?? 1) * k
+    picture.imageScale = (picture.imageScale ?? DEFAULT_IMAGE_SCALE) * k
   }
   if (component.type === componentTypes.shape) {
     for (const child of (component as Shape).components) transformComponent(child, k, 0, 0)

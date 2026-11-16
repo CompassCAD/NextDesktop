@@ -217,7 +217,7 @@ function resolveOptions(opts: DxfToCompassCadOptions): ResolvedOptions {
     groupByLayer: opts.groupByLayer ?? false,
     includeLayers: opts.includeLayers ? new Set(opts.includeLayers.map((l) => l.toUpperCase())) : null,
     excludeLayers: new Set((opts.excludeLayers ?? []).map((l) => l.toUpperCase())),
-    strokeRadius: opts.strokeRadius ?? 2,
+    strokeRadius: opts.strokeRadius ?? 0.00025,
     polygonStrokeColor: opts.polygonStrokeColor ?? '#000000',
     fillClosedPolylines: opts.fillClosedPolylines ?? false,
     bulgeSegments: opts.bulgeSegments ?? 12,
@@ -596,7 +596,7 @@ class Converter {
       text,
       // Text height is a length like any other DXF coordinate, so it gets
       // the same `scale` treatment as geometry — no extra multiplier.
-      fontSize: Math.max(1, Math.round(height * this.opts.scale * this.opts.textScale))
+      fontSize: Math.max(0.000001, height * this.opts.scale * this.opts.textScale)
     }
   }
 
@@ -671,7 +671,9 @@ class Converter {
  */
 export function convertDxfToCompassCad(dxfText: string, options: DxfToCompassCadOptions = {}): CompassComponentJSON[] {
   const doc = parseDxf(dxfText)
-  const resolved = resolveOptions(options)
+  const metresPerUnit: Record<number, number> = { 1: 0.0254, 2: 0.3048, 3: 1609.344, 4: 0.001, 5: 0.01, 6: 1, 7: 1000, 8: 0.0000000254, 9: 0.0000254, 10: 0.9144, 11: 1e-10, 12: 1e-9, 13: 1e-6, 14: 0.1, 15: 10, 16: 100 }
+  if (options.scale === undefined && !metresPerUnit[doc.insUnits ?? 0]) throw new Error('DXF has no supported physical units; specify a metres-per-unit scale')
+  const resolved = resolveOptions({ ...options, scale: options.scale ?? metresPerUnit[doc.insUnits!] })
   return new Converter(doc, resolved).convert()
 }
 

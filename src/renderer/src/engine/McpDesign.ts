@@ -59,7 +59,7 @@ export function createMcpExecutor(renderer: GraphicsRenderer): (request: McpRequ
     if (!logic) throw new Error('Open a design first.')
     const args = toolSchemas[request.tool].parse(request.args)
     if (request.tool === 'get_design')
-      return { units: 'cm', revision: currentRevision(), components: logic.components }
+      return { units: 'm', revision: currentRevision(), components: logic.components }
     if (request.tool === 'set_cursor') return { moved: true }
     if (renderer.readonly || renderer.isEditing)
       throw new Error(

@@ -88,7 +88,7 @@ export default function DocumentPropertiesModal({
   const dimensions = valid ? paperDimensions(valid) : null
   const world = valid ? worldPaperDimensions(valid) : null
   const titleBlock = valid?.showTitleBlock ? documentTitleBlockLayout(valid) : null
-  const paperMmPerWorldUnit = valid ? (10 * valid.scaleNumerator) / valid.scaleDenominator : 1
+  const paperMmPerWorldUnit = valid ? (1000 * valid.scaleNumerator) / valid.scaleDenominator : 1
   const update = <K extends keyof DocumentProperties>(key: K, value: DocumentProperties[K]): void =>
     setDraft({ ...draft, [key]: value })
   const numberInput = (key: NumericKey, min = 0.001, max = 1000000): React.JSX.Element => (

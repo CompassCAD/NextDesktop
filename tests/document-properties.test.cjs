@@ -44,7 +44,7 @@ const {
 const { Line } = load('src/renderer/src/engine/Component.ts')
 const { LogicDisplay } = load('src/renderer/src/engine/Logic.ts')
 
-test('Next round trip preserves document metadata and centimetre geometry; legacy stays an array', () => {
+test('Next round trip preserves document metadata and metre geometry; legacy stays an array', () => {
   const p = {
     ...defaults(),
     name: 'House',
@@ -58,17 +58,17 @@ test('Next round trip preserves document metadata and centimetre geometry; legac
   assert.equal(result.properties.name, 'House')
   assert.equal(result.properties.scaleDenominator, 100)
   assert.equal(result.components[0].x2, 100)
-  assert.equal(encodeDocument(geometry, p, false), JSON.stringify(geometry))
+  assert.equal(JSON.parse(encodeDocument(geometry, p, false))[0].x2, 10000)
   assert.equal(decodeDocument(encodeDocument(geometry, p, false), false).properties, null)
 })
 
 test('paper orientation, margins, reduction and enlargement have physical units', () => {
   const p = { ...defaults(), paper: 'A4', orientation: 'portrait', scaleDenominator: 100 }
-  assert.equal(worldPaperDimensions(p).width, 2100)
-  assert.equal(worldPaperDimensions(p).height, 2970)
-  assert.equal(worldPaperDimensions(p).margin, 100)
+  assert.equal(worldPaperDimensions(p).width, 21)
+  assert.equal(worldPaperDimensions(p).height, 29.700000000000003)
+  assert.equal(worldPaperDimensions(p).margin, 1)
   assert.equal(paperDimensions({ ...p, orientation: 'landscape' }).width, 297)
-  assert.equal(worldPaperDimensions({ ...p, scaleDenominator: 1, scaleNumerator: 2 }).width, 10.5)
+  assert.equal(worldPaperDimensions({ ...p, scaleDenominator: 1, scaleNumerator: 2 }).width, 0.105)
   assert.equal(paperDimensions({ ...p, paper: 'Letter' }).width, 215.9)
   assert.equal(paperDimensions({ ...p, paper: 'custom', widthMm: 400, heightMm: 200 }).height, 400)
 })
@@ -154,14 +154,14 @@ function fixture() {
 test('open Next then legacy resets per-document properties and history', async () => {
   const f = fixture()
   await f.file.openFileAndParse(f.renderer)
-  assert.equal(f.renderer.documentProperties.measurementUnit, 'mm')
+  assert.equal(f.renderer.documentProperties.measurementUnit, 'm')
   assert.equal(f.renderer.undoStack.length, 1)
   assert.equal(f.renderer.redoStack.length, 0)
   f.state.path = 'OLD.CCAD'
   f.state.content = JSON.stringify([new Line(1, 2, 3, 4)])
   await f.file.openFileAndParse(f.renderer)
   assert.equal(f.renderer.documentProperties, null)
-  assert.equal(f.renderer.logicDisplay.components[0].x2, 3)
+  assert.equal(f.renderer.logicDisplay.components[0].x2, 0.03)
 })
 
 test('invalid and cancelled opens leave the design, properties and history intact', async () => {
@@ -190,7 +190,7 @@ test('legacy export requires acknowledgement and never serializes properties', a
   await f.file.saveFile(f.renderer)
   assert.equal(f.calls.prompts, 2)
   assert.ok(Array.isArray(JSON.parse(f.calls.writes[0].data)))
-  assert.equal(f.renderer.documentProperties.measurementUnit, 'mm')
+  assert.equal(f.renderer.documentProperties.measurementUnit, 'm')
 })
 
 test('failed save and cancelled save never report success or retain the failed path', async () => {
@@ -244,6 +244,8 @@ function loadRenderer() {
     performance,
     window: { dispatchEvent() {} },
     require: (id) =>
+      id === '../utils/Units' ? load('src/renderer/src/utils/Units.ts') :
+      id === '../utils/MeasurementAnnotation' ? load('src/renderer/src/utils/MeasurementAnnotation.ts') :
       id === '../locales/Locale'
         ? { getLocaleKey: (key) => key }
         : id === '../utils/DocumentProperties'
@@ -288,7 +290,7 @@ test('app preferences respect document units and changing properties preserves g
   assert.equal(r.measurementPrecision, 2)
 })
 
-test('A6 fits at 0.3x and can zoom in and out without changing exported sizes', () => {
+test('A6 fits using a fixed pixels-per-metre camera and can zoom in and out without changing exported sizes', () => {
   const r = Object.create(loadRenderer().prototype)
   Object.assign(r, {
     documentProperties: { ...defaults(), canvas: 'paper', paper: 'A6', orientation: 'portrait' },
@@ -305,31 +307,32 @@ test('A6 fits at 0.3x and can zoom in and out without changing exported sizes', 
   const geometry = [new Line(0, 0, 5, 10)]
   const before = encodeDocument(geometry, r.documentProperties, true)
   r.fitDocumentPaper()
-  assert.ok(Math.abs(r.viewZoom - 0.3) < 1e-10)
+  const fittedZoom = r.viewZoom
+  assert.equal(r.documentViewScale, 3000)
   assert.ok(r.zoom > 30, 'effective camera scale may exceed the old limit')
   const world = worldPaperDimensions(r.documentProperties)
   assert.ok(Math.abs(world.height * r.zoom - 640) < 0.0001)
   assert.ok(Math.abs(world.width / world.height - 105 / 148) < 0.0001)
   r.setZoom(1.5)
   r.zoom = r.targetZoom
-  assert.ok(Math.abs(r.viewZoom - 0.45) < 1e-10)
-  r.setZoom(0.3 / r.viewZoom)
+  assert.ok(Math.abs(r.viewZoom - fittedZoom * 1.5) < 1e-10)
+  r.setZoom(1 / r.viewZoom)
   r.zoom = r.targetZoom
-  assert.ok(Math.abs(r.viewZoom - 0.3) < 1e-10)
+  assert.ok(Math.abs(r.viewZoom - r.zoom / 3000) < 1e-10)
   r.setZoom(0.9)
   r.zoom = r.targetZoom
-  assert.ok(Math.abs(r.viewZoom - 0.27) < 1e-10)
+  assert.ok(Math.abs(r.viewZoom - 0.9) < 1e-10)
   r.setZoom(14.9 / r.viewZoom)
   r.zoom = r.targetZoom
   assert.ok(Math.abs(r.viewZoom - 14.9) < 0.0001)
   const maximum = r.targetZoom
-  r.setZoom(2)
+  r.setZoom(Infinity)
   assert.equal(r.targetZoom, maximum)
   assert.equal(encodeDocument(geometry, r.documentProperties, true), before)
-  assert.equal(encodeDocument(geometry, r.documentProperties, false), JSON.stringify(geometry))
+  assert.equal(JSON.parse(encodeDocument(geometry, r.documentProperties, false))[0].x2, 500)
 })
 
-test('all paper presets fit proportionally at 0.3x, including large drawing scales', () => {
+test('all paper presets fit proportionally without redefining the zoom baseline, including large drawing scales', () => {
   const r = Object.create(loadRenderer().prototype)
   Object.assign(r, { displayWidth: 1200, displayHeight: 800, markDirty() {} })
   for (const paper of Object.keys(model.paperSizes)) {

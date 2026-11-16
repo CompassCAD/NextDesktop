@@ -1,3 +1,4 @@
+import { DEFAULT_FONT_HEIGHT, DEFAULT_STROKE_WIDTH, DEFAULT_IMAGE_SCALE } from '../utils/Units'
 export const componentTypes = {
     point: 1,
     line: 2,
@@ -28,7 +29,7 @@ export class Component {
         this.active = true;
         this.type = 0;
         this.color = '#ffffff';
-        this.radius = 1;
+        this.radius = DEFAULT_STROKE_WIDTH;
         this.opacity = 100;
         this.name = 'Component';
         this.rotation = 0;
@@ -46,7 +47,7 @@ export class Point extends Component {
     y: number;
     constructor(x: number, y: number, opacity?: number, name?: string, rotation?: number) {
         super();
-        this.radius = 3;
+        this.radius = DEFAULT_STROKE_WIDTH;
         this.type = componentTypes.point;
         this.x = x != undefined ? x : 0;
         this.y = y != undefined ? y : 0;
@@ -75,7 +76,7 @@ export class Line extends Component {
         rotation?: number
     ) {
         super();
-        this.radius = radius != undefined ? radius : 2;
+        this.radius = radius != undefined ? radius : DEFAULT_STROKE_WIDTH;
         this.type = componentTypes.line;
         this.color = color != undefined ? color : '#ffffff';
         this.x1 = x1 != undefined ? x1 : 0;
@@ -147,6 +148,8 @@ export class Measure extends Line {
 export class Label extends Point {
     text: string;
     fontSize: number;
+    textOffsetX?: number;
+    textLineSpacing?: number;
     constructor(
         x: number, 
         y: number, 
@@ -157,7 +160,7 @@ export class Label extends Point {
         rotation?: number,
     ) {
         super(x, y);
-        this.fontSize = fontSize != undefined ? fontSize : 18;
+        this.fontSize = fontSize != undefined ? fontSize : DEFAULT_FONT_HEIGHT;
         this.type = componentTypes.label;
         this.color = '#eeeeee';
         this.text = text != undefined ? text : 'Sample text';
@@ -191,7 +194,7 @@ export class Arc extends Component {
         rotation?: number
     ) {
         super();
-        this.radius = radius != undefined ? radius : 2;
+        this.radius = radius != undefined ? radius : DEFAULT_STROKE_WIDTH;
         this.type = componentTypes.arc;
         this.color = color != undefined ? color : '#ffffff';
         this.x1 = x1 != undefined ? x1 : 0;
@@ -242,6 +245,7 @@ export class Picture extends Point {
     ) {
         super(x, y);
         this.type = componentTypes.picture;
+        this.imageScale = DEFAULT_IMAGE_SCALE;
         this.pictureSource = pictureSource != undefined ? pictureSource : '';
         this.opacity = opacity != undefined ? opacity : 100;
         this.name = name != undefined ? name : 'Picture';
@@ -285,7 +289,7 @@ export class BoundBox extends Rectangle {
         y2: number,
         name?: string
     ) {
-        super(x1, y1, x2, y2, 2, '#FFFFFF', 100);
+        super(x1, y1, x2, y2, DEFAULT_STROKE_WIDTH, '#FFFFFF', 100);
         this.type = componentTypes.boundBox;
         this.name = name != undefined ? name : 'Boundbox';
     }

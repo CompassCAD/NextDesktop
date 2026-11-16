@@ -118,7 +118,7 @@ export default function SettingsModal({ onClose }: { onClose: () => void }): Rea
   const [search, setSearch] = useState('')
   const [updatesVisited, setUpdatesVisited] = useState(false)
   const [face, setFace] = useState(fontPreference)
-  const [size, setSize] = useState(String(numberPreference('fontSize', 18, 1, 256)))
+  const [size, setSize] = useState(String(numberPreference('fontSize', 12, 1, 256)))
   const [language, setLanguage] = useState(GetLanguage)
   const [showBeta, setShowBeta] = useState(
     preference('PUBLICBETA_DoNotShowThatShitEverAgain', 'false') !== 'true'
@@ -243,6 +243,8 @@ export default function SettingsModal({ onClose }: { onClose: () => void }): Rea
         language,
         measurementUnit: unit,
         ...numbers,
+        gridSpacing: String(Number(numbers.gridSpacing) * 100),
+        gridSpacingMetres: numbers.gridSpacing,
         PUBLICBETA_DoNotShowThatShitEverAgain: String(!showBeta),
         ...Object.fromEntries(Object.entries(canvas).map(([key, value]) => [key, String(value)]))
       })
@@ -525,7 +527,7 @@ export default function SettingsModal({ onClose }: { onClose: () => void }): Rea
                 {matches('preview') && (
                   <div className={style.previewGroup}>
                     <p>{t('preview')}</p>
-                    <FontPreview face={face} size={Number(size) || 18} />
+                    <FontPreview face={face} size={Number(size) || 12} />
                     <small>{t('fontHelp')}</small>
                   </div>
                 )}
