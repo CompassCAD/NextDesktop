@@ -1,3 +1,4 @@
+import wordmarkUrl from '../../assets/branding/logo-wordmark.svg'
 import NewDesignStart from './NewDesignStart'
 import startStyle from '../../style/newDesign.module.css'
 import { documentTitleBlockLayout } from '../../utils/DocumentFrame'
@@ -370,6 +371,13 @@ export default function DocumentPropertiesModal({
                             stroke="#ffffff"
                             strokeDasharray="4 4"
                           />
+                          {titleBlock &&
+                            <image href={wordmarkUrl}
+                              x={titleBlock.wordmark.x * paperMmPerWorldUnit + dimensions.width / 2}
+                              y={titleBlock.wordmark.y * paperMmPerWorldUnit + dimensions.height / 2}
+                              width={titleBlock.wordmark.width * paperMmPerWorldUnit}
+                              height={titleBlock.wordmark.height * paperMmPerWorldUnit}
+                            />}
                           {titleBlock &&
                             titleBlock.cells.map((cell) => (
                               <rect

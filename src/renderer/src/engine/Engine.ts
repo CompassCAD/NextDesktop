@@ -1,3 +1,4 @@
+import { drawFrameWordmark } from './FrameWordmark'
 import { documentTitleBlockLayout } from '../utils/DocumentFrame'
 import { type DocumentProperties, validateDocumentProperties, worldPaperDimensions } from '../utils/DocumentProperties'
 import { drawMcpCursors } from './McpCursors'
@@ -552,6 +553,8 @@ export class GraphicsRenderer {
       this.drawDocumentCellText(value, x + padding, y + h * 0.44,
         w - padding * 2, h * 0.4, '#ffffff')
     }
+    const brand = block.wordmark
+    drawFrameWordmark(ctx, { x: sx(brand.x), y: sy(brand.y), width: brand.width * this.zoom, height: brand.height * this.zoom })
     ctx.restore()
   }
 

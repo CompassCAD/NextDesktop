@@ -1,3 +1,4 @@
+import { wordmarkPaths, wordmarkTransform } from './FrameWordmark'
 import { measurementAnnotation } from '../utils/MeasurementAnnotation'
 import { Arc, Component, Label, Line, Picture, Point, Polygon, Shape, componentTypes as T } from './Component'
 import { DocumentProperties, paperDimensions, worldPaperDimensions } from '../utils/DocumentProperties'
@@ -153,7 +154,13 @@ export class ExportRenderer {
       if (p.showTitleBlock) {
         const frame = node('g', { fill: 'none', stroke: '#000000', 'stroke-width': 0.025 * p.scaleDenominator / p.scaleNumerator })
         frame.append(node('rect', { x: x + paper.margin, y: y + paper.margin, width: width - paper.margin * 2, height: height - paper.margin * 2 }))
-        for (const cell of documentTitleBlockLayout(p).cells) {
+        const block = documentTitleBlockLayout(p)
+        const brand = wordmarkTransform(block.wordmark)
+        const wordmark = node('g', { 'aria-label': 'CompassCAD', fill: '#000000', stroke: 'none',
+          transform: `translate(${brand.x} ${brand.y}) scale(${brand.scale})` })
+        for (const d of wordmarkPaths) wordmark.append(node('path', { d }))
+        frame.append(wordmark)
+        for (const cell of block.cells) {
           frame.append(node('rect', { x: cell.x, y: cell.y, width: cell.width, height: cell.height }))
           const pad = Math.min(cell.height * 0.1, cell.width * 0.04)
           frame.append(this.cellText(this.translate(`documentProperties.${cell.field}`), cell.x + pad, cell.y + pad, cell.width - 2 * pad, cell.height * 0.23))

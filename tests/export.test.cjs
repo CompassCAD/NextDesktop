@@ -7,7 +7,15 @@ const path = require('node:path')
 test('SVG geometry and paper PDF export in isolated Electron', async () => {
   const temp = await fs.mkdtemp(path.join(os.tmpdir(), 'compass-export-'))
   try {
-    const renderer = await Bun.build({ entrypoints: ['src/renderer/src/engine/ExportRenderer.ts'], target: 'browser', format: 'esm' })
+    const renderer = await Bun.build({
+      entrypoints: ['src/renderer/src/engine/ExportRenderer.ts'], target: 'browser', format: 'esm',
+      loader: { '.svg': 'text' },
+      plugins: [{ name: 'vite-raw-svg', setup(build) {
+        build.onResolve({ filter: /\.svg\?raw$/ }, args => ({
+          path: path.resolve(args.resolveDir, args.path.slice(0, -4))
+        }))
+      } }]
+    })
     assert.equal(renderer.success, true)
     // Expose the bundled module to the isolated test renderer without a dev server.
     await fs.writeFile(path.join(temp, 'renderer.js'), (await renderer.outputs[0].text()).replace(/export\s*\{[^}]+\};?\s*$/, 'window.ExportRenderer = ExportRenderer; void 0;'))

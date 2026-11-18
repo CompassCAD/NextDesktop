@@ -61,6 +61,8 @@ app.whenReady().then(async () => {
       return {paper,infinite,portrait,custom,picture,pictureFailed,unchanged:before===JSON.stringify(geometry)}
     })()`)
     assert.ok(pages.unchanged)
+    assert.match(pages.paper.svg, /aria-label="CompassCAD"[^>]*><path d="M/)
+    assert.doesNotMatch(pages.infinite.svg, /aria-label="CompassCAD"/)
     assert.ok(pages.pictureFailed)
     assert.equal(pages.paper.widthMm, 297)
     assert.equal(pages.paper.heightMm, 210)

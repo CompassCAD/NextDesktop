@@ -244,6 +244,7 @@ function loadRenderer() {
     performance,
     window: { dispatchEvent() {} },
     require: (id) =>
+      id === './FrameWordmark' ? { drawFrameWordmark: (ctx, box) => ctx.drawWordmark(box) } :
       id === '../locales/Locale'
         ? { getLocaleKey: (key) => key }
         : id === '../utils/DocumentProperties'
@@ -420,6 +421,9 @@ test('drawing frame uses stroke glyphs, contains metadata and leaves component g
       save() {},
       restore() {},
       setLineDash() {},
+      drawWordmark(box) {
+        assert.ok(box.width > 0 && box.height > 0)
+      },
       fillRect() {
         throw new Error('Document frame must remain unfilled')
       },
