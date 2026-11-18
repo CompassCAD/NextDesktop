@@ -1,3 +1,8 @@
+import CommandBrowser, { type DrawingCommand } from './CommandBrowser'
+import { drawingTools } from './Toolbar'
+import { editCommands } from './EditCommands'
+import { openBackup, startRecovery } from '../utils/Recovery'
+import workflowStyle from '../style/workflow.module.css'
 import { preference, numericPreference } from '../utils/Preferences'
 import { exportDrawing } from '../utils/ExportDrawing'
 import type { AgentCursor } from '../../../shared/Mcp'
@@ -124,6 +129,8 @@ function ConnectedAgentAvatars(): React.ReactElement | null {
 }
 
 export default function WindowBar(): React.ReactElement {
+  const [browser, setBrowser] = useState<'palette' | 'shortcuts' | null>(null)
+  const [guide, setGuide] = useState<'draw' | 'save' | null>(null)
   const [documentModal, setDocumentModal] = useState<'new' | 'properties' | null>(null)
   const [, refreshDocument] = useState(0)
   const [settingsOpen, setSettingsOpen] = useState(false)
@@ -135,6 +142,34 @@ export default function WindowBar(): React.ReactElement {
   const [isSnapped, setSnapped] = useState<boolean>(() => preference('snap', 'true') === 'true')
   const [gridSpacing, setGridSpacing] = useState(() => numericPreference('gridSpacing'))
   const { renderer } = useRenderer()
+  useEffect(() => renderer ? startRecovery(renderer) : undefined, [renderer])
+  useEffect(() => {
+    if (!guide) return
+    const drawn = (): void => {
+      if (guide !== 'draw' || !renderer) return
+      renderer.setMode(renderer.modes.Select)
+      setGuide('save')
+    }
+    const saved = (): void => {
+      if (guide === 'save') { setGuide(null); void toast(getLocaleKey('workflow.finish')) }
+    }
+    const end = (): void => setGuide(null)
+    window.addEventListener('line-drawn', drawn)
+    window.addEventListener('drawing-saved', saved)
+    window.addEventListener('drawing-replaced', end)
+    return () => {
+      window.removeEventListener('line-drawn', drawn)
+      window.removeEventListener('drawing-saved', saved)
+      window.removeEventListener('drawing-replaced', end)
+    }
+  }, [guide, renderer])
+  const startGuide = (): void => {
+    if (!renderer || renderer.readonly) return
+    setMenuOpened(false)
+    renderer.setMode(renderer.modes.AddLine)
+    setGuide('draw')
+    renderer.displayRef?.focus()
+  }
   const { isDevMode } = useDevMode()
   useEffect(() => {
     const refresh = (): void => refreshDocument(n => n + 1)
@@ -178,9 +213,32 @@ export default function WindowBar(): React.ReactElement {
     }
   }
   window.onkeydown = (e: KeyboardEvent) => {
-    if (document.querySelector('dialog[open]')) return
+    if (document.querySelector('dialog[open], [aria-modal="true"][role="dialog"]')) return
     const ctrlOrMeta = e.ctrlKey || e.metaKey
     const keyLower = e.key.toLowerCase()
+
+    const typing = e.target instanceof HTMLElement && (e.target.isContentEditable || e.target.closest('input,textarea,select,[role="dialog"]'))
+    if (renderer && ctrlOrMeta && !typing && !e.defaultPrevented && !e.altKey && !e.shiftKey && !e.isComposing) {
+      if (e.ctrlKey && !e.metaKey && keyLower === 'k') {
+        e.preventDefault()
+        setMenuOpened(false)
+        setBrowser('palette')
+        return
+      }
+      if ((keyLower === 'z' || keyLower === 'y') && !renderer.isEditing && !renderer.readonly) {
+        e.preventDefault()
+        if (keyLower === 'z') renderer.undo()
+        else renderer.redo()
+        return
+      }
+      if (['c', 'v', 'd'].includes(keyLower) && !renderer.contextMenuOpen) {
+        e.preventDefault()
+        if (keyLower === 'c') renderer.copySelection()
+        if (keyLower === 'v') renderer.pasteSelection()
+        if (keyLower === 'd') renderer.duplicateSelection()
+        return
+      }
+    }
 
     if (renderer && !e.defaultPrevented && !e.isComposing && !ctrlOrMeta && !e.altKey && !e.shiftKey &&
       !menuOpened && !renderer.contextMenuOpen && (e.key === '[' || e.key === ']') &&
@@ -313,7 +371,7 @@ export default function WindowBar(): React.ReactElement {
       keyCombinations: [controlKey, 'O'],
       onAction: () => openFileAndParse(renderer!)
     },
-    { icon: BackupIcon, title: getLocaleKey('editor.menu.openBackups') },
+    { icon: BackupIcon, title: getLocaleKey('editor.menu.openBackups'), onAction: () => { if (renderer) void openBackup(renderer) } },
     {
       icon: SaveDesignIcon,
       title: getLocaleKey('editor.menu.saveDesign'),
@@ -338,6 +396,8 @@ export default function WindowBar(): React.ReactElement {
       keyCombinations: [controlKey, 'P'],
       onAction: () => { if (renderer) void exportDrawing(renderer, 'pdf') }
     },
+    { title: getLocaleKey('workflow.shortcuts'), onAction: () => { setMenuOpened(false); setBrowser('shortcuts') } },
+    { title: getLocaleKey('workflow.guide'), onAction: startGuide },
     ...(isDevMode
       ? [
           { title: 'RNG Design Generator (choke test only)', onAction: _internal_spawnRngModal },
@@ -357,11 +417,36 @@ export default function WindowBar(): React.ReactElement {
     }
   ]
 
+  const commands: DrawingCommand[] = browser && renderer ? [
+    ...menuItemDefs.map(item => ({
+      title: item.title, icon: item.icon, shortcut: item.keyCombinations?.join('+'), run: () => item.onAction?.()
+    })),
+    ...drawingTools.map(tool => ({ title: getLocaleKey(tool.localeString), icon: tool.icon, shortcut: tool.keyName.toUpperCase(),
+      run: () => renderer.setMode(tool.state) })),
+    ...editCommands(renderer).map(action => ({ title: action.label, icon: action.icon, shortcut: action.shortcut, enabled: action.enabled, run: action.run })),
+    { title: getLocaleKey('contextMenu.undo'), shortcut: controlKey + '+Z', run: renderer.undo, icon: UndoIcon },
+    { title: getLocaleKey('contextMenu.redo'), shortcut: controlKey + '+Y', run: renderer.redo, icon: RedoIcon },
+    { title: getLocaleKey('contextMenu.selectAll'), shortcut: controlKey + '+A', run: () => renderer.selectAll() },
+    { title: getLocaleKey('contextMenu.group'), shortcut: controlKey + '+G', run: () => renderer.groupSelection() },
+    { title: getLocaleKey('contextMenu.ungroup'), shortcut: controlKey + '+Shift+G', run: () => renderer.groupSelection(true) },
+    { title: getLocaleKey('contextMenu.delete'), shortcut: 'Delete', run: () => renderer.deleteSelection() },
+    { title: getLocaleKey(isSnapped ? 'editor.window.disableSnap' : 'editor.window.enableSnap'), shortcut: controlKey + '+Q', run: () => savePreference('snap', String(!isSnapped)), icon: SnapOn },
+    { title: getLocaleKey('contextMenu.cancel'), shortcut: 'Esc', run: () => renderer.cancelEditing(), icon: Close },
+    { title: getLocaleKey('contextMenu.bringToFront'), shortcut: '[', run: () => renderer.reorderLayers('front') },
+    { title: getLocaleKey('contextMenu.sendToBack'), shortcut: ']', run: () => renderer.reorderLayers('back') }
+  ] : []
+
   const defaultMeasure = [...new Set([1000, 500, 200, 100, 50, 25, 10, 5, 1, gridSpacing])].sort((a, b) => b - a)
   const measurementUnit = renderer?.documentProperties?.measurementUnit ?? resolveUnit(preference('measurementUnit', 'm'))
 
   return (
     <>
+      {browser && <CommandBrowser key={browser} reference={browser === 'shortcuts'} commands={commands} close={() => setBrowser(null)} />}
+      {guide && <aside className={workflowStyle.guide}>
+        <span role="status">{getLocaleKey(guide === 'draw' ? 'workflow.guideDraw' : 'workflow.guideSave')}</span>
+        {guide === 'save' && <button onClick={() => renderer && void saveFile(renderer)}>{getLocaleKey('workflow.save')}</button>}
+        <button onClick={() => setGuide(null)}>{getLocaleKey('workflow.cancel')}</button>
+      </aside>}
       {documentModal && <DocumentPropertiesModal creating={documentModal === 'new'} onClose={() => setDocumentModal(null)} />}
       {settingsOpen && <SettingsModal onClose={() => setSettingsOpen(false)} />}
       <div className={styles['window-bar']}>

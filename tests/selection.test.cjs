@@ -4,12 +4,18 @@ const vm=require('vm');
 const ts=require('typescript');
 const {test}=require('node:test');
 const assert=require('node:assert/strict');
+let clipboard = ''
+const window = { api: {
+  copyComponents: source => { clipboard = source },
+  readComponents: () => clipboard,
+  clipboardFormats: () => clipboard ? ['application/x-compasscad-components'] : []
+} }
 const cache=new Map();
 function load(name) {
   if(cache.has(name)) return cache.get(name);
   const exports={}; cache.set(name,exports);
   const code=ts.transpileModule(fs.readFileSync(path.join('src/renderer/src/engine',name+'.ts'),'utf8').replace(/(undo|redo) = \(\): void => \{/g, '$1(): void {'),{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022}}).outputText;
-  vm.runInNewContext(code,{exports,require:id=>['./Component','./Logic','./Selection'].includes(id)?load(id.slice(2)):id.endsWith('.svg')?{default:id}:{},performance,console,crypto:require('node:crypto').webcrypto,structuredClone},{filename:name});
+  vm.runInNewContext(code,{exports,require:id=>['./Component','./Logic','./Selection'].includes(id)?load(id.slice(2)):id.endsWith('.svg')?{default:id}:{},performance,console,crypto:require('node:crypto').webcrypto,structuredClone,window},{filename:name});
   return exports;
 }
 const C=load('Component');
@@ -266,3 +272,46 @@ test('hierarchy ranges follow visible rows and Ctrl toggles only the target',()=
   assert.deepEqual(result('a','group',[0,1],false,false),[0]);
   assert.deepEqual(result('c','hidden',[0],true,false),[2]);
 });
+
+test('component clipboard preserves group membership, paint order and one-step undo', () => {
+  const r = renderer([new C.Line(0,0,10,0), new C.Line(0,2,10,2)])
+  r.gridSpacing = 5
+  r.setSelection([0,1])
+  r.groupSelection()
+  r.copySelection()
+  r.pasteSelection()
+  const [a,b,c,d] = r.logicDisplay.components
+  assert.notEqual(c.groupId,a.groupId)
+  assert.equal(c.groupId,d.groupId)
+  assert.equal(c.x1,5)
+  assert.equal(d.y1,b.y1+5)
+  r.undo()
+  assert.equal(r.logicDisplay.components.length,2)
+  r.redo()
+  assert.equal(r.logicDisplay.components.length,4)
+  r.setSelection([2])
+  r.duplicateSelection()
+  assert.equal(r.logicDisplay.components.length,6)
+  assert.equal(JSON.parse(clipboard)[0].x1,0)
+})
+
+test('line offset, trim and persistent length constraints round trip through history', () => {
+  const r = renderer([new C.Line(0,0,10,0), new C.Line(4,-5,4,5)])
+  r.setSelection([0,1])
+  assert.ok(r.editLine('trim'))
+  assert.equal(r.logicDisplay.components[0].x2,4)
+  r.setSelection([0])
+  assert.ok(r.editLine('offset',-2))
+  assert.equal(r.logicDisplay.components[2].y2,-2)
+  assert.ok(r.editLine('length',6))
+  assert.equal(r.logicDisplay.components[2].x2,6)
+  r.scaleSelection(2)
+  let line = r.logicDisplay.components[2]
+  assert.equal(line.x2-line.x1,6)
+  r.undo()
+  line = r.logicDisplay.components[2]
+  assert.equal(line.fixedLength,6)
+  r.setSelection([2])
+  assert.ok(r.editLine('unlock'))
+  assert.equal(line.fixedLength,undefined)
+})

@@ -23,7 +23,7 @@ import {
   BoundBox
 } from './Component'
 import { KeyboardHandler, MouseHandler } from './Input'
-import { LogicDisplay } from './Logic'
+import { isComponentList, LogicDisplay } from './Logic'
 import DefaultCursor from '../assets/cursors/normal.svg'
 import CrosshairCursor from '../assets/cursors/crosshair.svg'
 import MoveCursor from '../assets/cursors/move.svg'
@@ -107,6 +107,107 @@ export class GraphicsRenderer {
     this.selectedComponent = this.selectedComponents.length === 1 ? this.selectedComponents[0] : null
     this.temporarySelectedComponent = this.selectedComponent
     this.notifyComponentChange()
+  }
+
+  private lastPasteSource = ''
+  private pasteCount = 0
+
+  get hasClipboard(): boolean {
+    return window.api.clipboardFormats().some(type => type === 'application/x-compasscad-components' ||
+      type === 'text/plain' || type.startsWith('image/'))
+  }
+
+  private selectedCopies(): Component[] {
+    return this.getSelection().sort((a, b) => a - b).map(i => structuredClone(this.logicDisplay!.components[i]))
+  }
+
+  copySelection(): void {
+    const copies = this.selectedCopies()
+    if (copies.length && !this.isEditing) {
+      window.api.copyComponents(JSON.stringify(copies))
+      this.pasteCount = 0
+    }
+  }
+
+  private insertCopies(source: Component[], dx: number, dy: number): void {
+    if (!this.logicDisplay || !source.length || this.readonly || this.isEditing) return
+    const staged = new LogicDisplay()
+    staged.importJSON(structuredClone(source), staged.components)
+    const ids = new Map<string, string>()
+    for (const component of staged.components) {
+      if (component.groupId) {
+        if (!ids.has(component.groupId)) ids.set(component.groupId, crypto.randomUUID())
+        component.groupId = ids.get(component.groupId)
+      }
+      transformComponent(component, 1, dx, dy)
+    }
+    const start = this.logicDisplay.components.length
+    for (const component of staged.components) this.logicDisplay.components.push(component)
+    this.setSelection(staged.components.map((_, i) => start + i))
+    this.saveState()
+  }
+
+  pasteSelection(): void {
+    if (this.readonly || this.isEditing) return
+    const source = window.api.readComponents()
+    if (!source) {
+      this.pasteExternalClipboard()
+      return
+    }
+    try {
+      const components = JSON.parse(source)
+      if (!isComponentList(components) || !components.length) throw new Error('Invalid component list')
+      const count = source === this.lastPasteSource ? this.pasteCount + 1 : 1
+      const delta = count * this.gridSpacing
+      this.insertCopies(components, delta, delta)
+      this.lastPasteSource = source
+      this.pasteCount = count
+    } catch (error) { this.cleanLog(error) }
+  }
+
+  duplicateSelection(): void {
+    this.insertCopies(this.selectedCopies(), this.gridSpacing, this.gridSpacing)
+  }
+
+  editLine(action: 'offset' | 'trim' | 'length' | 'unlock', value = 0): boolean {
+    if (this.readonly || this.isEditing || !Number.isFinite(value)) return false
+    const lines = this.getSelection().map(i => this.logicDisplay!.components[i] as Line)
+    if (lines.length !== (action === 'trim' ? 2 : 1) || lines.some(c => c.type !== componentTypes.line)) return false
+    const line = lines[0]
+    const worldEnds = (l: Line) => {
+      const center = this.getRotationOrigin(l)
+      return [this.rotatePoint(l.x1, l.y1, center.x, center.y, l.rotation),
+        this.rotatePoint(l.x2, l.y2, center.x, center.y, l.rotation)]
+    }
+    const [a, b] = worldEnds(line)
+    const dx = b.x - a.x, dy = b.y - a.y
+    const length = Math.hypot(dx, dy)
+    if (!length) return false
+    if (action === 'offset') {
+      if (!value) return false
+      this.insertCopies([line], -dy * value / length, dx * value / length)
+      return true
+    }
+    if (action === 'trim') {
+      if (line.fixedLength) return false
+      const [c, d] = worldEnds(lines[1])
+      const sx = d.x - c.x, sy = d.y - c.y
+      const cross = dx * sy - dy * sx
+      if (!cross) return false
+      const t = ((c.x - a.x) * sy - (c.y - a.y) * sx) / cross
+      const u = ((c.x - a.x) * dy - (c.y - a.y) * dx) / cross
+      if (!(t > 0 && t < 1 && u >= 0 && u <= 1)) return false
+      Object.assign(line, { x1: a.x, y1: a.y, x2: a.x + dx * t, y2: a.y + dy * t, rotation: 0 })
+    } else if (action === 'length') {
+      if (value <= 0) return false
+      line.fixedLength = value
+    } else {
+      if (!line.fixedLength) return false
+      delete line.fixedLength
+    }
+    this.saveState()
+    this.notifyComponentChange()
+    return true
   }
 
   selectAll(): void {
@@ -487,19 +588,31 @@ export class GraphicsRenderer {
     return this.zoom
   }
 
+  private paperFitZoom(): number | null {
+    if (this.documentProperties?.canvas !== 'paper') return null
+    const { width, height } = worldPaperDimensions(this.documentProperties)
+    const w = this.displayRef?.clientWidth || this.displayWidth
+    const h = this.displayRef?.clientHeight || this.displayHeight
+    const fit = Math.min(w * 0.8 / width, h * 0.8 / height)
+    return Number.isFinite(fit) && fit > 0 ? fit : null
+  }
+
+  private clampZoom(zoom: number): number {
+    const base = this.paperFitZoom() ?? 1
+    return Math.min(15 * base, Math.max(0.2 * base, zoom))
+  }
+
   setDocumentProperties(properties: DocumentProperties | null): void {
     this.documentProperties = properties ? validateDocumentProperties(properties) : null
+    this.zoom = this.clampZoom(this.zoom)
+    this.targetZoom = this.clampZoom(this.targetZoom)
     this.applyPreferences()
     window.dispatchEvent(new Event('document-properties-changed'))
   }
 
   fitDocumentPaper(): void {
-    if (!this.documentProperties || this.documentProperties.canvas === 'infinite') return
-    const { width, height } = worldPaperDimensions(this.documentProperties)
-    const w = this.displayRef?.clientWidth || this.displayWidth
-    const h = this.displayRef?.clientHeight || this.displayHeight
-    const fittedScale = Math.min(w * 0.8 / width, h * 0.8 / height)
-    if (!Number.isFinite(fittedScale) || fittedScale <= 0) return
+    const fittedScale = this.paperFitZoom()
+    if (fittedScale === null) return
 
     this.camX = this.camY = 0
     this.zoom = this.targetZoom = fittedScale
@@ -1291,6 +1404,15 @@ export class GraphicsRenderer {
   // modify saveState() to respect the guard
   saveState(invalidateSpatialIndex: boolean = true) {
     if (this._bulkImportActive) return // suppressed during bulk import; caller snapshots once at the end
+    for (const component of this.logicDisplay?.components ?? []) {
+      const line = component as Line
+      if (line.type !== componentTypes.line || !line.fixedLength) continue
+      const dx = line.x2 - line.x1, dy = line.y2 - line.y1
+      const length = Math.hypot(dx, dy)
+      if (Math.abs(length - line.fixedLength) < 1e-10) continue
+      line.x2 = line.x1 + (length ? dx / length : 1) * line.fixedLength
+      line.y2 = line.y1 + (length ? dy / length : 0) * line.fixedLength
+    }
     this.cleanLog('saving state')
     this.undoStack.push(JSON.stringify(this.logicDisplay?.components))
     this.cleanLog(this.undoStack)
@@ -3160,7 +3282,7 @@ export class GraphicsRenderer {
     return btoa(binary)
   }
 
-  pasteWhateverTheFuckIsInTheClipboard() {
+  private pasteExternalClipboard() {
     navigator.clipboard.read().then((items) => {
       items.forEach(async (item) => {
         const types = item.types
@@ -3169,15 +3291,10 @@ export class GraphicsRenderer {
             if (type === 'text/plain') {
               const blob = await item.getType('text/plain')
               const text = await blob.text()
-              if (text.includes('active') && text.includes('type')) {
-                // <- It's a CompassCAD component!
-                // WIP: handle component pasting
-              } else {
-                this.logicDisplay?.addComponent(
-                  new Label(this.getCursorXLocal(), this.getCursorYLocal(), text)
-                )
-                this.saveState()
-              }
+              this.logicDisplay?.addComponent(
+                new Label(this.getCursorXLocal(), this.getCursorYLocal(), text)
+              )
+              this.saveState()
             } else if (type.startsWith('image/')) {
               const blob = await item.getType(type)
               const arrayBuffer = await blob.arrayBuffer()
@@ -3193,7 +3310,7 @@ export class GraphicsRenderer {
           }
         }
       })
-    })
+    }).catch(error => this.cleanLog(error))
   }
 
   rotateSelected() {
@@ -3275,6 +3392,7 @@ export class GraphicsRenderer {
             this.temporaryPoints[0] = this.temporaryPoints[2]
             this.temporaryPoints[1] = this.temporaryPoints[3]
             this.saveState()
+            window.dispatchEvent(new Event('line-drawn'))
           }
         }
         this.tooltip = getLocaleKey('editor.toolbox.addLine') + ' (' + getLocaleKey('editor.drawing.cancelHint') + ')'
@@ -4004,12 +4122,9 @@ export class GraphicsRenderer {
     }
   }
   setZoom(zoomFactor: number) {
-    var newZoom = this.zoom * zoomFactor
+    if (!Number.isFinite(zoomFactor) || zoomFactor <= 0) return
+    const newZoom = this.clampZoom(this.zoom * zoomFactor)
     this.cleanLog(newZoom)
-
-    // Paper fit may be far outside the old 0.25–15 range. Keep navigation usable
-    // at every supported paper scale, with the same limits on the infinite canvas.
-    if (!Number.isFinite(newZoom) || newZoom < 1e-9 || newZoom > 1e9) return
 
     this.targetZoom = newZoom
     const viewportCenterX = this.displayWidth / 2
@@ -4068,7 +4183,7 @@ export class GraphicsRenderer {
     const canvasRect = this.displayRef!.getBoundingClientRect()
     this.offsetX = canvasRect.left
     this.offsetY = canvasRect.top
-    this.zoom = this.targetZoom
+    this.zoom = this.targetZoom = this.clampZoom(this.targetZoom)
     this.updateCamera()
     this.clearGrid()
     this.drawDocumentPaper()
@@ -4421,15 +4536,6 @@ export const InitializeInstance = (renderer: GraphicsRenderer) => {
     },
     { ctrl: false }
   )
-  renderer.keyboard?.addKeyEvent(
-    true,
-    Types.default.KeyCodes.V,
-    () => {
-      renderer.pasteWhateverTheFuckIsInTheClipboard()
-    },
-    { ctrl: true }
-  )
-
   let animationFrameId: number | null
   let isWindowFocused = true
   let lastDrawTime = 0

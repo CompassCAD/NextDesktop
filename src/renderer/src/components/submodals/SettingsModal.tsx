@@ -22,11 +22,13 @@ import en from '../../locales/en.json'
 import modalStyle from '../../style/index.module.css'
 import style from '../../style/settings.module.css'
 import CloseIcon from '../../assets/icons/close.svg'
+import MeasureIcon from '../../assets/icons/measure.svg'
 import gear from '../../assets/icons/settings.svg'
 import grid from '../../assets/icons/blueprint.svg'
 import logo from '../../assets/icons/newlogo.svg'
 import jigsaw from '../../assets/icons/stroke-white-jigsaw.svg'
 import Clanker from '../../assets/icons/clanker.svg'
+import SaveIcon from '../../assets/icons/saveLogic.svg'
 
 const t = (key: keyof typeof en.settings): string => getLocaleKey(`settings.${key}`)
 type Section = 'general' | 'canvas' | 'measurements' | 'updates' | 'about' | 'extensions' | 'mcp'
@@ -266,7 +268,7 @@ export default function SettingsModal({ onClose }: { onClose: () => void }): Rea
     mcp: Clanker,
     general: gear,
     canvas: grid,
-    measurements: grid,
+    measurements: MeasureIcon,
     extensions: jigsaw,
     updates: updateIcon,
     about: logo
@@ -624,9 +626,11 @@ export default function SettingsModal({ onClose }: { onClose: () => void }): Rea
           )}
           <footer className={style.footer}>
             <button type="submit" disabled={saving}>
+              <img src={SaveIcon} />
               {saving ? t('saving') : t('save')}
             </button>
             <button type="button" onClick={close} disabled={saving}>
+              <img src={CloseIcon} />
               {t('cancel')}
             </button>
           </footer>

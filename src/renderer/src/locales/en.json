@@ -1,4 +1,30 @@
 {
+  "workflow": {
+    "copy": "Copy components",
+    "paste": "Paste components",
+    "duplicate": "Duplicate selection",
+    "offset": "Offset line",
+    "trim": "Trim first line to crossing",
+    "length": "Constrain line length",
+    "unlock": "Release line length",
+    "offsetPrompt": "Parallel offset in {unit} (use a negative value for the opposite side)",
+    "lengthPrompt": "Fixed line length in {unit}",
+    "invalidGeometry": "Enter a valid distance, or select two crossing segments with the first line unlocked.",
+    "palette": "Command palette",
+    "shortcuts": "Keyboard shortcuts",
+    "guide": "Guided first drawing",
+    "search": "Search commands or shortcuts",
+    "noMatches": "No matching commands",
+    "guideDraw": "Click the start and end of a line on the canvas.",
+    "guideSave": "Your line is ready. Save your drawing to finish.",
+    "finish": "Drawing saved. Guide complete.",
+    "save": "Save drawing",
+    "invalidBackup": "The backup contains unreadable components.",
+    "backupError": "Recovery error",
+    "recover": "Open the unsaved drawing from {name}? You can also open it later from Open backups.",
+    "replace": "Replace the current drawing with this backup?",
+    "cancel": "End guide"
+  },
   "name": "English",
   "editor": {
     "publicBeta": {

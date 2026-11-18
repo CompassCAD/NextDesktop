@@ -57,6 +57,7 @@ export class Point extends Component {
 }
 
 export class Line extends Component {
+    fixedLength?: number;
     x1: number;
     y1: number;
     x2: number;

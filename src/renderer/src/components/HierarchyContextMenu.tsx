@@ -1,3 +1,4 @@
+import { editCommands } from './EditCommands'
 import { useEffect, useLayoutEffect, useRef } from 'react'
 import { createPortal } from 'react-dom'
 import type { GraphicsRenderer } from '../engine/Engine'
@@ -46,6 +47,7 @@ export default function HierarchyContextMenu({ position, renderer, onClose, onRe
   const editable = !renderer.readonly
   const t = (key: 'title' | 'cancel' | 'selectAll' | 'clear' | 'group' | 'ungroup' | 'scale' | 'delete' | 'undo' | 'redo' | 'select' | 'navigate' | 'factor' | 'invalid') => getLocaleKey(`contextMenu.${key}`)
   const actions = [
+    ...editCommands(renderer),
     ...(onRename ? [{ label: getLocaleKey('contextMenu.rename'), run: onRename, enabled: editable && !editing }] : []),
     { label: t('delete'), run: () => renderer.deleteSelection(), enabled: editable && !editing && !!selection.length },
     ...(editing ? [{ label:t('cancel'), run:() => renderer.cancelEditing(), enabled:true }] : []),

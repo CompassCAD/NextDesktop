@@ -1,3 +1,4 @@
+import { BackupStore } from './BackupStore'
 import { ExtensionDecisions } from './ExtensionDecisions'
 import { renderPdf } from './PrintExport'
 import { CompassMcpServer } from './CompassMcpServer'
@@ -169,6 +170,23 @@ ipcMain.handle('dialog:showOpenFileDialog', (_event, options) => {
 })
 ipcMain.handle('dialog:showSaveFileDialog', (_event, options) => {
   return dialog.showSaveDialogSync(options)
+})
+const backups = new BackupStore(path.join(app.getPath('appData'), 'backups'))
+ipcMain.handle('backup:write', (event, source: string) => { checkExtensionSender(event); return backups.write(source) })
+ipcMain.handle('backup:pending', event => { checkExtensionSender(event); return backups.pending() })
+ipcMain.handle('backup:dismiss', (event, name: string) => { checkExtensionSender(event); backups.dismiss(name) })
+ipcMain.handle('backup:read', (event, name: string) => { checkExtensionSender(event); return backups.read(name) })
+ipcMain.handle('backup:choose', async (event, title: string) => {
+  checkExtensionSender(event)
+  fs.mkdirSync(backups.directory, { recursive: true })
+  const result = await dialog.showOpenDialog(mainWindow!, {
+    title, defaultPath: backups.directory, properties: ['openFile'],
+    filters: [{ name: 'CompassCAD', extensions: ['nextbackup'] }]
+  })
+  if (result.canceled) return
+  const file = result.filePaths[0]
+  if (path.relative(backups.directory, path.dirname(file)) !== '') throw new Error('Choose a file in the backups folder')
+  return path.basename(file)
 })
 ipcMain.handle('export:pdf', (event, page) => {
   if (event.sender !== mainWindow?.webContents) throw new Error('Unauthorized export request')

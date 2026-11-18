@@ -130,7 +130,7 @@ function fixture() {
         }
       }
     },
-    { window: { api } }
+    { window: { api, dispatchEvent() {} }, Event }
   )('src/renderer/src/utils/FileImporter.ts')
   const renderer = {
     logicDisplay: new LogicDisplay(),
@@ -321,29 +321,51 @@ test('A6 fit uses world zoom and remains navigable without changing exported siz
   r.setZoom(0.9)
   r.zoom = r.targetZoom
   assert.ok(Math.abs(r.viewZoom - fittedZoom * 0.9) < 1e-10)
-  r.setZoom(14.9 / r.viewZoom)
-  r.zoom = r.targetZoom
-  assert.ok(Math.abs(r.viewZoom - 14.9) < 0.0001)
-  r.setZoom(2)
-  assert.ok(Math.abs(r.targetZoom - 29.8) < 0.0001)
+  r.setZoom(1e20)
+  assert.equal(r.targetZoom, 15 * fittedZoom)
   const previous = r.targetZoom
-  for (const factor of [NaN, Infinity, 0, -1, 1e20]) r.setZoom(factor)
+  for (const factor of [NaN, Infinity, 0, -1]) r.setZoom(factor)
   assert.equal(r.targetZoom, previous)
   assert.equal(encodeDocument(geometry, r.documentProperties, true), before)
   assert.equal(encodeDocument(geometry, r.documentProperties, false), JSON.stringify(geometry))
 })
 
-test('all paper presets fit with an honest world zoom and removing paper preserves the camera', () => {
+test('infinite and legacy canvases clamp zoom requests and inherited paper zoom', () => {
   const r = Object.create(loadRenderer().prototype)
-  Object.assign(r, { displayWidth: 1200, displayHeight: 800, markDirty() {} })
+  Object.assign(r, {
+    zoom: 100, targetZoom: 0.01, camX: 0, camY: 0,
+    displayWidth: 800, displayHeight: 600, offsetX: 0, offsetY: 0,
+    mouse: { cursorXGlobal: 450, cursorYGlobal: 350 },
+    applyPreferences() {}, cleanLog() {}, markDirty() {}
+  })
+  for (const properties of [null, { ...defaults(), canvas: 'infinite' }]) {
+    r.zoom = 100
+    r.targetZoom = 0.01
+    r.setDocumentProperties(properties)
+    assert.equal(r.zoom, 15)
+    assert.equal(r.targetZoom, 0.2)
+    r.zoom = 14
+    r.setZoom(1.5)
+    assert.equal(r.targetZoom, 15)
+    r.zoom = 0.25
+    r.setZoom(2 / 3)
+    assert.equal(r.targetZoom, 0.2)
+  }
+})
+
+test('all paper presets fit and clamp zoom relative to sheet size and drawing scale', () => {
+  const r = Object.create(loadRenderer().prototype)
+  Object.assign(r, { displayWidth: 1200, displayHeight: 800, offsetX: 0, offsetY: 0,
+    mouse: { cursorXGlobal: 600, cursorYGlobal: 400 }, markDirty() {}, cleanLog() {} })
   for (const paper of Object.keys(model.paperSizes)) {
     for (const orientation of ['portrait', 'landscape']) {
-      for (const scaleDenominator of [1, 100, 1000]) {
+      for (const [scaleNumerator, scaleDenominator] of [[2, 1], [1, 1], [1, 100], [1, 1000]]) {
         r.documentProperties = {
           ...defaults(),
           canvas: 'paper',
           paper,
           orientation,
+          scaleNumerator,
           scaleDenominator
         }
         r.fitDocumentPaper()
@@ -353,14 +375,13 @@ test('all paper presets fit with an honest world zoom and removing paper preserv
         const height = world.height * r.zoom
         assert.ok(width <= 960.00001 && height <= 640.00001)
         assert.ok(Math.abs(width - 960) < 0.00001 || Math.abs(height - 640) < 0.00001)
+        r.setZoom(0.01)
+        assert.equal(r.targetZoom, r.zoom * 0.2)
+        r.setZoom(100)
+        assert.equal(r.targetZoom, r.zoom * 15)
       }
     }
   }
-  r.applyPreferences = () => {}
-  const previousZoom = r.zoom
-  r.setDocumentProperties(null)
-  assert.equal(r.zoom, previousZoom)
-  assert.equal(r.viewZoom, previousZoom)
 })
 
 test('title blocks stay within the bottom-left margins for every paper and scale', () => {
@@ -519,7 +540,7 @@ test('paper properties never change world strokes, markers, labels, or measureme
     r.drawMeasure(0, 0, 100, 0, '#fff', 2, 100, 30)
     return JSON.stringify(trace)
   }
-  for (const zoom of [0.01, 0.3, 1, 40]) {
+  for (const zoom of [0.2, 0.3, 1, 15]) {
     r.zoom = zoom
     r.setDocumentProperties({ ...defaults(), canvas: 'infinite' })
     const original = draw()

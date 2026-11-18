@@ -1,10 +1,19 @@
-import { contextBridge, ipcRenderer, OpenDialogSyncOptions } from 'electron'
+import { clipboard, contextBridge, ipcRenderer, OpenDialogSyncOptions } from 'electron'
 import { electronAPI } from '@electron-toolkit/preload'
 import fs from 'node:original-fs';
 import path from 'path'
 
 // Custom APIs for renderer
+const componentFormat = 'application/x-compasscad-components'
 const api = {
+  copyComponents: (source: string) => clipboard.writeBuffer(componentFormat, Buffer.from(source)),
+  readComponents: () => clipboard.readBuffer(componentFormat).toString('utf8'),
+  clipboardFormats: () => clipboard.availableFormats(),
+  writeBackup: (source: string) => ipcRenderer.invoke('backup:write', source),
+  pendingBackup: () => ipcRenderer.invoke('backup:pending'),
+  dismissBackup: (name: string) => ipcRenderer.invoke('backup:dismiss', name),
+  readBackup: (name: string) => ipcRenderer.invoke('backup:read', name),
+  chooseBackup: (title: string) => ipcRenderer.invoke('backup:choose', title),
   renderPdf: (page: { svg: string; widthMm: number; heightMm: number }) => ipcRenderer.invoke('export:pdf', page),
   mcpStatus: () => ipcRenderer.invoke('mcp:status'),
   mcpApply: () => ipcRenderer.invoke('mcp:apply'),

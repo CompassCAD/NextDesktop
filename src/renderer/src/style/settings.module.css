@@ -1,16 +1,6 @@
-@keyframes popup {
-  0% {
-    opacity: 0;
-    transform: scale(0.95);
-  }
-
-  100% {
-    opacity: 1;
-    transform: scale(1);
-  }
-}
 /* Match ModalProvider's surface, backdrop, spacing, and shared button styles. */
 .dialog {
+  composes: modal-popup from './index.module.css';
   padding: 20px;
   width: min(960px, calc(100vw - 48px));
   height: min(600px, calc(100dvh - 72px));
@@ -25,7 +15,6 @@
   border: 0.5px solid var(--outline);
   border-radius: 15px;
   box-shadow: 0px 0px 13px 3px rgba(0, 0, 0, 0.5);
-  animation: popup 0.25s cubic-bezier(0.31, 1.02, 0.51, 1.17);
   overflow: hidden;
   user-select: none;
 }

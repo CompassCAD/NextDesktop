@@ -38,7 +38,7 @@ function ToolbarButton(props: ToolbarButtonProps): React.ReactElement {
   const [tooltipPos, setPos] = useState<Vector2>({ x: 0, y: 0 });
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent): void => {
-      if (e.ctrlKey || e.metaKey || e.altKey) return
+      if (document.querySelector('dialog[open]') || e.defaultPrevented || e.ctrlKey || e.metaKey || e.altKey) return
       if ((e.keyCode === props.keyCode || e.keyCode === props.alternateKeyCode) && props.onAction) {
         if (
           document.activeElement &&
@@ -95,11 +95,7 @@ interface ToolbarButtonSingleton {
   state: number
 }
 
-export default function Toolbar(): React.ReactElement {
-  const [modeState, setModeState] = useState<number>(Types.default.NavigationTypes.Navigate)
-  const { renderer } = useRenderer();
-
-  const tools: ToolbarButtonSingleton[] = [
+export const drawingTools: ToolbarButtonSingleton[] = [
     {
       icon: SelectIcon,
       localeString: 'editor.toolbox.select',
@@ -200,6 +196,11 @@ export default function Toolbar(): React.ReactElement {
     }
   ]
 
+export default function Toolbar(): React.ReactElement {
+  const [modeState, setModeState] = useState<number>(Types.default.NavigationTypes.Navigate)
+  const { renderer } = useRenderer();
+
+
   useEffect(() => {
     if (!renderer) return;
     if (renderer) {
@@ -223,7 +224,7 @@ export default function Toolbar(): React.ReactElement {
   return (
     <>
       <div className={styles['workflow-toolbar']} onMouseDown={(e) => e.stopPropagation()}>
-        {tools.map((tool, index) => (
+        {drawingTools.map((tool, index) => (
           <ToolbarButton
             icon={tool.icon}
             key={index}

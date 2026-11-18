@@ -1,3 +1,4 @@
+import { editCommands } from './EditCommands'
 import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { useRenderer } from './RendererContextProvider'
 import { getLocaleKey } from '../locales/Locale'
@@ -60,7 +61,8 @@ export default function CanvasContextMenu(): React.JSX.Element | null {
   const editing = renderer.isEditing
   const editable = !renderer.readonly
   const t = (key: 'title' | 'cancel' | 'selectAll' | 'clear' | 'group' | 'ungroup' | 'scale' | 'delete' | 'undo' | 'redo' | 'select' | 'navigate' | 'factor' | 'invalid') => getLocaleKey(`contextMenu.${key}`)
-  const actions = [
+  const actions: { label: string; icon: string; shortcut?: string; enabled: boolean; run: () => void }[] = [
+    ...editCommands(renderer),
     ...(editing ? [{ label:t('cancel'), icon:CancelIcon, run:() => renderer.cancelEditing(), enabled:true }] : []),
     { label:t('undo'), icon:UndoIcon, run:() => renderer.undo(), enabled:!editing && editable && renderer.undoStack.length > 1 },
     { label:t('redo'), icon:RedoIcon, run:() => renderer.redo(), enabled:!editing && editable && renderer.redoStack.length > 0 },

@@ -31,6 +31,22 @@ export const createNewFile = (
   // A new sheet is a reference in the existing world-space viewport.
   renderer.onZoomUpdate?.()
   currentFilePath = undefined
+  window.dispatchEvent(new Event('drawing-replaced'))
+}
+
+export function replaceDrawing(renderer: GraphicsRenderer, components: unknown[], properties: DocumentProperties | null, filePath?: string): void {
+  // Construct everything before replacing the active design, including history.
+  const staged = new LogicDisplay()
+  staged.importJSON(components as Component[], staged.components)
+  renderer.logicDisplay!.components = staged.components
+  renderer.cleanUpBeforeImport()
+  renderer.setDocumentProperties(properties)
+  renderer.undoStack = [renderer.logicDisplay!.exportJSON()]
+  renderer.redoStack = []
+  renderer.postDoAfterComponentImport()
+  renderer.fitDocumentPaper()
+  currentFilePath = filePath
+  window.dispatchEvent(new Event('drawing-replaced'))
 }
 
 export const openFileAndParse = async (renderer: GraphicsRenderer): Promise<void> => {
@@ -55,17 +71,8 @@ export const openFileAndParse = async (renderer: GraphicsRenderer): Promise<void
     } else if (ext === 'dxf') {
       components = convertDxfToCompassCad(source, { scale: 10, flipY: true })
     } else throw new Error(getLocaleKey('documentProperties.unsupported'))
-    // Construct everything before replacing the active design, including history.
-    const staged = new LogicDisplay()
-    staged.importJSON(components as Component[], staged.components)
-    renderer.logicDisplay!.components = staged.components
-    renderer.cleanUpBeforeImport()
-    renderer.setDocumentProperties(properties)
-    renderer.undoStack = [renderer.logicDisplay!.exportJSON()]
-    renderer.redoStack = []
-    renderer.postDoAfterComponentImport()
-    renderer.fitDocumentPaper()
-    currentFilePath = filePath
+    replaceDrawing(renderer, components, properties, filePath)
+    window.dispatchEvent(new Event('drawing-opened'))
   } catch (error) {
     void toast(getLocaleKey('documentProperties.openError') + ' ' + String(error))
   }
@@ -126,6 +133,7 @@ export const saveFile = async (
     if (next && !renderer.documentProperties) renderer.setDocumentProperties(properties)
     // A legacy export does not redirect subsequent saves away from the Next document.
     if (next || !renderer.documentProperties) currentFilePath = targetPath
+    if (next || !renderer.documentProperties) window.dispatchEvent(new Event('drawing-saved'))
     void toast(getLocaleKey('editor.sysdialogs.saved').replace('{path}', () => targetPath!))
   } catch (error) {
     void toast(getLocaleKey('documentProperties.saveError') + ' ' + String(error))

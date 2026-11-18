@@ -5,6 +5,14 @@ declare global {
   interface Window {
     electron: ElectronAPI
     api: {
+      copyComponents: (source: string) => void,
+      readComponents: () => string,
+      clipboardFormats: () => string[],
+      writeBackup: (source: string) => Promise<string>,
+      pendingBackup: () => Promise<string | undefined>,
+      dismissBackup: (name: string) => Promise<void>,
+      readBackup: (name: string) => Promise<string>,
+      chooseBackup: (title: string) => Promise<string | undefined>,
       renderPdf: (page: { svg: string; widthMm: number; heightMm: number }) => Promise<Uint8Array>,
       mcpStatus: () => Promise<import('../shared/Mcp').McpStatus>,
       mcpApply: () => Promise<import('../shared/Mcp').McpStatus>,

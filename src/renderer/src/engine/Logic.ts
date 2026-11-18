@@ -15,6 +15,30 @@ import {
     BoundBox
 } from "./Component";
 
+/** Validate serialized component trees received from recovery files and the clipboard. */
+export function isComponentList(value: unknown): value is Component[] {
+    if (!Array.isArray(value)) return false;
+    return value.every(c => {
+        if (!c || typeof c.active !== 'boolean') return false;
+        const finite = (...keys: string[]) => keys.every(key => Number.isFinite(c[key]));
+        switch (c.type) {
+            case componentTypes.point: return finite('x', 'y');
+            case componentTypes.picture: return finite('x', 'y') && typeof c.pictureSource === 'string';
+            case componentTypes.label: return finite('x', 'y', 'fontSize') && typeof c.text === 'string';
+            case componentTypes.shape: return finite('x', 'y') && isComponentList(c.components);
+            case componentTypes.polygon: return Array.isArray(c.vectors) &&
+                c.vectors.every((p: Vector) => p && Number.isFinite(p.x) && Number.isFinite(p.y));
+            case componentTypes.arc: return finite('x1', 'y1', 'x2', 'y2', 'x3', 'y3');
+            case componentTypes.line:
+            case componentTypes.rectangle:
+            case componentTypes.boundBox:
+            case componentTypes.measure:
+            case componentTypes.circle: return finite('x1', 'y1', 'x2', 'y2');
+            default: return false;
+        }
+    });
+}
+
 export class LogicDisplay {
     components: Array<Component>;
     constructor() {
@@ -86,6 +110,7 @@ export class LogicDisplay {
                         line.name,
                         line.rotation
                     ));
+                    if (Number.isFinite(line.fixedLength) && line.fixedLength! > 0) (parent[parent.length - 1] as Line).fixedLength = line.fixedLength;
                     break;
                 case componentTypes.boundBox: {
                     const box = arrJSON[i] as Rectangle;
@@ -192,7 +217,7 @@ export class LogicDisplay {
             }
             if (parent.length > previousLength) {
                 const added = parent[parent.length - 1];
-                for (const key of ['groupId', 'groupName', 'imageScale', 'rotation', 'color', 'radius', 'name'] as const) {
+                for (const key of ['groupId', 'groupName', 'imageScale', 'rotation', 'color', 'radius', 'opacity', 'name'] as const) {
                     if (arrJSON[i][key] !== undefined) Object.assign(added, { [key]: arrJSON[i][key] });
                 }
             }
