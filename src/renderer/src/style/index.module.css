@@ -55,9 +55,12 @@
     width: 18px;
     height: 18px;
 }
+.window-bar-right .window-bar-button {
+    padding: 11px 22px;
+}
 .window-bar-mac-buttons {
-    display: flex;
-    padding-left: 8px;
+  display: flex;
+  padding-left: 8px;
 }
 .window-bar-button-mac {
     -webkit-appearance: none;
