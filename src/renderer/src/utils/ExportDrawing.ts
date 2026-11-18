@@ -16,7 +16,10 @@ export async function exportDrawing(renderer: GraphicsRenderer, format: 'svg' | 
     })
     await renderer.fb.ready()
     const page = await new ExportRenderer(text => renderer.getStrokeGlyphs(text), getLocaleKey).render(components, properties)
-    if (page.outsidePaper && await callGenericPrompt(getLocaleKey('documentProperties.exportOutsidePaper'), { buttons: 'yesno' }) !== 'yes') return
+    if (page.outsidePaper && await callGenericPrompt(getLocaleKey('documentProperties.exportOutsidePaperHeading'), {
+      body: getLocaleKey('documentProperties.exportOutsidePaper'),
+      buttons: 'yesno'
+    }) !== 'yes') return
     const result = await window.api.showSaveFileDialog({
       title: getLocaleKey(format === 'svg' ? 'editor.menu.exportToSvg' : 'editor.menu.exportToPdf'),
       defaultPath: (properties.name || getLocaleKey('editor.sysdialogs.defaultName')).replace(/[<>:"/\\|?*]/g, '_') + '.' + format,

@@ -1,4 +1,11 @@
 {
+  "unsavedChanges": {
+    "heading": "Save changes to this drawing?",
+    "body": "Your changes will be lost if you continue without saving.",
+    "save": "Save",
+    "discard": "Don't Save",
+    "nextRequired": "Choose a .cnext file to preserve the drawing's document properties."
+  },
   "workflow": {
     "copy": "Copy components",
     "paste": "Paste components",
@@ -347,7 +354,8 @@
     "create": "Create design",
     "apply": "Apply",
     "nextFiles": "CompassCAD NEXT document",
-    "legacyWarning": "Export geometry only to legacy .ccad? Document properties, paper settings, scale and measurement preferences will not be included. Save a .cnext copy to preserve them.",
+    "legacyWarningHeading": "Export geometry only to legacy .ccad?",
+    "legacyWarning": "Document properties, paper settings, scale and measurement preferences will not be included. Save a .cnext copy to preserve them.",
     "unsupported": "Choose a supported document extension (.cnext or .ccad for saving).",
     "openError": "Could not open the document.",
     "saveError": "Could not save the document.",
@@ -367,6 +375,7 @@
     "includeTitleBlock": "Include border & title block",
     "advancedSetup": "More document options",
     "backToTemplates": "Back to templates",
-    "exportOutsidePaper": "Part of the drawing is outside the paper and will be cropped. Export this paper anyway? Choose No to adjust the paper size or drawing scale in Document Properties."
+    "exportOutsidePaperHeading": "Export with cropping?",
+    "exportOutsidePaper": "Part of the drawing is outside the paper and will be cropped. Choose No to adjust the paper size or drawing scale in Document Properties."
   }
 }

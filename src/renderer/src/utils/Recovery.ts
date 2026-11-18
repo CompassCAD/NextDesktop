@@ -1,10 +1,9 @@
 import { isComponentList } from '../engine/Logic'
 import type { GraphicsRenderer } from '../engine/Engine'
 import { getLocaleKey } from '../locales/Locale'
-import { callGenericPrompt } from '../components/GenericPrompt'
 import { toast } from '../components/Toast'
 import { decodeDocument } from './DocumentProperties'
-import { replaceDrawing } from './FileImporter'
+import { confirmDrawingDeparture, replaceDrawing } from './FileImporter'
 
 function failure(error: unknown): void {
   void toast(getLocaleKey('workflow.backupError') + ' ' + String(error))
@@ -17,8 +16,7 @@ export async function openBackup(renderer: GraphicsRenderer, pending?: string): 
     const source = await window.api.readBackup(name)
     const drawing = decodeDocument(source, !source.trimStart().startsWith('['))
     if (!isComponentList(drawing.components)) throw new Error(getLocaleKey('workflow.invalidBackup'))
-    if ((renderer.logicDisplay?.components.length || renderer.documentProperties) &&
-      await callGenericPrompt(getLocaleKey('workflow.replace'), { buttons: 'yesno' }) !== 'yes') return false
+    if (!(await confirmDrawingDeparture(renderer))) return false
     replaceDrawing(renderer, drawing.components, drawing.properties)
     renderer.setMode(renderer.modes.Select)
     return true

@@ -543,14 +543,15 @@ input[type="checkbox"] {
   background-color: rgba(0, 0, 0, 0.25);
 }
 .prompt-container {
-    background-color: var(--primary);
-    backdrop-filter: blur(5px);
-    border: 0.5px solid var(--outline);
-    box-shadow: 0px 0px 13px 3px rgba(0, 0, 0, 0.5);
-    border-radius: 15px;
-    padding: 10px;
-    display: flex;
-    flex-direction: column;
+  background-color: var(--primary);
+  backdrop-filter: blur(5px);
+  border: 0.5px solid var(--outline);
+  box-shadow: 0px 0px 13px 3px rgba(0, 0, 0, 0.5);
+  border-radius: 15px;
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  animation: popup 0.25s cubic-bezier(0.31, 1.02, 0.51, 1.17);
 }
 .prompt-container h3 {
     padding: 10px;
@@ -597,6 +598,28 @@ input[type="checkbox"] {
 .prompt-container .prompt-actions button:hover {
     background-color: var(--secondary);
 }
+.generic-prompt {
+    color: var(--text);
+    width: min(420px, calc(100vw - 48px));
+    margin: auto;
+}
+.generic-prompt:not([open]) {
+    display: none;
+}
+.generic-prompt::backdrop {
+    background-color: rgba(0, 0, 0, 0.45);
+}
+.prompt-body {
+    margin: 6px 10px;
+    line-height: 1.5;
+}
+.generic-prompt .prompt-actions {
+    flex-wrap: wrap;
+}
+.generic-prompt .prompt-actions .prompt-button-confirm {
+    background-color: var(--secondary);
+    border-color: var(--theme);
+}
 .toolbar-tooltip {
   position: absolute;
   display: flex;
@@ -625,17 +648,36 @@ input[type="checkbox"] {
   font-family: var(--font-monospace);
 }
 
-.slider-maintrack {
-  position: relative;
-  width: 100%;
+.slider-maintrack,
+:global(progress) {
   height: 24px;
   border-radius: 999px;
   background-color: var(--secondary);
   border: 0.5px solid var(--outline);
   box-sizing: border-box;
   overflow: hidden;
+}
+
+.slider-maintrack {
+  position: relative;
+  width: 100%;
   touch-action: none;
   user-select: none;
+}
+
+:global(progress) {
+  appearance: none;
+}
+
+:global(progress)::-webkit-progress-bar {
+  background: transparent;
+  padding: 2.5px;
+}
+
+:global(progress)::-webkit-progress-value {
+  background-color: var(--theme);
+  border-radius: 999px;
+  transition: width 0.2s ease;
 }
 
 .slider-value-text {
@@ -749,32 +791,27 @@ input[type="checkbox"] {
   transition: all 0.2s ease;
 }
 .loader {
+  --color-1: #fff;
   width: 24px;
-  aspect-ratio: 1;
-  display: grid;
+  height: 24px;
   border-radius: 50%;
-  background:
-    linear-gradient(0deg ,rgb(239 239 239/50%) 30%,#0000 0 70%,var(--text) 0) 50%/8% 100%,
-    linear-gradient(90deg,rgb(239 239 239/25%) 30%,#0000 0 70%,rgb(239 239 239/75% ) 0) 50%/100% 8%;
-  background-repeat: no-repeat;
-  animation: l23 1s infinite steps(12);
+  display: inline-block;
+  border-top: 3px solid var(--color-1);
+  border-right: 3px solid transparent;
+  box-sizing: border-box;
+  animation: rotation 0.5s linear infinite;
 }
-.loader::before,
-.loader::after {
-   content: "";
-   grid-area: 1/1;
-   border-radius: 50%;
-   background: inherit;
-   opacity: 0.915;
-   transform: rotate(30deg);
+
+@keyframes rotation {
+  0% {
+    transform: rotate(0deg);
+  }
+
+  100% {
+    transform: rotate(360deg);
+  }
 }
-.loader::after {
-   opacity: 0.83;
-   transform: rotate(60deg);
-}
-@keyframes l23 {
-  100% {transform: rotate(1turn)}
-}
+
 .plugin-container-button-group {
   width: 100%;
   display: flex;

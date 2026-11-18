@@ -16,6 +16,7 @@ import { ToastContainer } from './components/Toast'
 import { KonamiCode } from './components/KonamiCodeDetector'
 import { DevModeProvider, useDevMode } from './exports'
 import GenericPrompt from './components/GenericPrompt'
+import { confirmDrawingDeparture } from './utils/FileImporter'
 
 function AppContent(): React.JSX.Element {
   const [, refreshSettings] = useState(0)
@@ -28,6 +29,18 @@ function AppContent(): React.JSX.Element {
   const { renderer, isReady, createRenderer } = useRenderer()
   const { isDevMode, enableDevMode } = useDevMode()
   const host = usePluginHost() // <-- Access Lua host
+
+  useEffect(() => {
+    if (!renderer) return
+    return window.api.onDrawingDeparture(async () => {
+      try {
+        return await confirmDrawingDeparture(renderer)
+      } catch (error) {
+        console.error('Could not check the drawing before leaving', error)
+        return false
+      }
+    })
+  }, [renderer])
 
   const resize = useCallback((): void => {
     if (canvas.current && renderer) {

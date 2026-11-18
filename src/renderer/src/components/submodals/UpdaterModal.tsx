@@ -41,7 +41,7 @@ export default function UpdaterModal(): React.ReactElement {
   switch (status) {
     case 'idle':
     case 'checking':
-      content = <p role="status" style={{display: 'flex', gap: '10px'}}><span className={styles['loader']}></span> {getLocaleKey('editor.updaterModal.checkingForUpdates')}</p>
+      content = <p role="status" style={{display: 'flex', gap: '10px', alignItems: 'center'}}><span className={styles['loader']}></span> {getLocaleKey('editor.updaterModal.checkingForUpdates')}</p>
       break
     case 'not-available':
       content = (
@@ -75,7 +75,7 @@ export default function UpdaterModal(): React.ReactElement {
     case 'downloading':
       content = (
         <>
-          <p role="status">{getLocaleKey('editor.updaterModal.downloadingUpdate')} {roundedProgress}%</p>
+          <p role="status" style={{display: 'flex', alignItems: 'center', gap: '10px'}}><span className={styles['loader']}></span> {getLocaleKey('editor.updaterModal.downloadingUpdate')} {roundedProgress}%</p>
           <progress value={roundedProgress} max={100} style={{ width: '100%' }}>
             {roundedProgress}%
           </progress>

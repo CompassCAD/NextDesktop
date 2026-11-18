@@ -101,7 +101,7 @@ function fixture() {
   const state = {
     path: 'drawing.cnext',
     content: encodeDocument([new Line(0, 0, 100, 0)], defaults(), true),
-    answer: 'yes',
+    answer: 'discard',
     failWrite: false
   }
   const api = {
@@ -162,6 +162,35 @@ test('open Next then legacy resets per-document properties and history', async (
   await f.file.openFileAndParse(f.renderer)
   assert.equal(f.renderer.documentProperties, null)
   assert.equal(f.renderer.logicDisplay.components[0].x2, 3)
+  assert.equal(f.calls.prompts, 1)
+})
+
+test('leaving a changed drawing requires discard or a successful save', async () => {
+  const f = fixture()
+  const original = f.renderer.logicDisplay.components
+  f.state.answer = 'cancel'
+  await f.file.openFileAndParse(f.renderer)
+  assert.equal(f.renderer.logicDisplay.components, original)
+
+  f.state.answer = 'save'
+  f.state.path = undefined
+  assert.equal(await f.file.confirmDrawingDeparture(f.renderer), false)
+  f.state.path = 'drawing.cnext'
+  f.state.failWrite = true
+  assert.equal(await f.file.confirmDrawingDeparture(f.renderer), false)
+  f.state.failWrite = false
+  assert.equal(await f.file.confirmDrawingDeparture(f.renderer), true)
+  assert.equal(f.calls.writes.length, 1)
+
+  const prompts = f.calls.prompts
+  assert.equal(await f.file.confirmDrawingDeparture(f.renderer), true)
+  assert.equal(f.calls.prompts, prompts)
+
+  f.renderer.documentProperties.name = 'Changed title'
+  f.state.answer = 'discard'
+  assert.equal(await f.file.confirmDrawingDeparture(f.renderer), true)
+  f.state.answer = 'cancel'
+  assert.equal(await f.file.confirmDrawingDeparture(f.renderer), false)
 })
 
 test('invalid and cancelled opens leave the design, properties and history intact', async () => {

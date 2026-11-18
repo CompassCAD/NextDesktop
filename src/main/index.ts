@@ -6,7 +6,7 @@ import { readMcpSettings } from '../shared/Mcp'
 import { ExtensionService } from './ExtensionService'
 import { randomUUID } from 'node:crypto'
 import { SettingsStore } from './SettingsStore'
-import { app, shell, BrowserWindow, ipcMain, dialog } from 'electron'
+import { app, shell, BrowserWindow, ipcMain, dialog, autoUpdater as nativeUpdater } from 'electron'
 import { join } from 'path'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import icon from '../../resources/icon.png?asset';
@@ -28,6 +28,44 @@ autoUpdater.autoInstallOnAppQuit = false;
 
 // Declare mainWindow as a global variable
 let mainWindow: BrowserWindow | null = null;
+let departureReady = false
+let departureApproved = false
+let pendingDeparture: (() => void) | undefined
+let installingUpdate = false
+
+function requestDrawingDeparture(proceed: () => void): void {
+  if (pendingDeparture) return
+  if (!mainWindow || !departureReady) {
+    proceed()
+    return
+  }
+  pendingDeparture = proceed
+  mainWindow.webContents.send('drawing:departure-request')
+}
+
+ipcMain.on('drawing:departure-ready', (event, ready: boolean) => {
+  if (event.sender !== mainWindow?.webContents || event.senderFrame !== event.sender.mainFrame) return
+  departureReady = ready === true
+  if (!departureReady) pendingDeparture = undefined
+})
+ipcMain.on('drawing:departure-result', (event, approved: boolean) => {
+  if (event.sender !== mainWindow?.webContents || event.senderFrame !== event.sender.mainFrame) return
+  const proceed = pendingDeparture
+  pendingDeparture = undefined
+  if (approved === true) proceed?.()
+})
+app.on('before-quit', (event) => {
+  if (!departureReady || departureApproved) return
+  event.preventDefault()
+  requestDrawingDeparture(() => {
+    departureApproved = true
+    app.quit()
+  })
+})
+nativeUpdater.on('before-quit-for-update', () => {
+  if (installingUpdate) departureApproved = true
+})
+autoUpdater.on('error', () => { installingUpdate = false })
 
 const send = (channel: string, ...args: any[]) => {
   mainWindow?.webContents.send(channel, ...args);
@@ -89,8 +127,29 @@ function createWindow(): void {
     }
   })
 
-  mainWindow.webContents.on('did-start-loading', () => { extensionService.dispose(); disconnectMcpRenderer() })
-  mainWindow.on('closed', () => { extensionService.dispose(); disconnectMcpRenderer() })
+  mainWindow.webContents.on('did-start-loading', () => {
+    departureReady = false
+    pendingDeparture = undefined
+    extensionService.dispose()
+    disconnectMcpRenderer()
+  })
+  mainWindow.on('close', (event) => {
+    if (!departureReady || departureApproved) return
+    event.preventDefault()
+    requestDrawingDeparture(() => {
+      departureApproved = true
+      mainWindow?.close()
+    })
+  })
+  mainWindow.on('closed', () => {
+    mainWindow = null
+    departureReady = false
+    departureApproved = false
+    pendingDeparture = undefined
+    installingUpdate = false
+    extensionService.dispose()
+    disconnectMcpRenderer()
+  })
   mainWindow.on('ready-to-show', () => {
     mainWindow?.show()
   })
@@ -166,10 +225,10 @@ ipcMain.on('fullscreen', () => {
 })
 ipcMain.on('close', () => mainWindow?.close())
 ipcMain.handle('dialog:showOpenFileDialog', (_event, options) => {
-  return dialog.showOpenDialogSync(options)
+  return mainWindow ? dialog.showOpenDialogSync(mainWindow, options) : dialog.showOpenDialogSync(options)
 })
 ipcMain.handle('dialog:showSaveFileDialog', (_event, options) => {
-  return dialog.showSaveDialogSync(options)
+  return mainWindow ? dialog.showSaveDialogSync(mainWindow, options) : dialog.showSaveDialogSync(options)
 })
 const backups = new BackupStore(path.join(app.getPath('appData'), 'backups'))
 ipcMain.handle('backup:write', (event, source: string) => { checkExtensionSender(event); return backups.write(source) })
@@ -210,7 +269,13 @@ ipcMain.handle('req-version', () => app.getVersion());
 ipcMain.handle('update:check', () => autoUpdater.checkForUpdates());
 ipcMain.handle('update:download', () => autoUpdater.downloadUpdate());
 ipcMain.handle('update:preview-download', () => previewSlowUpdateDownload());
-ipcMain.handle('update:install', () => autoUpdater.quitAndInstall());
+ipcMain.handle('update:install', (event) => {
+  checkExtensionSender(event)
+  requestDrawingDeparture(() => {
+    installingUpdate = true
+    autoUpdater.quitAndInstall()
+  })
+})
 
 // In this file you can include the rest of your app's specific main process
 // code. You can also put them in separate files and require them here.
@@ -279,7 +344,6 @@ ipcMain.handle('extensions:call', (event, token: string, operation: string, args
   checkExtensionSender(event)
   return extensionService.call(token, operation, args)
 })
-app.on('before-quit', () => extensionService.dispose())
 
 let mcpRendererReady = false
 const mcpPending = new Map<string, { resolve: (value: unknown) => void; reject: (error: Error) => void; timer: NodeJS.Timeout }>()
@@ -313,4 +377,4 @@ ipcMain.on('mcp:reply', (event, id: string, reply: { result?: unknown; error?: s
   if (reply.error) request.reject(new Error(reply.error))
   else request.resolve(reply.result)
 })
-app.on('before-quit', () => { disconnectMcpRenderer(); void mcpServer.stop() })
+app.on('will-quit', () => { disconnectMcpRenderer(); void mcpServer.stop() })

@@ -13,6 +13,33 @@ import {
 } from './DocumentProperties'
 
 let currentFilePath: string | undefined
+const emptyDrawing = '[null,[]]'
+const savedDrawings = new WeakMap<GraphicsRenderer, string>()
+const snapshot = (renderer: GraphicsRenderer): string =>
+  JSON.stringify([renderer.documentProperties, renderer.logicDisplay?.components ?? []])
+let confirmingDeparture = false
+
+export async function confirmDrawingDeparture(renderer: GraphicsRenderer): Promise<boolean> {
+  if (confirmingDeparture) return false
+  if (snapshot(renderer) === (savedDrawings.get(renderer) ?? emptyDrawing)) return true
+
+  confirmingDeparture = true
+  try {
+    const choice = await callGenericPrompt(getLocaleKey('unsavedChanges.heading'), {
+      body: getLocaleKey('unsavedChanges.body'),
+      buttons: [
+        { label: getLocaleKey('common.cancel'), value: 'cancel', role: 'cancel' },
+        { label: getLocaleKey('unsavedChanges.discard'), value: 'discard' },
+        { label: getLocaleKey('unsavedChanges.save'), value: 'save', role: 'confirm' }
+      ]
+    })
+    if (choice === 'save') return await saveFile(renderer, { preserveProperties: true })
+    return choice === 'discard'
+  } finally {
+    confirmingDeparture = false
+  }
+}
+
 const extension = (path: string): string => path.split('.').pop()!.toLowerCase()
 export const getDialogPath = (file: string | string[] | undefined): string | undefined =>
   Array.isArray(file) ? file[0] : file || undefined
@@ -31,6 +58,7 @@ export const createNewFile = (
   // A new sheet is a reference in the existing world-space viewport.
   renderer.onZoomUpdate?.()
   currentFilePath = undefined
+  savedDrawings.delete(renderer)
   window.dispatchEvent(new Event('drawing-replaced'))
 }
 
@@ -46,6 +74,8 @@ export function replaceDrawing(renderer: GraphicsRenderer, components: unknown[]
   renderer.postDoAfterComponentImport()
   renderer.fitDocumentPaper()
   currentFilePath = filePath
+  if (filePath) savedDrawings.set(renderer, snapshot(renderer))
+  else savedDrawings.delete(renderer)
   window.dispatchEvent(new Event('drawing-replaced'))
 }
 
@@ -62,6 +92,7 @@ export const openFileAndParse = async (renderer: GraphicsRenderer): Promise<void
     })
     const filePath = getDialogPath(file)
     if (!filePath) return
+    if (!(await confirmDrawingDeparture(renderer))) return
     const ext = extension(filePath)
     const source = window.api.readFile(filePath)
     let components: unknown[]
@@ -80,8 +111,8 @@ export const openFileAndParse = async (renderer: GraphicsRenderer): Promise<void
 
 export const saveFile = async (
   renderer: GraphicsRenderer,
-  options?: { forceSaveDialog?: boolean }
-): Promise<void> => {
+  options?: { forceSaveDialog?: boolean; preserveProperties?: boolean }
+): Promise<boolean> => {
   try {
     // Properties always require Next format; imported formats are never overwritten.
     let targetPath = options?.forceSaveDialog ? undefined : currentFilePath
@@ -102,25 +133,28 @@ export const saveFile = async (
           title: getLocaleKey('editor.sysdialogs.saveFile'),
           filters: [
             { name: getLocaleKey('documentProperties.nextFiles'), extensions: ['cnext'] },
-            { name: getLocaleKey('editor.sysdialogs.compassFiles'), extensions: ['ccad'] }
+            ...(options?.preserveProperties && renderer.documentProperties
+              ? []
+              : [{ name: getLocaleKey('editor.sysdialogs.compassFiles'), extensions: ['ccad'] }])
           ],
           defaultPath: base + '.cnext'
         })
       )
     }
-    if (!targetPath) return
+    if (!targetPath) return false
     if (!/\.[^\\/.]+$/.test(targetPath)) targetPath += '.cnext'
     const next = extension(targetPath) === 'cnext'
     if (!next && extension(targetPath) !== 'ccad')
       throw new Error(getLocaleKey('documentProperties.unsupported'))
-    if (
-      !next &&
-      renderer.documentProperties &&
-      (await callGenericPrompt(getLocaleKey('documentProperties.legacyWarning'), {
+    if (!next && renderer.documentProperties) {
+      if (options?.preserveProperties)
+        throw new Error(getLocaleKey('unsavedChanges.nextRequired'))
+      const answer = await callGenericPrompt(getLocaleKey('documentProperties.legacyWarningHeading'), {
+        body: getLocaleKey('documentProperties.legacyWarning'),
         buttons: 'yesno'
-      })) !== 'yes'
-    )
-      return
+      })
+      if (answer !== 'yes') return false
+    }
     const properties = renderer.documentProperties || {
       ...defaultDocumentProperties(),
       measurementUnit: renderer.unitMeasure as DocumentProperties['measurementUnit'],
@@ -132,10 +166,16 @@ export const saveFile = async (
     )
     if (next && !renderer.documentProperties) renderer.setDocumentProperties(properties)
     // A legacy export does not redirect subsequent saves away from the Next document.
-    if (next || !renderer.documentProperties) currentFilePath = targetPath
-    if (next || !renderer.documentProperties) window.dispatchEvent(new Event('drawing-saved'))
+    const saved = next || !renderer.documentProperties
+    if (saved) {
+      currentFilePath = targetPath
+      savedDrawings.set(renderer, snapshot(renderer))
+      window.dispatchEvent(new Event('drawing-saved'))
+    }
     void toast(getLocaleKey('editor.sysdialogs.saved').replace('{path}', () => targetPath!))
+    return saved
   } catch (error) {
     void toast(getLocaleKey('documentProperties.saveError') + ' ' + String(error))
+    return false
   }
 }

@@ -15,7 +15,7 @@ import {
   type DocumentProperties
 } from '../../utils/DocumentProperties'
 import { formatMeasurement, measurementUnits } from '../../utils/SettingsOptions'
-import { createNewFile } from '../../utils/FileImporter'
+import { confirmDrawingDeparture, createNewFile } from '../../utils/FileImporter'
 import style from '../../style/settings.module.css'
 import modalStyle from '../../style/index.module.css'
 import CloseIcon from '../../assets/icons/close.svg'
@@ -106,14 +106,16 @@ export default function DocumentPropertiesModal({
       />
     </label>
   )
-  const apply = (event: React.FormEvent): void => {
+  const apply = async (event: React.FormEvent): Promise<void> => {
     event.preventDefault()
     if (!valid || !renderer) {
       setError(t('invalid'))
       return
     }
-    if (creating) createNewFile(renderer, valid)
-    else {
+    if (creating) {
+      if (!(await confirmDrawingDeparture(renderer))) return
+      createNewFile(renderer, valid)
+    } else {
       renderer.setDocumentProperties(valid)
       if (fitPaper) renderer.fitDocumentPaper()
     }

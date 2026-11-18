@@ -5,6 +5,7 @@ declare global {
   interface Window {
     electron: ElectronAPI
     api: {
+      onDrawingDeparture: (confirm: () => Promise<boolean>) => () => void,
       copyComponents: (source: string) => void,
       readComponents: () => string,
       clipboardFormats: () => string[],

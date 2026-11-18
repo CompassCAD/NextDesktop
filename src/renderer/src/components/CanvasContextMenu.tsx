@@ -6,12 +6,12 @@ import styles from '../style/index.module.css'
 import CancelIcon from '../assets/icons/back.svg'
 import UndoIcon from '../assets/icons/undo.svg'
 import RedoIcon from '../assets/icons/redo.svg'
-import SelectAllIcon from '../assets/icons/boundbox.svg'
+import SelectAllIcon from '../assets/icons/selectall.svg'
 import ClearIcon from '../assets/icons/close.svg'
-import GroupIcon from '../assets/icons/hierarchy.svg'
-import UngroupIcon from '../assets/icons/restoredown.svg'
-import FrontIcon from '../assets/icons/arrow-up.svg'
-import BackIcon from '../assets/icons/arrow-down.svg'
+import GroupIcon from '../assets/icons/group.svg'
+import UngroupIcon from '../assets/icons/ungroup.svg'
+import FrontIcon from '../assets/icons/uplayer.svg'
+import BackIcon from '../assets/icons/downlayer.svg'
 
 export default function CanvasContextMenu(): React.JSX.Element | null {
   const { renderer } = useRenderer()

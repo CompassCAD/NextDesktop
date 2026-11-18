@@ -6,6 +6,17 @@ import path from 'path'
 // Custom APIs for renderer
 const componentFormat = 'application/x-compasscad-components'
 const api = {
+  onDrawingDeparture: (confirm: () => Promise<boolean>) => {
+    const listener = async (): Promise<void> => {
+      ipcRenderer.send('drawing:departure-result', await confirm())
+    }
+    ipcRenderer.on('drawing:departure-request', listener)
+    ipcRenderer.send('drawing:departure-ready', true)
+    return () => {
+      ipcRenderer.removeListener('drawing:departure-request', listener)
+      ipcRenderer.send('drawing:departure-ready', false)
+    }
+  },
   copyComponents: (source: string) => clipboard.writeBuffer(componentFormat, Buffer.from(source)),
   readComponents: () => clipboard.readBuffer(componentFormat).toString('utf8'),
   clipboardFormats: () => clipboard.availableFormats(),

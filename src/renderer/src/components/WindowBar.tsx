@@ -42,13 +42,13 @@ import ZoomInIcon from '../assets/icons/zoomin.svg'
 import ZoomOutIcon from '../assets/icons/zoomout.svg'
 import SnapOn from '../assets/icons/snapped.svg'
 import SnapOff from '../assets/icons/snap.svg'
+import SelectAllIcon from '../assets/icons/selectall.svg'
 // Window buttons
 import Minimize from '../assets/icons/minimize.svg'
 import Maximize from '../assets/icons/maximize.svg'
 import Close from '../assets/icons/close.svg'
 import RestoreDown from '../assets/icons/restoredown.svg'
 import { Vector2 } from '@renderer/engine/Engine'
-import { callGenericPrompt } from './GenericPrompt'
 
 function MenuButton(props: {
   icon?: string
@@ -176,10 +176,9 @@ export default function WindowBar(): React.ReactElement {
     window.addEventListener('document-properties-changed', refresh)
     return () => window.removeEventListener('document-properties-changed', refresh)
   }, [])
-  const newDesign = async (): Promise<void> => {
+  const newDesign = (): void => {
     setMenuOpened(false)
-    if (renderer && ((!renderer.logicDisplay?.components.length && !renderer.documentProperties) ||
-      await callGenericPrompt(getLocaleKey('editor.menu.newDesignWarning'), { buttons: 'yesno' }) === 'yes')) setDocumentModal('new')
+    if (renderer) setDocumentModal('new')
   }
 
   window.electron.ipcRenderer.on('isMaximized', (_event, isMaximized: boolean) => {
@@ -426,7 +425,7 @@ export default function WindowBar(): React.ReactElement {
     ...editCommands(renderer).map(action => ({ title: action.label, icon: action.icon, shortcut: action.shortcut, enabled: action.enabled, run: action.run })),
     { title: getLocaleKey('contextMenu.undo'), shortcut: controlKey + '+Z', run: renderer.undo, icon: UndoIcon },
     { title: getLocaleKey('contextMenu.redo'), shortcut: controlKey + '+Y', run: renderer.redo, icon: RedoIcon },
-    { title: getLocaleKey('contextMenu.selectAll'), shortcut: controlKey + '+A', run: () => renderer.selectAll() },
+    { title: getLocaleKey('contextMenu.selectAll'), shortcut: controlKey + '+A', run: () => renderer.selectAll(), icon: SelectAllIcon },
     { title: getLocaleKey('contextMenu.group'), shortcut: controlKey + '+G', run: () => renderer.groupSelection() },
     { title: getLocaleKey('contextMenu.ungroup'), shortcut: controlKey + '+Shift+G', run: () => renderer.groupSelection(true) },
     { title: getLocaleKey('contextMenu.delete'), shortcut: 'Delete', run: () => renderer.deleteSelection() },

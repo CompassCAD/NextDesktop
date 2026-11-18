@@ -13,7 +13,8 @@ export interface PromptButton {
 }
 
 export interface GenericPromptOptions {
-  /** A preset, or up to two custom buttons. Defaults to 'ok'. */
+  body?: string
+  /** A preset or a list of custom buttons. Defaults to 'ok'. */
   buttons?: PromptPreset | PromptButton[]
 }
 
@@ -30,31 +31,30 @@ const getPresets = (): Record<PromptPreset, PromptButton[]> => ({
 })
 
 const resolveButtons = (buttons: GenericPromptOptions['buttons'] = 'ok'): PromptButton[] =>
-  typeof buttons === 'string' ? getPresets()[buttons] : buttons.slice(0, 2)
+  typeof buttons === 'string' ? getPresets()[buttons] : buttons
 
 type ShowFn = (
-  message: string,
+  heading: string,
+  body: string | undefined,
   buttons: PromptButton[],
   resolve: (value: string | null) => void
 ) => void
 
 const promptController: { show: ShowFn } = {
-  show: () => {
-    console.error('GenericPrompt component is not mounted yet.')
-  }
+  show: (_heading, _body, _buttons, resolve) => resolve(null)
 }
 
 /**
- * Displays a message with one or two buttons.
+ * Displays a heading, optional body, and a set of action buttons.
  * Resolves with the clicked button's `value`, or with the cancel button's value
  * if Escape is pressed (null if there is no cancel button, e.g. a lone OK).
  */
 export const callGenericPrompt = (
-  message: string,
+  heading: string,
   options: GenericPromptOptions = {}
 ): Promise<string | null> => {
   return new Promise((resolve) => {
-    promptController.show(message, resolveButtons(options.buttons), resolve)
+    promptController.show(heading, options.body, resolveButtons(options.buttons), resolve)
   })
 }
 
@@ -69,49 +69,45 @@ export const alertPrompt = async (message: string): Promise<void> => {
 
 export const GenericPrompt: React.FC = () => {
   const [isOpen, setIsOpen] = useState<boolean>(false)
-  const [message, setMessage] = useState<string>('')
+  const [heading, setHeading] = useState('')
+  const [body, setBody] = useState<string>()
   const [buttons, setButtons] = useState<PromptButton[]>(() => getPresets().ok)
   const onResolveRef = useRef<((value: string | null) => void) | null>(null)
-  const confirmRef = useRef<HTMLButtonElement | null>(null)
+  const dialogRef = useRef<HTMLDialogElement>(null)
+  const primaryRef = useRef<HTMLButtonElement>(null)
 
   const cancelValue = buttons.find((b) => b.role === 'cancel')?.value ?? null
 
   useEffect(() => {
-    promptController.show = (newMessage, newButtons, resolveCallback) => {
+    promptController.show = (newHeading, newBody, newButtons, resolveCallback) => {
       // If a prompt is already open, dismiss it as cancelled so its promise isn't orphaned.
       onResolveRef.current?.(null)
-      setMessage(newMessage)
+      setHeading(newHeading)
+      setBody(newBody)
       setButtons(newButtons)
       onResolveRef.current = resolveCallback
       setIsOpen(true)
     }
 
     return () => {
-      promptController.show = () => {
-        console.error('GenericPrompt component has been unmounted.')
-      }
+      promptController.show = (_heading, _body, _buttons, resolve) => resolve(null)
+      onResolveRef.current?.(null)
+      onResolveRef.current = null
     }
   }, [])
 
-  // Focus the primary button when the dialog opens.
   useEffect(() => {
-    if (isOpen) {
-      setTimeout(() => confirmRef.current?.focus(), 50)
-    }
+    const dialog = dialogRef.current
+    if (!isOpen || !dialog) return
+    dialog.showModal()
+    primaryRef.current?.focus()
+    return () => dialog.close()
   }, [isOpen])
 
   const close = (value: string | null): void => {
     onResolveRef.current?.(value)
     onResolveRef.current = null
     setIsOpen(false)
-  }
-
-  // Enter is handled natively by the focused button; only Escape needs handling here.
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLDivElement>): void => {
-    if (e.key === 'Escape') {
-      e.preventDefault()
-      close(cancelValue)
-    }
   }
 
   if (!isOpen) {
@@ -125,34 +121,37 @@ export const GenericPrompt: React.FC = () => {
   )
 
   return (
-    <div
-      className={styles['prompt-overlay']}
-      onKeyDown={handleKeyDown}
-      tabIndex={-1}
-      role="dialog"
-      aria-modal="true"
-      aria-label={message}
+    <dialog
+      ref={dialogRef}
+      className={`${styles['prompt-container']} ${styles['generic-prompt']}`}
+      aria-labelledby="generic-prompt-heading"
+      aria-describedby={body ? 'generic-prompt-body' : undefined}
+      onCancel={(event) => {
+        event.preventDefault()
+        close(cancelValue)
+      }}
     >
-      <div className={styles['prompt-container']}>
-        <h3 className={styles['prompt-message']}>{message}</h3>
-        <div className={styles['prompt-actions']}>
-          {buttons.map((btn, i) => (
-            <button
-              key={`${btn.value}-${i}`}
-              ref={i === primaryIndex ? confirmRef : undefined}
-              onClick={() => close(btn.value)}
-              className={`${styles['prompt-button']} ${
-                btn.role === 'cancel'
-                  ? styles['prompt-button-cancel']
-                  : styles['prompt-button-confirm']
-              }`}
-            >
-              {btn.label}
-            </button>
-          ))}
-        </div>
+      <h3 id="generic-prompt-heading">{heading}</h3>
+      {body && (
+        <p id="generic-prompt-body" className={styles['prompt-body']}>
+          {body}
+        </p>
+      )}
+      <div className={styles['prompt-actions']}>
+        {buttons.map((btn, i) => (
+          <button
+            key={`${btn.value}-${i}`}
+            ref={i === primaryIndex ? primaryRef : undefined}
+            onClick={() => close(btn.value)}
+            className={`${styles['prompt-button']} ${
+              btn.role === 'confirm' ? styles['prompt-button-confirm'] : ''
+            }`}
+          >
+            {btn.label}
+          </button>
+        ))}
       </div>
-    </div>
+    </dialog>
   )
 }
 
