@@ -26,7 +26,8 @@
       "compassFiles": "Berkas CompassCAD",
       "qrocadFiles": "Berkas QroCAD",
       "defaultName": "Desain Saya",
-      "saved": "Berkas disimpan di {path}"
+      "saved": "Berkas disimpan di {path}",
+      "exportError": "Gagal mengekspor gambar."
     },
     "window": {
       "menu": "Menu",
@@ -51,7 +52,8 @@
       "checkForUpdates": "Cek update",
       "about": "Tentang CompassCAD NEXT",
       "settings": "Pengaturan",
-      "newDesignWarning": "Hapus semuanya dan buat desain baru? Perubahan yang belum disimpan akan hilang."
+      "newDesignWarning": "Hapus semuanya dan buat desain baru? Perubahan yang belum disimpan akan hilang.",
+      "exportToPdf": "Ekspor PDF siap cetak"
     },
     "updaterModal": {
       "checkingForUpdates": "Mengecek update...",
@@ -243,7 +245,9 @@
     "select": "Alat pilih",
     "navigate": "Alat geser tampilan",
     "factor": "Faktor skala k (misalnya, 2 menggandakan ukuran)",
-    "invalid": "Masukkan faktor skala terhingga yang lebih besar dari nol."
+    "invalid": "Masukkan faktor skala terhingga yang lebih besar dari nol.",
+    "bringToFront": "Pindahkan ke paling depan",
+    "sendToBack": "Pindahkan ke paling belakang"
   },
   "extensions": {
     "title": "Ekstensi",
@@ -317,7 +321,7 @@
     "create": "Buat desain",
     "apply": "Terapkan",
     "nextFiles": "Dokumen CompassCAD NEXT",
-    "legacyWarning": "Ekspor geometri saja ke .ccad lawas? Properti dokumen, pengaturan kertas, preferensi skala dan pengukuran tidak akan disertakan. Simpan salinan .cnext untuk menyimpannya.",
+    "legacyWarning": "Properti dokumen, pengaturan kertas, preferensi skala dan pengukuran tidak akan disertakan. Simpan salinan .cnext untuk menyimpannya.",
     "unsupported": "Pilih ekstensi dokumen yang didukung (.cnext atau .ccad untuk menyimpan).",
     "openError": "Tidak dapat membuka dokumen.",
     "saveError": "Tidak dapat menyimpan dokumen.",
@@ -336,6 +340,42 @@
     "infiniteDimensionHelp": "Tanpa tepi kertas. Masukkan dimensi untuk beralih ke lembar khusus.",
     "includeTitleBlock": "Sertakan batas & blok judul",
     "advancedSetup": "Opsi dokumen lainnya",
-    "backToTemplates": "Kembali ke templat"
+    "backToTemplates": "Kembali ke templat",
+    "legacyWarningHeading": "Ekspor hanya geometri ke format .ccad lama?",
+    "exportOutsidePaperHeading": "Ekspor dengan pemotongan?",
+    "exportOutsidePaper": "Sebagian gambar berada di luar kertas dan akan terpotong. Pilih Tidak untuk menyesuaikan ukuran kertas atau skala gambar di Properti Dokumen."
+  },
+  "unsavedChanges": {
+    "heading": "Simpan perubahan pada gambar ini?",
+    "body": "Perubahan akan hilang jika Anda melanjutkan tanpa menyimpan.",
+    "save": "Simpan",
+    "discard": "Jangan Simpan",
+    "nextRequired": "Pilih berkas .cnext untuk mempertahankan properti dokumen gambar."
+  },
+  "workflow": {
+    "copy": "Salin komponen",
+    "paste": "Tempel komponen",
+    "duplicate": "Gandakan pilihan",
+    "offset": "Geser garis secara sejajar",
+    "trim": "Pangkas garis pertama hingga titik potong",
+    "length": "Kunci panjang garis",
+    "unlock": "Buka kunci panjang garis",
+    "offsetPrompt": "Jarak pergeseran sejajar dalam {unit} (gunakan nilai negatif untuk sisi sebaliknya)",
+    "lengthPrompt": "Panjang tetap garis dalam {unit}",
+    "invalidGeometry": "Masukkan jarak yang valid, atau pilih dua segmen yang berpotongan dengan garis pertama tidak terkunci.",
+    "palette": "Palet perintah",
+    "shortcuts": "Pintasan keyboard",
+    "guide": "Panduan menggambar pertama",
+    "search": "Cari perintah atau pintasan",
+    "noMatches": "Tidak ada perintah yang cocok",
+    "guideDraw": "Klik titik awal dan akhir garis pada kanvas.",
+    "guideSave": "Garis sudah siap. Simpan gambar untuk menyelesaikan panduan.",
+    "finish": "Gambar tersimpan. Panduan selesai.",
+    "save": "Simpan gambar",
+    "invalidBackup": "Cadangan berisi komponen yang tidak dapat dibaca.",
+    "backupError": "Kesalahan pemulihan",
+    "recover": "Buka gambar yang belum disimpan dari {name}? Anda juga dapat membukanya nanti melalui “Buka Backup/Cadangan”.",
+    "replace": "Ganti gambar saat ini dengan cadangan ini?",
+    "cancel": "Akhiri panduan"
   }
 }

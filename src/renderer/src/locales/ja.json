@@ -26,7 +26,8 @@
       "compassFiles": "CompassCAD ファイル",
       "qrocadFiles": "QroCAD ファイル",
       "defaultName": "新しい図面",
-      "saved": "{path} に保存しました"
+      "saved": "{path} に保存しました",
+      "exportError": "図面をエクスポートできませんでした。"
     },
     "window": {
       "menu": "メニュー",
@@ -51,7 +52,8 @@
       "checkForUpdates": "アップデートを確認",
       "about": "CompassCAD NEXT について",
       "settings": "設定",
-      "newDesignWarning": "すべて消去して新しい図面を作成しますか？未保存の変更は失われます。"
+      "newDesignWarning": "すべて消去して新しい図面を作成しますか？未保存の変更は失われます。",
+      "exportToPdf": "印刷用 PDF をエクスポート"
     },
     "updaterModal": {
       "checkingForUpdates": "アップデートを確認中…",
@@ -243,7 +245,9 @@
     "select": "選択ツール",
     "navigate": "パンツール",
     "factor": "倍率 k（例：2 でサイズが 2 倍になります）",
-    "invalid": "0 より大きい有限の倍率を入力してください。"
+    "invalid": "0 より大きい有限の倍率を入力してください。",
+    "bringToFront": "最前面へ移動",
+    "sendToBack": "最背面へ移動"
   },
   "extensions": {
     "title": "拡張機能",
@@ -317,7 +321,7 @@
     "create": "デザインを作成",
     "apply": "適用",
     "nextFiles": "CompassCAD NEXT ドキュメント",
-    "legacyWarning": "従来の .ccad に図形のみをエクスポートしますか？ドキュメントのプロパティ、用紙設定、縮尺、計測の設定は含まれません。これらを保持するには .cnext コピーを保存してください。",
+    "legacyWarning": "ドキュメントのプロパティ、用紙設定、縮尺、計測の設定は含まれません。これらを保持するには .cnext コピーを保存してください。",
     "unsupported": "サポートされているドキュメント拡張子を選択してください（保存には .cnext または .ccad）。",
     "openError": "ドキュメントを開けませんでした。",
     "saveError": "ドキュメントを保存できませんでした。",
@@ -336,6 +340,42 @@
     "infiniteDimensionHelp": "用紙の端はありません。寸法を入力してカスタム用紙に切り替えます。",
     "includeTitleBlock": "枠と表題欄を含める",
     "advancedSetup": "詳細なドキュメント設定",
-    "backToTemplates": "テンプレートに戻る"
+    "backToTemplates": "テンプレートに戻る",
+    "legacyWarningHeading": "形状のみを旧形式の .ccad にエクスポートしますか？",
+    "exportOutsidePaperHeading": "はみ出した部分を切り取ってエクスポートしますか？",
+    "exportOutsidePaper": "用紙からはみ出した図面の一部が切り取られます。用紙サイズや図面の縮尺を変更するには「いいえ」を選び、ドキュメントのプロパティで調整してください。"
+  },
+  "unsavedChanges": {
+    "heading": "この図面の変更を保存しますか？",
+    "body": "保存せずに続けると、変更内容は失われます。",
+    "save": "保存",
+    "discard": "保存しない",
+    "nextRequired": "図面のドキュメントのプロパティを保持するには、.cnext ファイルを選択してください。"
+  },
+  "workflow": {
+    "copy": "コンポーネントをコピー",
+    "paste": "コンポーネントを貼り付け",
+    "duplicate": "選択項目を複製",
+    "offset": "線分をオフセット",
+    "trim": "最初の線分を交点でトリム",
+    "length": "線分の長さを固定",
+    "unlock": "線分の長さの固定を解除",
+    "offsetPrompt": "平行オフセット距離（{unit}、反対側には負の値を使用）",
+    "lengthPrompt": "線分の固定長（{unit}）",
+    "invalidGeometry": "有効な距離を入力するか、交差する2本の線分を選択し、最初の線分の長さの固定を解除してください。",
+    "palette": "コマンドパレット",
+    "shortcuts": "キーボードショートカット",
+    "guide": "初めての作図ガイド",
+    "search": "コマンドまたはショートカットを検索",
+    "noMatches": "一致するコマンドがありません",
+    "guideDraw": "キャンバスで線分の始点と終点をクリックしてください。",
+    "guideSave": "線分が作成されました。図面を保存して完了してください。",
+    "finish": "図面を保存しました。ガイドは完了です。",
+    "save": "図面を保存",
+    "invalidBackup": "バックアップに読み取れないコンポーネントが含まれています。",
+    "backupError": "復元エラー",
+    "recover": "{name} から未保存の図面を開きますか？後で「バックアップを開く」から開くこともできます。",
+    "replace": "現在の図面をこのバックアップで置き換えますか？",
+    "cancel": "ガイドを終了"
   }
 }

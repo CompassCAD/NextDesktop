@@ -43,6 +43,13 @@ import ZoomOutIcon from '../assets/icons/zoomout.svg'
 import SnapOn from '../assets/icons/snapped.svg'
 import SnapOff from '../assets/icons/snap.svg'
 import SelectAllIcon from '../assets/icons/selectall.svg'
+import GroupIcon from '../assets/icons/group.svg'
+import UngroupIcon from '../assets/icons/ungroup.svg'
+import DeleteIcon from '../assets/icons/delete.svg'
+import CancelIcon from '../assets/icons/back.svg'
+import FrontIcon from '../assets/icons/uplayer.svg'
+import BackIcon from '../assets/icons/downlayer.svg'
+import GuideIcon from '../assets/icons/help.svg'
 // Window buttons
 import Minimize from '../assets/icons/minimize.svg'
 import Maximize from '../assets/icons/maximize.svg'
@@ -395,8 +402,8 @@ export default function WindowBar(): React.ReactElement {
       keyCombinations: [controlKey, 'P'],
       onAction: () => { if (renderer) void exportDrawing(renderer, 'pdf') }
     },
-    { title: getLocaleKey('workflow.shortcuts'), onAction: () => { setMenuOpened(false); setBrowser('shortcuts') } },
-    { title: getLocaleKey('workflow.guide'), onAction: startGuide },
+    { icon: MenuIcon, title: getLocaleKey('workflow.shortcuts'), onAction: () => { setMenuOpened(false); setBrowser('shortcuts') } },
+    { icon: GuideIcon, title: getLocaleKey('workflow.guide'), onAction: startGuide },
     ...(isDevMode
       ? [
           { title: 'RNG Design Generator (choke test only)', onAction: _internal_spawnRngModal },
@@ -426,13 +433,13 @@ export default function WindowBar(): React.ReactElement {
     { title: getLocaleKey('contextMenu.undo'), shortcut: controlKey + '+Z', run: renderer.undo, icon: UndoIcon },
     { title: getLocaleKey('contextMenu.redo'), shortcut: controlKey + '+Y', run: renderer.redo, icon: RedoIcon },
     { title: getLocaleKey('contextMenu.selectAll'), shortcut: controlKey + '+A', run: () => renderer.selectAll(), icon: SelectAllIcon },
-    { title: getLocaleKey('contextMenu.group'), shortcut: controlKey + '+G', run: () => renderer.groupSelection() },
-    { title: getLocaleKey('contextMenu.ungroup'), shortcut: controlKey + '+Shift+G', run: () => renderer.groupSelection(true) },
-    { title: getLocaleKey('contextMenu.delete'), shortcut: 'Delete', run: () => renderer.deleteSelection() },
-    { title: getLocaleKey(isSnapped ? 'editor.window.disableSnap' : 'editor.window.enableSnap'), shortcut: controlKey + '+Q', run: () => savePreference('snap', String(!isSnapped)), icon: SnapOn },
-    { title: getLocaleKey('contextMenu.cancel'), shortcut: 'Esc', run: () => renderer.cancelEditing(), icon: Close },
-    { title: getLocaleKey('contextMenu.bringToFront'), shortcut: '[', run: () => renderer.reorderLayers('front') },
-    { title: getLocaleKey('contextMenu.sendToBack'), shortcut: ']', run: () => renderer.reorderLayers('back') }
+    { title: getLocaleKey('contextMenu.group'), icon: GroupIcon, shortcut: controlKey + '+G', run: () => renderer.groupSelection() },
+    { title: getLocaleKey('contextMenu.ungroup'), icon: UngroupIcon, shortcut: controlKey + '+Shift+G', run: () => renderer.groupSelection(true) },
+    { title: getLocaleKey('contextMenu.delete'), icon: DeleteIcon, shortcut: 'Delete', run: () => renderer.deleteSelection() },
+    { title: getLocaleKey(isSnapped ? 'editor.window.disableSnap' : 'editor.window.enableSnap'), shortcut: controlKey + '+Q', run: () => savePreference('snap', String(!isSnapped)), icon: isSnapped ? SnapOn : SnapOff },
+    { title: getLocaleKey('contextMenu.cancel'), icon: CancelIcon, shortcut: 'Esc', run: () => renderer.cancelEditing() },
+    { title: getLocaleKey('contextMenu.bringToFront'), icon: FrontIcon, shortcut: '[', run: () => renderer.reorderLayers('front') },
+    { title: getLocaleKey('contextMenu.sendToBack'), icon: BackIcon, shortcut: ']', run: () => renderer.reorderLayers('back') }
   ] : []
 
   const defaultMeasure = [...new Set([1000, 500, 200, 100, 50, 25, 10, 5, 1, gridSpacing])].sort((a, b) => b - a)

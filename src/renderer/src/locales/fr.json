@@ -26,7 +26,8 @@
       "compassFiles": "Fichiers CompassCAD",
       "qrocadFiles": "Fichiers QroCAD",
       "defaultName": "Mon projet",
-      "saved": "Fichier enregistré dans {path}"
+      "saved": "Fichier enregistré dans {path}",
+      "exportError": "Impossible d’exporter le dessin."
     },
     "window": {
       "menu": "Menu",
@@ -51,7 +52,8 @@
       "checkForUpdates": "Rechercher des mises à jour",
       "about": "À propos de CompassCAD NEXT",
       "settings": "Paramètres",
-      "newDesignWarning": "Tout effacer et créer un nouveau projet ? Les modifications non enregistrées seront perdues."
+      "newDesignWarning": "Tout effacer et créer un nouveau projet ? Les modifications non enregistrées seront perdues.",
+      "exportToPdf": "Exporter en PDF imprimable"
     },
     "updaterModal": {
       "checkingForUpdates": "Recherche de mises à jour...",
@@ -243,7 +245,9 @@
     "select": "Outil de sélection",
     "navigate": "Outil de déplacement de la vue",
     "factor": "Facteur d’échelle k (par exemple, 2 double la taille)",
-    "invalid": "Saisissez un facteur d’échelle fini supérieur à zéro."
+    "invalid": "Saisissez un facteur d’échelle fini supérieur à zéro.",
+    "bringToFront": "Mettre au premier plan",
+    "sendToBack": "Mettre à l’arrière-plan"
   },
   "extensions": {
     "title": "Extensions",
@@ -317,7 +321,7 @@
     "create": "Créer le dessin",
     "apply": "Appliquer",
     "nextFiles": "Document CompassCAD NEXT",
-    "legacyWarning": "Exporter uniquement la géométrie vers l'ancien format .ccad ? Les propriétés du document, les paramètres de papier, l'échelle et les préférences de mesure ne seront pas inclus. Enregistrez une copie .cnext pour les conserver.",
+    "legacyWarning": "Les propriétés du document, les paramètres de papier, l'échelle et les préférences de mesure ne seront pas inclus. Enregistrez une copie .cnext pour les conserver.",
     "unsupported": "Choisissez une extension de document prise en charge (.cnext ou .ccad pour l'enregistrement).",
     "openError": "Impossible d'ouvrir le document.",
     "saveError": "Impossible d'enregistrer le document.",
@@ -336,6 +340,42 @@
     "infiniteDimensionHelp": "Aucun bord de papier. Entrez des dimensions pour passer à une feuille personnalisée.",
     "includeTitleBlock": "Inclure bordure et cartouche",
     "advancedSetup": "Plus d'options de document",
-    "backToTemplates": "Retour aux modèles"
+    "backToTemplates": "Retour aux modèles",
+    "legacyWarningHeading": "Exporter uniquement la géométrie au format .ccad ancien ?",
+    "exportOutsidePaperHeading": "Exporter en rognant le dessin ?",
+    "exportOutsidePaper": "Une partie du dessin dépasse de la feuille et sera rognée. Choisissez Non pour ajuster le format du papier ou l’échelle du dessin dans les propriétés du document."
+  },
+  "unsavedChanges": {
+    "heading": "Enregistrer les modifications de ce dessin ?",
+    "body": "Vos modifications seront perdues si vous continuez sans enregistrer.",
+    "save": "Enregistrer",
+    "discard": "Ne pas enregistrer",
+    "nextRequired": "Choisissez un fichier .cnext pour conserver les propriétés du document."
+  },
+  "workflow": {
+    "copy": "Copier les composants",
+    "paste": "Coller les composants",
+    "duplicate": "Dupliquer la sélection",
+    "offset": "Décaler la ligne",
+    "trim": "Ajuster la première ligne à l’intersection",
+    "length": "Fixer la longueur de la ligne",
+    "unlock": "Libérer la longueur de la ligne",
+    "offsetPrompt": "Décalage parallèle en {unit} (valeur négative pour le côté opposé)",
+    "lengthPrompt": "Longueur fixe de la ligne en {unit}",
+    "invalidGeometry": "Saisissez une distance valide ou sélectionnez deux segments sécants dont le premier est déverrouillé.",
+    "palette": "Palette de commandes",
+    "shortcuts": "Raccourcis clavier",
+    "guide": "Premier dessin guidé",
+    "search": "Rechercher des commandes ou des raccourcis",
+    "noMatches": "Aucune commande correspondante",
+    "guideDraw": "Cliquez sur le début et la fin d’une ligne sur le canevas.",
+    "guideSave": "Votre ligne est prête. Enregistrez votre dessin pour terminer.",
+    "finish": "Dessin enregistré. Guide terminé.",
+    "save": "Enregistrer le dessin",
+    "invalidBackup": "La sauvegarde contient des composants illisibles.",
+    "backupError": "Erreur de récupération",
+    "recover": "Ouvrir le dessin non enregistré depuis {name} ? Vous pourrez aussi l’ouvrir plus tard via Ouvrir les sauvegardes.",
+    "replace": "Remplacer le dessin actuel par cette sauvegarde ?",
+    "cancel": "Terminer le guide"
   }
 }

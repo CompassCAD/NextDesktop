@@ -26,7 +26,8 @@
       "compassFiles": "CompassCAD 文件",
       "qrocadFiles": "QroCAD 文件",
       "defaultName": "我的图纸",
-      "saved": "文件已保存至 {path}"
+      "saved": "文件已保存至 {path}",
+      "exportError": "无法导出图纸。"
     },
     "window": {
       "menu": "菜单",
@@ -51,7 +52,8 @@
       "checkForUpdates": "检查更新",
       "about": "关于 CompassCAD NEXT",
       "settings": "设置",
-      "newDesignWarning": "清空所有内容并新建图纸？未保存的更改将丢失。"
+      "newDesignWarning": "清空所有内容并新建图纸？未保存的更改将丢失。",
+      "exportToPdf": "导出可打印的 PDF"
     },
     "updaterModal": {
       "checkingForUpdates": "正在检查更新...",
@@ -243,7 +245,9 @@
     "select": "选择工具",
     "navigate": "平移工具",
     "factor": "缩放因子 k（例如，2 表示放大至两倍）",
-    "invalid": "请输入大于零的有限缩放因子。"
+    "invalid": "请输入大于零的有限缩放因子。",
+    "bringToFront": "置于顶层",
+    "sendToBack": "置于底层"
   },
   "extensions": {
     "title": "扩展",
@@ -317,7 +321,7 @@
     "create": "创建设计",
     "apply": "应用",
     "nextFiles": "CompassCAD NEXT 文档",
-    "legacyWarning": "仅导出几何图形到旧版 .ccad？文档属性、图纸设置、比例和测量首选项将不会包含在内。请保存 .cnext 副本以保留它们。",
+    "legacyWarning": "文档属性、图纸设置、比例和测量首选项将不会包含在内。请保存 .cnext 副本以保留它们。",
     "unsupported": "请选择支持的文档扩展名（保存请使用 .cnext 或 .ccad）。",
     "openError": "无法打开文档。",
     "saveError": "无法保存文档。",
@@ -336,6 +340,42 @@
     "infiniteDimensionHelp": "无图纸边缘。输入尺寸以切换到自定义图纸。",
     "includeTitleBlock": "包含图框与标题栏",
     "advancedSetup": "更多文档选项",
-    "backToTemplates": "返回模板"
+    "backToTemplates": "返回模板",
+    "legacyWarningHeading": "仅将几何图形导出为旧版 .ccad 格式吗？",
+    "exportOutsidePaperHeading": "裁剪后导出吗？",
+    "exportOutsidePaper": "图纸的一部分超出纸张范围，导出时将被裁剪。选择“否”可在文档属性中调整纸张尺寸或图纸比例。"
+  },
+  "unsavedChanges": {
+    "heading": "要保存对此图纸的更改吗？",
+    "body": "如果继续而不保存，更改将会丢失。",
+    "save": "保存",
+    "discard": "不保存",
+    "nextRequired": "请选择 .cnext 文件以保留图纸的文档属性。"
+  },
+  "workflow": {
+    "copy": "复制组件",
+    "paste": "粘贴组件",
+    "duplicate": "创建选中项的副本",
+    "offset": "偏移直线",
+    "trim": "将第一条线段修剪至交点",
+    "length": "锁定线段长度",
+    "unlock": "解锁线段长度",
+    "offsetPrompt": "平行偏移距离（{unit}，反方向请输入负值）",
+    "lengthPrompt": "固定线段长度（{unit}）",
+    "invalidGeometry": "请输入有效距离，或选择两条相交的线段，并确保第一条线段未锁定。",
+    "palette": "命令面板",
+    "shortcuts": "键盘快捷键",
+    "guide": "首次绘图指南",
+    "search": "搜索命令或快捷键",
+    "noMatches": "没有匹配的命令",
+    "guideDraw": "在画布上点击线段的起点和终点。",
+    "guideSave": "线段已绘制。保存图纸即可完成指南。",
+    "finish": "图纸已保存，指南已完成。",
+    "save": "保存图纸",
+    "invalidBackup": "备份中包含无法读取的组件。",
+    "backupError": "恢复错误",
+    "recover": "要打开 {name} 中未保存的图纸吗？也可以稍后通过“打开备份”打开。",
+    "replace": "要用此备份替换当前图纸吗？",
+    "cancel": "结束指南"
   }
 }

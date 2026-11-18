@@ -26,7 +26,8 @@
       "compassFiles": "CompassCAD-filer",
       "qrocadFiles": "QroCAD-filer",
       "defaultName": "Min ritning",
-      "saved": "Filen sparades till {path}"
+      "saved": "Filen sparades till {path}",
+      "exportError": "Det gick inte att exportera ritningen."
     },
     "window": {
       "menu": "Meny",
@@ -51,7 +52,8 @@
       "checkForUpdates": "Sök efter Uppdateringar",
       "about": "Om CompassCAD NEXT",
       "settings": "Inställningar",
-      "newDesignWarning": "Rensa allt och skapa en ny ritning? Osparade ändringar går förlorade."
+      "newDesignWarning": "Rensa allt och skapa en ny ritning? Osparade ändringar går förlorade.",
+      "exportToPdf": "Exportera utskriftsbar PDF"
     },
     "updaterModal": {
       "checkingForUpdates": "Söker efter uppdateringar...",
@@ -243,7 +245,9 @@
     "select": "Markeringsverktyg",
     "navigate": "Panoreringsverktyg",
     "factor": "Skalfaktor k (till exempel fördubblar 2 storleken)",
-    "invalid": "Ange en ändlig skalfaktor större än noll."
+    "invalid": "Ange en ändlig skalfaktor större än noll.",
+    "bringToFront": "Flytta längst fram",
+    "sendToBack": "Flytta längst bak"
   },
   "extensions": {
     "title": "Tillägg",
@@ -317,7 +321,7 @@
     "create": "Skapa ritning",
     "apply": "Tillämpa",
     "nextFiles": "CompassCAD NEXT-dokument",
-    "legacyWarning": "Exportera endast geometri till äldre .ccad? Dokumentegenskaper, pappersinställningar, skala och måttinställningar inkluderas inte. Spara en .cnext-kopia för att behålla dem.",
+    "legacyWarning": "Dokumentegenskaper, pappersinställningar, skala och måttinställningar inkluderas inte. Spara en .cnext-kopia för att behålla dem.",
     "unsupported": "Välj ett dokumenttillägg som stöds (.cnext eller .ccad för att spara).",
     "openError": "Det gick inte att öppna dokumentet.",
     "saveError": "Det gick inte att spara dokumentet.",
@@ -336,6 +340,42 @@
     "infiniteDimensionHelp": "Inga papperskanter. Ange dimensioner för att växla till ett anpassat ark.",
     "includeTitleBlock": "Inkludera ram & namnruta",
     "advancedSetup": "Fler dokumentalternativ",
-    "backToTemplates": "Tillbaka till mallar"
+    "backToTemplates": "Tillbaka till mallar",
+    "legacyWarningHeading": "Exportera endast geometrin till det äldre .ccad-formatet?",
+    "exportOutsidePaperHeading": "Exportera med beskärning?",
+    "exportOutsidePaper": "En del av ritningen ligger utanför papperet och beskärs. Välj Nej för att ändra pappersformatet eller ritningens skala i Dokumentegenskaper."
+  },
+  "unsavedChanges": {
+    "heading": "Spara ändringarna i den här ritningen?",
+    "body": "Dina ändringar går förlorade om du fortsätter utan att spara.",
+    "save": "Spara",
+    "discard": "Spara inte",
+    "nextRequired": "Välj en .cnext-fil för att bevara ritningens dokumentegenskaper."
+  },
+  "workflow": {
+    "copy": "Kopiera komponenter",
+    "paste": "Klistra in komponenter",
+    "duplicate": "Duplicera markeringen",
+    "offset": "Parallellförskjut linjen",
+    "trim": "Trimma den första linjen vid skärningspunkten",
+    "length": "Lås linjens längd",
+    "unlock": "Lås upp linjens längd",
+    "offsetPrompt": "Parallellförskjutning i {unit} (använd ett negativt värde för motsatt sida)",
+    "lengthPrompt": "Fast linjelängd i {unit}",
+    "invalidGeometry": "Ange ett giltigt avstånd eller välj två korsande linjesegment där det första segmentet är olåst.",
+    "palette": "Kommandopalett",
+    "shortcuts": "Kortkommandon",
+    "guide": "Guide till din första ritning",
+    "search": "Sök efter kommandon eller kortkommandon",
+    "noMatches": "Inga matchande kommandon",
+    "guideDraw": "Klicka på linjens start- och slutpunkt på ritytan.",
+    "guideSave": "Linjen är klar. Spara ritningen för att slutföra guiden.",
+    "finish": "Ritningen har sparats. Guiden är klar.",
+    "save": "Spara ritningen",
+    "invalidBackup": "Säkerhetskopian innehåller komponenter som inte går att läsa.",
+    "backupError": "Återställningsfel",
+    "recover": "Öppna den osparade ritningen från {name}? Du kan också öppna den senare via ”Öppna Backuper”.",
+    "replace": "Ersätta den aktuella ritningen med den här säkerhetskopian?",
+    "cancel": "Avsluta guiden"
   }
 }

@@ -49,6 +49,16 @@
     src: url(../assets/fonts/bricolage.ttf) format('truetype');
 }
 @font-face {
+  font-family: 'IBMThai';
+  src: url(../assets/fonts/IBMPlexSansThai-Regular.ttf) format('truetype');
+  font-weight: 400;
+}
+@font-face {
+  font-family: 'IBMThai';
+  src: url(../assets/fonts/IBMPlexSansThai-Bold.ttf) format('truetype');
+  font-weight: 700;
+}
+@font-face {
   font-family: 'Google Sans Code';
   src: url(../assets/fonts/gsanscode.ttf) format('truetype');
 }
@@ -70,9 +80,8 @@
   --tertiary: #3f3f3f;
   --outline: #636363;
   --secondary-disabled: #5050504d;
-  --font:
-    'Radio Canada Big', 'Murecho', system-ui, sans-serif;
-  --font-heading: 'Bricolage', 'Murecho', system-ui, sans-serif;
+  --font: 'Radio Canada Big', 'Murecho', 'IBMThai', system-ui, sans-serif;
+  --font-heading: 'Bricolage', 'Murecho', 'IBMThai', system-ui, sans-serif;
   --font-monospace: 'Google Sans Code', monospace;
   --text: #efefef;
   --theme: #0080ff;

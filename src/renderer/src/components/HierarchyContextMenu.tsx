@@ -4,6 +4,17 @@ import { createPortal } from 'react-dom'
 import type { GraphicsRenderer } from '../engine/Engine'
 import { getLocaleKey } from '../locales/Locale'
 import styles from '../style/index.module.css'
+import CancelIcon from '../assets/icons/back.svg'
+import UndoIcon from '../assets/icons/undo.svg'
+import RedoIcon from '../assets/icons/redo.svg'
+import SelectAllIcon from '../assets/icons/selectall.svg'
+import ClearIcon from '../assets/icons/close.svg'
+import GroupIcon from '../assets/icons/group.svg'
+import UngroupIcon from '../assets/icons/ungroup.svg'
+import FrontIcon from '../assets/icons/uplayer.svg'
+import BackIcon from '../assets/icons/downlayer.svg'
+import DeleteIcon from '../assets/icons/delete.svg'
+import RenameIcon from '../assets/icons/text.svg'
 
 export default function HierarchyContextMenu({ position, renderer, onClose, onRename }: {
   position: { x: number; y: number }
@@ -46,19 +57,19 @@ export default function HierarchyContextMenu({ position, renderer, onClose, onRe
   const editing = renderer.isEditing
   const editable = !renderer.readonly
   const t = (key: 'title' | 'cancel' | 'selectAll' | 'clear' | 'group' | 'ungroup' | 'scale' | 'delete' | 'undo' | 'redo' | 'select' | 'navigate' | 'factor' | 'invalid') => getLocaleKey(`contextMenu.${key}`)
-  const actions = [
+  const actions: { label: string; icon: string; shortcut?: string; enabled: boolean; run: () => void }[] = [
     ...editCommands(renderer),
-    ...(onRename ? [{ label: getLocaleKey('contextMenu.rename'), run: onRename, enabled: editable && !editing }] : []),
-    { label: t('delete'), run: () => renderer.deleteSelection(), enabled: editable && !editing && !!selection.length },
-    ...(editing ? [{ label:t('cancel'), run:() => renderer.cancelEditing(), enabled:true }] : []),
-    { label:t('undo'), run:() => renderer.undo(), enabled:!editing && editable && renderer.undoStack.length > 1 },
-    { label:t('redo'), run:() => renderer.redo(), enabled:!editing && editable && renderer.redoStack.length > 0 },
-    { label:t('selectAll'), run:() => renderer.selectAll(), enabled:!editing && !!renderer.logicDisplay?.components.length },
-    { label:t('clear'), run:() => renderer.setSelection([]), enabled:!!selection.length },
-    { label:t('group'), run:() => renderer.groupSelection(false, getLocaleKey('editor.inspector.general.group')), enabled:!editing && editable && selection.length > 1 },
-    { label:t('ungroup'), run:() => renderer.groupSelection(true), enabled:editable && selection.some(i => renderer.logicDisplay?.components[i].groupId) },
-    { label:getLocaleKey('contextMenu.bringToFront'), shortcut:'[', run:() => renderer.reorderLayers('front'), enabled:editable && !editing && !!selection.length },
-    { label:getLocaleKey('contextMenu.sendToBack'), shortcut:']', run:() => renderer.reorderLayers('back'), enabled:editable && !editing && !!selection.length },
+    ...(onRename ? [{ label: getLocaleKey('contextMenu.rename'), icon: RenameIcon, run: onRename, enabled: editable && !editing }] : []),
+    { label: t('delete'), icon: DeleteIcon, run: () => renderer.deleteSelection(), enabled: editable && !editing && !!selection.length },
+    ...(editing ? [{ label:t('cancel'), icon: CancelIcon, run:() => renderer.cancelEditing(), enabled:true }] : []),
+    { label:t('undo'), icon: UndoIcon, run:() => renderer.undo(), enabled:!editing && editable && renderer.undoStack.length > 1 },
+    { label:t('redo'), icon: RedoIcon, run:() => renderer.redo(), enabled:!editing && editable && renderer.redoStack.length > 0 },
+    { label:t('selectAll'), icon: SelectAllIcon, run:() => renderer.selectAll(), enabled:!editing && !!renderer.logicDisplay?.components.length },
+    { label:t('clear'), icon: ClearIcon, run:() => renderer.setSelection([]), enabled:!!selection.length },
+    { label:t('group'), icon: GroupIcon, run:() => renderer.groupSelection(false, getLocaleKey('editor.inspector.general.group')), enabled:!editing && editable && selection.length > 1 },
+    { label:t('ungroup'), icon: UngroupIcon, run:() => renderer.groupSelection(true), enabled:editable && selection.some(i => renderer.logicDisplay?.components[i].groupId) },
+    { label:getLocaleKey('contextMenu.bringToFront'), icon: FrontIcon, shortcut:'[', run:() => renderer.reorderLayers('front'), enabled:editable && !editing && !!selection.length },
+    { label:getLocaleKey('contextMenu.sendToBack'), icon: BackIcon, shortcut:']', run:() => renderer.reorderLayers('back'), enabled:editable && !editing && !!selection.length },
   ]
   return createPortal(<div ref={menu} role="menu" aria-label={getLocaleKey('contextMenu.hierarchyTitle')}
     className={`${styles['menu-provider']} ${styles['canvas-context-menu']}`}
@@ -78,6 +89,7 @@ export default function HierarchyContextMenu({ position, renderer, onClose, onRe
     }}>
     {actions.map(action => <button type="button" role="menuitem" key={action.label}
       aria-keyshortcuts={action.shortcut} disabled={!action.enabled} onClick={() => { close(); void action.run() }}>
+      <img src={action.icon} alt="" aria-hidden="true" />
       <span>{action.label}</span>{action.shortcut && <kbd aria-hidden="true">{action.shortcut}</kbd>}
     </button>)}
   </div>, document.body)
