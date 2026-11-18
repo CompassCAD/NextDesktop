@@ -40,7 +40,6 @@
 .results:empty { display: none; }
 .row { composes: menu-context from './index.module.css'; }
 .row[role='option']:hover, .row[aria-selected='true'] { background: var(--secondary); }
-.row[aria-selected='true'] { outline: 1px solid var(--theme); }
 .row[aria-disabled='true'] { opacity: .4; }
 .keys { margin-inline-start: auto; }
 .keys kbd { font-family: var(--font); }
