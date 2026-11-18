@@ -162,7 +162,8 @@
 }
 
 input[type="checkbox"] {
-  -webkit-appearance: none;
+  appearance: none;
+  position: relative;
   width: 24px;
   height: 24px;
   border-radius: 5px;
@@ -177,13 +178,29 @@ input[type="checkbox"] {
     outline: 4px solid var(--theme) !important;
     transition: all 0.2s ease !important;
 }*/
-  input[type="checkbox"]:checked {
+  input[type='checkbox']:checked {
     background-color: var(--theme);
+  }
+
+  input[type='checkbox']:checked::after {
+    content: '';
+    position: absolute;
+    inset: 0;
     background-image: url('../assets/icons/check.svg');
-    background-size: 18px;
+    background-position: center;
     background-repeat: no-repeat;
-    background-position-x: 2.5px;
-    background-position-y: 2.5px;
+    background-size: 18px 18px;
+    pointer-events: none;
+    animation: checkbox-check-in 0.2s ease;
+  }
+
+  @keyframes checkbox-check-in {
+    from {
+      background-position: top left;
+    }
+    to {
+      background-position: center;
+    }
   }
 
 .modal-content input[type=text] {
@@ -976,9 +993,9 @@ input[type="checkbox"] {
   background: transparent;
   border: 0;
   border-radius: 5px;
-  font-size: 12pt;
+  font-size: 10pt;
   text-align: left;
-  padding: 7px 12px;
+  padding: 7px;
   font-family: var(--font);
 }
 .canvas-context-menu button:hover:not(:disabled), .canvas-context-menu button:focus-visible {

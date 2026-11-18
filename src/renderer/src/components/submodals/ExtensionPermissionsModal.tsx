@@ -3,6 +3,8 @@ import en from '../../locales/en.json'
 import CloseIcon from '../../assets/icons/close.svg'
 import WebRequestIcon from '../../assets/icons/webrequest.svg'
 import LocalServerIcon from '../../assets/icons/localserver.svg'
+import OpenFolderIcon from '../../assets/icons/openLogic.svg'
+import SaveIcon from '../../assets/icons/saveLogic.svg'
 import style from '../../style/extensionPermissions.module.css'
 
 export interface PermissionRequest {
@@ -17,7 +19,9 @@ type PermissionKey = keyof typeof en.extensions.permissions
 // Map each permission key to its icon. Fall back to CloseIcon for unmapped keys.
 const permissionIcons: Partial<Record<PermissionKey, string>> = {
   web_request: WebRequestIcon,
-  server_listen: LocalServerIcon
+  server_listen: LocalServerIcon,
+  filesystem_read: OpenFolderIcon,
+  filesystem_write: SaveIcon
 }
 
 export default function ExtensionPermissionsModal({
