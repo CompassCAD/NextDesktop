@@ -18,7 +18,7 @@ CompassCAD NEXT (*stylized as CompassCAD NEXT*), also known as **Project Sova**,
 
 ## 🤖 AI-generated stuffs
 We welcome AI-generated code (partial or full) in your PRs, or even official commits that are pushed, provided that you have sufficient context and code knowlege. Basically, you should understand what code the AI is writing.
-However, what we don't welcome, as part of our humane documentation, are AI-generated documents (e.g. intros, API documentation, feature walkthrough, etc). AI can only be used for feedbacks or gap spotting, the final documentation writing must be done by a human.
+However, what we don't welcome, as part of our humane stance, are AI-generated documents (e.g. intros, API documentation, feature walkthrough, etc), and AI-generated artwork (icons, etc). AI can only be used for feedbacks or gap spotting, the final documentation writing must be done by a human.
 
 For your agents, please ask them to refer to **AGENTS.md** for agent instructions.
 
