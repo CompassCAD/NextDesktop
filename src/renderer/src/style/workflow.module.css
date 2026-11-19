@@ -76,10 +76,9 @@
   height: 100%;
   pointer-events: none;
   fill: none;
-  stroke: var(--text);
+  stroke: var(--theme);
   stroke-width: 2px;
   stroke-dasharray: 6 4;
-  filter: drop-shadow(0 0 2px var(--theme));
 }
 .guideBorder rect {
   width: calc(100% - 2px);
@@ -91,3 +90,11 @@
   .guideBorder rect { animation: none; }
 }
 .guide button { position: relative; }
+.guide p { margin: 3px 0 0; }
+.endpoint, .canvasBorder {
+  position: fixed;
+  pointer-events: none;
+  z-index: 1;
+}
+.endpoint { top: 0; left: 0; width: 26px; height: 26px; }
+.canvasBorder { inset: 42px 2px 2px; }

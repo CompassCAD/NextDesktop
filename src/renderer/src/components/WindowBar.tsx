@@ -1,5 +1,7 @@
 import CommandBrowser, { type DrawingCommand } from './CommandBrowser'
 import { drawingTools } from './Toolbar'
+import DrawingTour from './DrawingTour'
+import GuideBorder from './GuideBorder'
 import { editCommands } from './EditCommands'
 import { openBackup, startRecovery } from '../utils/Recovery'
 import workflowStyle from '../style/workflow.module.css'
@@ -137,7 +139,8 @@ function ConnectedAgentAvatars(): React.ReactElement | null {
 
 export default function WindowBar(): React.ReactElement {
   const [browser, setBrowser] = useState<'palette' | 'shortcuts' | null>(null)
-  const [guide, setGuide] = useState<'draw' | 'save' | null>(null)
+  const [tourSession, setTourSession] = useState(0)
+  const [tourOpen, setTourOpen] = useState(false)
   const [inviteToDraw, setInviteToDraw] = useState(
     () => preference('firstDrawingInvitation', '') === 'pending'
   )
@@ -153,26 +156,6 @@ export default function WindowBar(): React.ReactElement {
   const [gridSpacing, setGridSpacing] = useState(() => numericPreference('gridSpacing'))
   const { renderer } = useRenderer()
   useEffect(() => renderer ? startRecovery(renderer) : undefined, [renderer])
-  useEffect(() => {
-    if (!guide) return
-    const drawn = (): void => {
-      if (guide !== 'draw' || !renderer) return
-      renderer.setMode(renderer.modes.Select)
-      setGuide('save')
-    }
-    const saved = (): void => {
-      if (guide === 'save') { setGuide(null); void toast(getLocaleKey('workflow.finish')) }
-    }
-    const end = (): void => setGuide(null)
-    window.addEventListener('line-drawn', drawn)
-    window.addEventListener('drawing-saved', saved)
-    window.addEventListener('drawing-replaced', end)
-    return () => {
-      window.removeEventListener('line-drawn', drawn)
-      window.removeEventListener('drawing-saved', saved)
-      window.removeEventListener('drawing-replaced', end)
-    }
-  }, [guide, renderer])
   const dismissInvitation = (): void => {
     if (!inviteToDraw) return
     savePreference('firstDrawingInvitation', 'dismissed')
@@ -182,8 +165,8 @@ export default function WindowBar(): React.ReactElement {
     if (!renderer || renderer.readonly) return
     dismissInvitation()
     setMenuOpened(false)
-    renderer.setMode(renderer.modes.AddLine)
-    setGuide('draw')
+    setTourSession(session => session + 1)
+    setTourOpen(true)
     renderer.displayRef?.focus()
   }
   const { isDevMode } = useDevMode()
@@ -462,16 +445,12 @@ export default function WindowBar(): React.ReactElement {
           <h2 id="first-drawing-title">{getLocaleKey('workflow.welcomeTitle')}</h2>
           <p>{getLocaleKey('workflow.welcomeBody')}</p>
           <div className={workflowStyle.invitationActions}>
-            <button onClick={startGuide}>{getLocaleKey('workflow.startGuide')}</button>
+            <button onClick={startGuide}>{getLocaleKey('workflow.startGuide')}<GuideBorder /></button>
             <button onClick={dismissInvitation}>{getLocaleKey('workflow.skipGuide')}</button>
           </div>
         </aside>
       )}
-      {guide && <aside className={workflowStyle.guide}>
-        <span role="status">{getLocaleKey(guide === 'draw' ? 'workflow.guideDraw' : 'workflow.guideSave')}</span>
-        {guide === 'save' && <button onClick={() => renderer && void saveFile(renderer)}>{getLocaleKey('workflow.save')}</button>}
-        <button onClick={() => setGuide(null)}>{getLocaleKey('workflow.cancel')}</button>
-      </aside>}
+      <DrawingTour key={tourSession} open={tourOpen} onEnd={setTourOpen} />
       {documentModal && <DocumentPropertiesModal creating={documentModal === 'new'} onClose={() => setDocumentModal(null)} />}
       {settingsOpen && <SettingsModal onClose={() => setSettingsOpen(false)} />}
       <div className={styles['window-bar']}>

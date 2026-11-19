@@ -7,7 +7,6 @@ import { ModalProvider } from './components/ModalProvider'
 import TextPrompt from './components/TextPrompt'
 import { RendererProvider, useRenderer } from './components/RendererContextProvider'
 import Inspector from './components/Inspector'
-import Toolbar from './components/Toolbar'
 import { usePluginHost } from './plugins/PluginRuntime' // <-- Import plugin host context
 import { ToastContainer } from './components/Toast'
 import { KonamiCode } from './components/KonamiCodeDetector'
@@ -91,7 +90,6 @@ function AppContent(): React.JSX.Element {
       <WindowBar />
       <Inspector />
       <CanvasContextMenu />
-      <Toolbar />
       <div className={style['canvas-container']}>
         <canvas width={window.innerWidth} height={window.innerHeight} ref={canvas} tabIndex={-1} />
       </div>
