@@ -107,6 +107,7 @@ export class GraphicsRenderer {
     this.selectedComponent = this.selectedComponents.length === 1 ? this.selectedComponents[0] : null
     this.temporarySelectedComponent = this.selectedComponent
     this.notifyComponentChange()
+    if (this.selectedComponent !== null) this.onToolAction?.('select', components[this.selectedComponent])
   }
 
   private lastPasteSource = ''
@@ -2990,6 +2991,7 @@ export class GraphicsRenderer {
     if (this.onModeChange) {
       this.onModeChange()
     }
+    this.onToolAction?.('mode')
   }
   setModeShape(getShape: () => Shape) {
     this.setMode(this.modes.AddShape)
@@ -3237,6 +3239,8 @@ export class GraphicsRenderer {
   }
   public onComponentChangeCallback: (() => void) | null = null
   public onModeChange: (() => void) | null = null
+  public onToolAction?: (action: 'mode' | 'line' | 'select' | 'pan' | 'delete', target?: Component) => void
+  public canDeleteWithTool?: (target: Component) => boolean
   public onComponentArrayChanged: (() => void) | null = null
   public onZoomUpdate: (() => void) | null = null
 
@@ -3392,6 +3396,7 @@ export class GraphicsRenderer {
             this.temporaryPoints[0] = this.temporaryPoints[2]
             this.temporaryPoints[1] = this.temporaryPoints[3]
             this.saveState()
+            this.onToolAction?.('line', this.logicDisplay?.components.at(-1))
             window.dispatchEvent(new Event('line-drawn'))
           }
         }
@@ -3697,9 +3702,11 @@ export class GraphicsRenderer {
           this.yCNaught = this.getCursorYRaw()
           this.displayRef!.style.cursor = `url("${NavigateDragCursor}") 16 16, default`
         } else if (action === this.mouseAction.Up) {
+          const panned = this.camMoving && (this.getCursorXRaw() !== this.xCNaught || this.getCursorYRaw() !== this.yCNaught)
           this.camMoving = false
           this.camX += this.getCursorXRaw() - this.xCNaught
           this.camY += this.getCursorYRaw() - this.yCNaught
+          if (panned) this.onToolAction?.('pan')
           this.displayRef!.style.cursor = `url("${NavigateIdleCursor}") 16 16, default`
         } else if (action === this.mouseAction.Move) {
           if (this.camMoving)
@@ -3753,8 +3760,11 @@ export class GraphicsRenderer {
             this.temporarySelectedComponent !== null &&
             this.logicDisplay?.components[this.temporarySelectedComponent]
           ) {
+            const target = this.logicDisplay.components[this.temporarySelectedComponent]
+            if (this.canDeleteWithTool && !this.canDeleteWithTool(target)) break
             this.forcefullyRemoveSelectedComponentOnActiveIndex()
             this.saveState()
+            this.onToolAction?.('delete', target)
           }
         }
         this.tooltip = getLocaleKey('editor.drawing.deleteHint')

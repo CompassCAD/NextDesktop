@@ -93,6 +93,37 @@ test('renderer API coerces strings, migrates once, and propagates errors', (t) =
   assert.equal(storage.length, 0)
 })
 
+test('only fresh profiles receive the first drawing invitation, and dismissal survives startup', (t) => {
+  for (const profile of ['fresh', 'legacy', 'configured', 'migrated']) {
+    const store = new SettingsStore(fixture(t))
+    if (profile === 'configured') store.update('set', { custom: 'keep' })
+    if (profile === 'migrated') store.update('set', { _migratedLocalStorage: 'true' })
+    const startup = () => {
+      const { migrateSettings, settingsStorage } = load('src/renderer/src/utils/SettingsStorage.ts', {
+        Event: class {},
+        localStorage: {
+          length: profile === 'legacy' ? 1 : 0,
+          getItem: key => profile === 'legacy' && key === 'language' ? 'en' : null
+        },
+        window: {
+          dispatchEvent() {},
+          api: { settingsStorage: (op, entries) => ({
+            values: op === 'read' ? store.read() : store.update(op, entries)
+          }) }
+        }
+      })
+      migrateSettings()
+      return settingsStorage
+    }
+    const storage = startup()
+    assert.equal(storage.getItem('firstDrawingInvitation'), profile === 'fresh' ? 'pending' : null)
+    if (profile === 'fresh') {
+      storage.setItem('firstDrawingInvitation', 'dismissed')
+      assert.equal(startup().getItem('firstDrawingInvitation'), 'dismissed')
+    }
+  }
+})
+
 const options = load('src/renderer/src/utils/SettingsOptions.ts')
 test('metric and imperial conversions preserve physical distances', () => {
   assert.equal(options.formatMeasurement(100, 'm', 2), '1.00 m')

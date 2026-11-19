@@ -138,6 +138,9 @@ function ConnectedAgentAvatars(): React.ReactElement | null {
 export default function WindowBar(): React.ReactElement {
   const [browser, setBrowser] = useState<'palette' | 'shortcuts' | null>(null)
   const [guide, setGuide] = useState<'draw' | 'save' | null>(null)
+  const [inviteToDraw, setInviteToDraw] = useState(
+    () => preference('firstDrawingInvitation', '') === 'pending'
+  )
   const [documentModal, setDocumentModal] = useState<'new' | 'properties' | null>(null)
   const [, refreshDocument] = useState(0)
   const [settingsOpen, setSettingsOpen] = useState(false)
@@ -170,8 +173,14 @@ export default function WindowBar(): React.ReactElement {
       window.removeEventListener('drawing-replaced', end)
     }
   }, [guide, renderer])
+  const dismissInvitation = (): void => {
+    if (!inviteToDraw) return
+    savePreference('firstDrawingInvitation', 'dismissed')
+    setInviteToDraw(false)
+  }
   const startGuide = (): void => {
     if (!renderer || renderer.readonly) return
+    dismissInvitation()
     setMenuOpened(false)
     renderer.setMode(renderer.modes.AddLine)
     setGuide('draw')
@@ -448,6 +457,16 @@ export default function WindowBar(): React.ReactElement {
   return (
     <>
       {browser && <CommandBrowser key={browser} reference={browser === 'shortcuts'} commands={commands} close={() => setBrowser(null)} />}
+      {inviteToDraw && renderer && !renderer.readonly && (
+        <aside className={workflowStyle.invitation} aria-labelledby="first-drawing-title">
+          <h2 id="first-drawing-title">{getLocaleKey('workflow.welcomeTitle')}</h2>
+          <p>{getLocaleKey('workflow.welcomeBody')}</p>
+          <div className={workflowStyle.invitationActions}>
+            <button onClick={startGuide}>{getLocaleKey('workflow.startGuide')}</button>
+            <button onClick={dismissInvitation}>{getLocaleKey('workflow.skipGuide')}</button>
+          </div>
+        </aside>
+      )}
       {guide && <aside className={workflowStyle.guide}>
         <span role="status">{getLocaleKey(guide === 'draw' ? 'workflow.guideDraw' : 'workflow.guideSave')}</span>
         {guide === 'save' && <button onClick={() => renderer && void saveFile(renderer)}>{getLocaleKey('workflow.save')}</button>}

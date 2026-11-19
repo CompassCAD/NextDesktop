@@ -122,9 +122,6 @@ export default function SettingsModal({ onClose }: { onClose: () => void }): Rea
   const [face, setFace] = useState(fontPreference)
   const [size, setSize] = useState(String(numberPreference('fontSize', 18, 1, 256)))
   const [language, setLanguage] = useState(GetLanguage)
-  const [showBeta, setShowBeta] = useState(
-    preference('PUBLICBETA_DoNotShowThatShitEverAgain', 'false') !== 'true'
-  )
   const [unit, setUnit] = useState(() => resolveUnit(preference('measurementUnit', 'm')))
   const [numbers, setNumbers] = useState(
     () =>
@@ -171,7 +168,6 @@ export default function SettingsModal({ onClose }: { onClose: () => void }): Rea
     'fontSize',
     'preview',
     'language',
-    'showBeta',
     'maximumStack'
   ] as const
   const canvasKeys = ['showGrid', 'showOrigin', 'showRules', 'snap'] as const
@@ -245,7 +241,6 @@ export default function SettingsModal({ onClose }: { onClose: () => void }): Rea
         language,
         measurementUnit: unit,
         ...numbers,
-        PUBLICBETA_DoNotShowThatShitEverAgain: String(!showBeta),
         ...Object.fromEntries(Object.entries(canvas).map(([key, value]) => [key, String(value)]))
       })
       renderer?.setStrokeFont(font)
@@ -548,16 +543,6 @@ export default function SettingsModal({ onClose }: { onClose: () => void }): Rea
                 )}
                 {numberInput('maximumStack')}
                 {matches('maximumStack') && <p className={style.hint}>{t('undoHelp')}</p>}
-                {matches('showBeta') && (
-                  <label className={style.row}>
-                    {t('showBeta')}
-                    <input
-                      type="checkbox"
-                      checked={showBeta}
-                      onChange={(e) => setShowBeta(e.target.checked)}
-                    />
-                  </label>
-                )}
               </section>
             )}
             {showCanvas && (

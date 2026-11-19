@@ -45,6 +45,9 @@ export const settingsStorage = {
 export function migrateSettings(): void {
   if (settingsStorage.getItem('_migratedLocalStorage') === 'true') return
   const entries: Record<string, string> = { _migratedLocalStorage: 'true' }
+  if (settingsStorage.length === 0 && localStorage.length === 0) {
+    entries.firstDrawingInvitation = 'pending'
+  }
   for (const key of ['language', 'PUBLICBETA_DoNotShowThatShitEverAgain']) {
     const value = localStorage.getItem(key)
     if (value !== null && settingsStorage.getItem(key) === null) entries[key] = value

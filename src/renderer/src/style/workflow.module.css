@@ -59,3 +59,35 @@
   z-index: 20;
 }
 .guide button { white-space: nowrap; }
+.invitation {
+  composes: guide;
+  width: min(360px, calc(100vw - 32px));
+  align-items: flex-start;
+  flex-direction: column;
+  padding: 16px;
+}
+.invitation h2 { margin: 0; font-size: 1.1rem; }
+.invitation p { margin: 0; line-height: 1.45; }
+.invitationActions { display: flex; gap: 8px; }
+.guideBorder {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  fill: none;
+  stroke: var(--text);
+  stroke-width: 2px;
+  stroke-dasharray: 6 4;
+  filter: drop-shadow(0 0 2px var(--theme));
+}
+.guideBorder rect {
+  width: calc(100% - 2px);
+  height: calc(100% - 2px);
+  animation: guideMarch 750ms linear infinite;
+}
+@keyframes guideMarch { to { stroke-dashoffset: -10; } }
+@media (prefers-reduced-motion: reduce) {
+  .guideBorder rect { animation: none; }
+}
+.guide button { position: relative; }

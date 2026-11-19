@@ -3,6 +3,7 @@ import styles from '../style/index.module.css'
 import * as Types from '../engine/Types'
 import { Vector2 } from '@renderer/engine/Engine'
 import { useRenderer } from './RendererContextProvider'
+import GuideBorder from './GuideBorder'
 import { getLocaleKey, LocaleKey } from '../locales/Locale'
 
 import SelectIcon from '../assets/icons/navigate.svg'
@@ -30,6 +31,7 @@ interface ToolbarButtonProps {
   alternateKeyCode?: number
   // To check if the tool is selected
   isActive: boolean
+  highlighted: boolean
   onAction?: () => void
 }
 
@@ -58,22 +60,26 @@ function ToolbarButton(props: ToolbarButtonProps): React.ReactElement {
       window.removeEventListener('keydown', handleKeyDown)
     }
   })
-  const changePos = (e: React.MouseEvent<HTMLDivElement, MouseEvent>): void => {
+  const changePos = (e: React.MouseEvent<HTMLButtonElement, MouseEvent>): void => {
     const x = e.clientX;
     const y = e.clientY - 40;
     setPos({ x, y });
   }
   return (
     <>
-      <div
+      <button
+        type="button"
+        aria-label={props.title}
+        aria-pressed={props.isActive}
         className={`${styles['toolbar-button']}${props.isActive ? ` ${styles['button-active']}` : ''}`}
         onClick={props.onAction}
         onMouseEnter={() => setVisibility(true)}
         onMouseLeave={() => setVisibility(false)}
         onMouseMove={changePos}
       >
-        <img width={18} src={props.icon} />
-      </div>
+        <img width={18} src={props.icon} alt="" />
+        {props.highlighted && <GuideBorder />}
+      </button>
       {isTooltipVisible && (
         <div
           className={styles['toolbar-tooltip']}
@@ -196,7 +202,7 @@ export const drawingTools: ToolbarButtonSingleton[] = [
     }
   ]
 
-export default function Toolbar(): React.ReactElement {
+export default function Toolbar({ highlightedMode }: { highlightedMode?: number }): React.ReactElement {
   const [modeState, setModeState] = useState<number>(Types.default.NavigationTypes.Navigate)
   const { renderer } = useRenderer();
 
@@ -220,7 +226,7 @@ export default function Toolbar(): React.ReactElement {
         renderer.onModeChange = null
       }
     }
-  }, [])
+  }, [renderer])
   return (
     <>
       <div className={styles['workflow-toolbar']} onMouseDown={(e) => e.stopPropagation()}>
@@ -232,6 +238,7 @@ export default function Toolbar(): React.ReactElement {
             keyName={tool.keyName}
             keyCode={tool.keyCode}
             isActive={modeState == tool.state}
+            highlighted={highlightedMode === tool.state}
             onAction={() => renderer?.setMode(tool.state)}
           />
         ))}

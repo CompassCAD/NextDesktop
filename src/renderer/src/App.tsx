@@ -1,16 +1,13 @@
 import CanvasContextMenu from './components/CanvasContextMenu'
 import { SETTINGS_CHANGED } from './utils/SettingsStorage'
-import { preference } from './utils/Preferences'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import WindowBar from './components/WindowBar'
 import style from './style/index.module.css'
-import { ModalProvider, openModal } from './components/ModalProvider'
-import Toolbar from './components/Toolbar'
+import { ModalProvider } from './components/ModalProvider'
 import TextPrompt from './components/TextPrompt'
 import { RendererProvider, useRenderer } from './components/RendererContextProvider'
 import Inspector from './components/Inspector'
-import { getLocaleKey } from './locales/Locale'
-import PublicBetaModal from './components/submodals/PublicBeta'
+import Toolbar from './components/Toolbar'
 import { usePluginHost } from './plugins/PluginRuntime' // <-- Import plugin host context
 import { ToastContainer } from './components/Toast'
 import { KonamiCode } from './components/KonamiCodeDetector'
@@ -26,7 +23,7 @@ function AppContent(): React.JSX.Element {
     return () => window.removeEventListener(SETTINGS_CHANGED, refresh)
   }, [])
   const canvas = useRef<HTMLCanvasElement>(null)
-  const { renderer, isReady, createRenderer } = useRenderer()
+  const { renderer, createRenderer } = useRenderer()
   const { isDevMode, enableDevMode } = useDevMode()
   const host = usePluginHost() // <-- Access Lua host
 
@@ -84,12 +81,6 @@ function AppContent(): React.JSX.Element {
     return () => window.removeEventListener('resize', handleResize)
   }, [resize])
 
-  useEffect(() => {
-    if (preference('PUBLICBETA_DoNotShowThatShitEverAgain', 'false') !== 'true') {
-      openModal(getLocaleKey('editor.publicBeta.welcome'), <PublicBetaModal />)
-    }
-  }, [])
-
   return (
     <>
       <KonamiCode onSuccess={enableDevMode} />
@@ -100,7 +91,7 @@ function AppContent(): React.JSX.Element {
       <WindowBar />
       <Inspector />
       <CanvasContextMenu />
-      {isReady && <Toolbar />}
+      <Toolbar />
       <div className={style['canvas-container']}>
         <canvas width={window.innerWidth} height={window.innerHeight} ref={canvas} tabIndex={-1} />
       </div>
