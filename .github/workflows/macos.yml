@@ -11,6 +11,7 @@ permissions:
 jobs:
   build-macos:
     runs-on: macos-latest
+    environment: CompassCAD build env
 
     steps:
       - name: Checkout
@@ -29,6 +30,7 @@ jobs:
         run: yarn build:mac
         env:
           CSC_IDENTITY_AUTO_DISCOVERY: false
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
 
       - name: Launch app and capture preview
         shell: bash
