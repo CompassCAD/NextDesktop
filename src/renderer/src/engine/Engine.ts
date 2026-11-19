@@ -3239,7 +3239,7 @@ export class GraphicsRenderer {
   }
   public onComponentChangeCallback: (() => void) | null = null
   public onModeChange: (() => void) | null = null
-  public onToolAction?: (action: 'mode' | 'line' | 'select' | 'pan' | 'delete', target?: Component) => void
+  public onToolAction?: (action: 'mode' | 'line' | 'select' | 'point' | 'pan' | 'delete', target?: Component) => void
   public canDeleteWithTool?: (target: Component) => boolean
   public onComponentArrayChanged: (() => void) | null = null
   public onZoomUpdate: (() => void) | null = null
@@ -4060,6 +4060,8 @@ export class GraphicsRenderer {
             }
           }
         } else if (action == this.mouseAction.Up) {
+          const modified = this._dragDidModify
+          const target = this.selectedComponent !== null ? this.logicDisplay?.components[this.selectedComponent] : undefined
           if (this._dragDidModify) {
             // Snapshot once per completed drag; serializing 100k components on
             // every pointer event was the main source of render starvation.
@@ -4072,6 +4074,7 @@ export class GraphicsRenderer {
           this.displayRef!.style.cursor = `url("${DefaultCursor}") 6 6, default`
           // After releasing the drag, ensure the state is up-to-date
           this.notifyComponentChange()
+          if (modified) this.onToolAction?.('point', target)
         }
 
         if (this.selectedComponent !== null) {
