@@ -658,6 +658,7 @@ export default function Inspector(): React.ReactElement {
                     <label>{getLocaleKey('editor.inspector.text.text')}</label>
                     <input
                       type="text"
+                      style={{width: '50%'}}
                       value={component.text ?? ''}
                       onChange={(e) => handleComponentChange('text', e.target.value)}
                     />

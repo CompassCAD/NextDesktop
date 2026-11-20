@@ -102,7 +102,8 @@ function fixture() {
     path: 'drawing.cnext',
     content: encodeDocument([new Line(0, 0, 100, 0)], defaults(), true),
     answer: 'discard',
-    failWrite: false
+    failWrite: false,
+    dxfOptions: { scale: 10, flipY: true }
   }
   const api = {
     showOpenFileDialog: async () => state.path,
@@ -121,13 +122,22 @@ function fixture() {
       '../engine/Engine': {},
       '../engine/Logic': { LogicDisplay },
       '../locales/Locale': { getLocaleKey: (key) => key },
-      './dxfparse': { convertDxfToCompassCad: () => [] },
+      './dxfparse': {
+        convertDxfToCompassCad: (source, options) => {
+          calls.dxf = { source, options }
+          return [new Line(0, 0, 10, 10)]
+        },
+        parseDxf: () => ({ layers: new Map(), entities: [], insUnits: null })
+      },
       '../components/Toast': { toast: (message) => calls.messages.push(message) },
       '../components/GenericPrompt': {
         callGenericPrompt: async () => {
           calls.prompts++
           return state.answer
         }
+      },
+      '../components/submodals/DxfImportModal': {
+        promptDxfImportOptions: async () => state.dxfOptions
       }
     },
     { window: { api, dispatchEvent() {} }, Event }
@@ -613,4 +623,23 @@ test('new document scale gives radius 2 a 0.2 mm print width without migrating s
     assert.equal(decoded.components[0].radius, 2)
     assert.equal(decoded.components[0].x2, 100)
   }
+})
+
+test('DXF import prompts for options and applies them, or aborts when cancelled', async () => {
+  const f = fixture()
+  f.state.path = 'test.dxf'
+  f.state.content = 'fake-dxf'
+  f.state.dxfOptions = { scale: 0.1, flipY: true, groupByLayer: true }
+  await f.file.openFileAndParse(f.renderer)
+  assert.equal(f.calls.dxf.source, 'fake-dxf')
+  assert.equal(f.calls.dxf.options.scale, 0.1)
+  assert.equal(f.calls.dxf.options.flipY, true)
+  assert.equal(f.calls.dxf.options.groupByLayer, true)
+  assert.equal(f.renderer.logicDisplay.components[0].x2, 10)
+
+  // Cancelled import keeps the existing drawing intact
+  f.state.dxfOptions = null
+  const original = f.renderer.logicDisplay.components
+  await f.file.openFileAndParse(f.renderer)
+  assert.equal(f.renderer.logicDisplay.components, original)
 })

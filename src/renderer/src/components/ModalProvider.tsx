@@ -10,6 +10,8 @@ type ModalContent = ReactNode
 interface ModalPayload {
   title: ModalTitle
   content: ModalContent
+  onClose?: () => void
+  close?: boolean
 }
 
 const globalThis = window as any
@@ -27,9 +29,17 @@ globalThis.__modalEmitter = globalThis.__modalEmitter || {
 }
 const modalEmitter = globalThis.__modalEmitter
 
-export const openModal = (title: ModalTitle, content: ModalContent): void => {
+export const openModal = (
+  title: ModalTitle,
+  content: ModalContent,
+  onClose?: () => void
+): void => {
   console.log('[modal] opening modal as per request')
-  modalEmitter.emit({ title, content })
+  modalEmitter.emit({ title, content, onClose })
+}
+
+export const closeModal = (): void => {
+  modalEmitter.emit({ title: null, content: null, close: true })
 }
 
 interface ModalProps {
@@ -97,9 +107,13 @@ export const ModalProvider: React.FC = () => {
   })
 
   const dismissPermission = useRef<(() => void) | null>(null)
+  const onModalCloseRef = useRef<(() => void) | null>(null)
   const closeModal = useCallback(() => {
     dismissPermission.current?.()
     dismissPermission.current = null
+    const onClose = onModalCloseRef.current
+    onModalCloseRef.current = null
+    onClose?.()
     setModalState((prev) => ({ ...prev, isOpen: false }))
   }, [])
 
@@ -107,7 +121,18 @@ export const ModalProvider: React.FC = () => {
     const handleOpen = (payload: ModalPayload): void => {
       dismissPermission.current?.()
       dismissPermission.current = null
-      setModalState({ ...payload, isOpen: true })
+      if (payload.close) {
+        const onClose = onModalCloseRef.current
+        onModalCloseRef.current = null
+        onClose?.()
+        setModalState((prev) => ({ ...prev, isOpen: false }))
+      } else {
+        const onClose = onModalCloseRef.current
+        onModalCloseRef.current = null
+        onClose?.()
+        onModalCloseRef.current = payload.onClose ?? null
+        setModalState({ title: payload.title, content: payload.content, isOpen: true })
+      }
     }
     const unsubscribe = modalEmitter.on(handleOpen)
     const unsubscribePermissions = window.api.onExtensionPermissionRequest((request) => {
@@ -119,6 +144,9 @@ export const ModalProvider: React.FC = () => {
         void window.api.respondExtensionPermission(request.requestId, approved).catch(console.error)
       }
       dismissPermission.current = () => decide(false)
+      const onClose = onModalCloseRef.current
+      onModalCloseRef.current = null
+      onClose?.()
       setModalState({
         isOpen: true,
         title: getLocaleKey('extensions.consentTitle'),
@@ -140,6 +168,9 @@ export const ModalProvider: React.FC = () => {
       unsubscribePermissions()
       dismissPermission.current?.()
       dismissPermission.current = null
+      const onClose = onModalCloseRef.current
+      onModalCloseRef.current = null
+      onClose?.()
     }
   }, [closeModal])
 

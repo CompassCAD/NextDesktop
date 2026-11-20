@@ -2,7 +2,8 @@ import { GraphicsRenderer } from '../engine/Engine'
 import { Component } from '../engine/Component'
 import { LogicDisplay } from '../engine/Logic'
 import { getLocaleKey } from '../locales/Locale'
-import { convertDxfToCompassCad } from './dxfparse'
+import { convertDxfToCompassCad, parseDxf } from './dxfparse'
+import { promptDxfImportOptions } from '../components/submodals/DxfImportModal'
 import { toast } from '../components/Toast'
 import { callGenericPrompt } from '../components/GenericPrompt'
 import {
@@ -100,7 +101,11 @@ export const openFileAndParse = async (renderer: GraphicsRenderer): Promise<void
     if (['cnext', 'ccad', 'qrocad', 'qrocad2'].includes(ext)) {
       ;({ components, properties } = decodeDocument(source, ext === 'cnext'))
     } else if (ext === 'dxf') {
-      components = convertDxfToCompassCad(source, { scale: 10, flipY: true })
+      const doc = parseDxf(source)
+      const fileName = filePath.replace(/^.*[\\/]/, '')
+      const options = await promptDxfImportOptions(doc, fileName)
+      if (!options) return
+      components = convertDxfToCompassCad(source, options)
     } else throw new Error(getLocaleKey('documentProperties.unsupported'))
     replaceDrawing(renderer, components, properties, filePath)
     window.dispatchEvent(new Event('drawing-opened'))
