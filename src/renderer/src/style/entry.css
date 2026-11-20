@@ -96,6 +96,45 @@
 *:focus-visible {
     outline: 1.5px solid var(--theme);
 }
+::-webkit-scrollbar {
+  padding: 5px;
+  width: 16px
+}
+
+::-webkit-scrollbar-button:single-button {
+  background-position: 50%;
+  background-repeat: no-repeat;
+  background-size: 8px
+}
+
+  ::-webkit-scrollbar-button:single-button:vertical:decrement {
+    background-image: url('../assets/icons/arrow-up.svg');
+    background-position: center 4px;
+    height: 16px;
+    width: 16px
+  }
+
+  ::-webkit-scrollbar-button:single-button:vertical:increment {
+    background-image: url('../assets/icons/arrow-down.svg');
+    background-position: center 2px;
+    height: 16px;
+    width: 16px
+  }
+
+::-webkit-scrollbar-track {
+  background: var(--primary)
+}
+
+::-webkit-scrollbar-thumb {
+  background-clip: padding-box;
+  background-color: var(--secondary);
+  border: 2px solid #0000;
+  border-radius: 6px
+}
+
+  ::-webkit-scrollbar-thumb:hover {
+    background-color: var(--outline)
+  }
 body {
   background: var(--primary-background);
   color: var(--text);
