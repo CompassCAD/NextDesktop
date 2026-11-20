@@ -6,6 +6,7 @@ import { callTextPrompt } from './TextPrompt'
 import { toast } from './Toast'
 import CopyIcon from '../assets/icons/copy.svg'
 import LineIcon from '../assets/icons/line.svg'
+import PasteIcon from '../assets/icons/paste.svg'
 
 export function editCommands(renderer: GraphicsRenderer) {
   const selection = renderer.getSelection().map(i => renderer.logicDisplay!.components[i])
@@ -27,7 +28,7 @@ export function editCommands(renderer: GraphicsRenderer) {
   }
   return [
     { label: getLocaleKey('workflow.copy'), icon: CopyIcon, shortcut: mod + '+C', enabled: !renderer.isEditing && !!selection.length, run: () => renderer.copySelection() },
-    { label: getLocaleKey('workflow.paste'), icon: CopyIcon, shortcut: mod + '+V', enabled: editable && renderer.hasClipboard, run: () => renderer.pasteSelection() },
+    { label: getLocaleKey('workflow.paste'), icon: PasteIcon, shortcut: mod + '+V', enabled: editable && renderer.hasClipboard, run: () => renderer.pasteSelection() },
     { label: getLocaleKey('workflow.duplicate'), icon: CopyIcon, shortcut: mod + '+D', enabled: editable && !!selection.length, run: () => renderer.duplicateSelection() },
   ]
 }

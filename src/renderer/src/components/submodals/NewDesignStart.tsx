@@ -3,6 +3,7 @@ import { paperSizes } from '../../utils/DocumentProperties'
 import { getLocaleKey } from '../../locales/Locale'
 import en from '../../locales/en.json'
 import style from '../../style/newDesign.module.css'
+import InfiniteIcon from '../../assets/icons/infinite.svg'
 
 const t = (key: keyof typeof en.documentProperties): string =>
   getLocaleKey(`documentProperties.${key}`)
@@ -60,7 +61,7 @@ export default function NewDesignStart({
             >
               <span className={style.thumbnail} aria-hidden="true">
                 {template === 'infinite' ? (
-                  <span className={style.infinity}>∞</span>
+                  <img className={style.infinity} src={InfiniteIcon} />
                 ) : (
                   <svg viewBox="0 0 100 80">
                     <rect x="28" y="8" width="44" height="62" rx="1" />

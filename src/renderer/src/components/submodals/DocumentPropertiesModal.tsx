@@ -20,10 +20,21 @@ import style from '../../style/settings.module.css'
 import modalStyle from '../../style/index.module.css'
 import CloseIcon from '../../assets/icons/close.svg'
 import DocumentIcon from '../../assets/icons/docproperties.svg'
+import PaperIcon from '../../assets/icons/paper.svg'
+import MeasureIcon from '../../assets/icons/measure.svg'
+import SettingsIcon from '../../assets/icons/settings.svg'
+import NewDocumentIcon from '../../assets/icons/newLogic.svg'
+import SaveIcon from '../../assets/icons/saveLogic.svg'
+import BackIcon from '../../assets/icons/back.svg'
 
 const t = (key: keyof typeof en.documentProperties): string =>
   getLocaleKey(`documentProperties.${key}`)
 type Section = 'identity' | 'paperSetup' | 'measurements'
+const sectionIcons: Record<Section, string> = {
+  identity: DocumentIcon,
+  paperSetup: PaperIcon,
+  measurements: MeasureIcon
+}
 const numericKeys = [
   'widthMm',
   'heightMm',
@@ -172,12 +183,14 @@ export default function DocumentPropertiesModal({
           )}
           <footer className={startStyle.footer}>
             <button type="button" className={startStyle.advanced} onClick={() => setAdvanced(true)}>
+              <img src={SettingsIcon} width={24} height={24} alt="" />
               {t('advancedSetup')}
             </button>
             <button type="button" onClick={onClose}>
               {getLocaleKey('settings.cancel')}
             </button>
             <button type="submit">
+              <img src={NewDocumentIcon} width={24} height={24} alt="" />
               {t('create')}
             </button>
           </footer>
@@ -216,6 +229,7 @@ export default function DocumentPropertiesModal({
                 setAdvanced(false)
               }}
             >
+              <img src={BackIcon} width={24} height={24} alt="" />
               {t('backToTemplates')}
             </button>
           )}
@@ -227,7 +241,7 @@ export default function DocumentPropertiesModal({
                 aria-current={section === item ? 'page' : undefined}
                 onClick={() => setSection(item)}
               >
-                <img src={DocumentIcon} alt="" />
+                <img src={sectionIcons[item]} alt="" />
                 {t(item)}
               </button>
             ))}
@@ -488,8 +502,12 @@ export default function DocumentPropertiesModal({
             </p>
           )}
           <footer className={style.footer}>
-            <button type="submit">{creating ? t('create') : t('apply')}</button>
+            <button type="submit">
+              <img src={creating ? NewDocumentIcon : SaveIcon} width={24} height={24} alt="" />
+              {creating ? t('create') : t('apply')}
+            </button>
             <button type="button" onClick={onClose}>
+              <img src={CloseIcon} width={24} height={24} alt="" />
               {getLocaleKey('settings.cancel')}
             </button>
           </footer>

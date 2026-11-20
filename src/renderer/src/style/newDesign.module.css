@@ -87,7 +87,8 @@
   stroke-width: 1;
 }
 .infinity {
-  font-size: 33pt;
+  height: 64px;
+  aspect-ratio: 1;
   line-height: 1;
 }
 .cardTitle {
